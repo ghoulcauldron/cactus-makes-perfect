@@ -15,5 +15,5 @@ RUN npm install -g serve
 COPY --from=build /app/dist ./dist
 
 # Railway injects $PORT, so bind to it
-# Added -u flag for Basic Auth (username:password)
-CMD ["serve", "-s", "dist", "-l", "$PORT", "-u", "guest:secretpass"]
+# Shell form allows $PORT to expand properly
+CMD sh -c "serve -s dist -l $PORT -u guest:secretpass"
