@@ -1,9 +1,9 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
-import CalculatorAuth from './routes/guest/login/CalculatorAuth.tsx'
-import Welcome from './routes/guest/welcome/Welcome.tsx'
-import RSVP from './routes/guest/rsvp/RSVP.tsx'
+import CalculatorAuth from './routes/guest/login/CalculatorAuth'
+import Welcome from './routes/guest/welcome/Welcome'
+import RSVP from './routes/guest/rsvp/RSVP'
 
 const router = createBrowserRouter([
   { path: '/guest/login', element: <CalculatorAuth/> },
