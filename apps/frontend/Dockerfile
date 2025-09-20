@@ -1,3 +1,4 @@
+# Build stage
 FROM node:20-slim AS build
 WORKDIR /app
 
@@ -7,12 +8,17 @@ RUN npm install
 COPY . ./
 RUN npm run build
 
-# Runtime image
+# Runtime stage
 FROM node:20-slim
 WORKDIR /app
 
-RUN npm install -g serve
-COPY --from=build /app/dist ./dist
+# Install only runtime deps
+RUN npm install express basic-auth
 
-# Correct listen flag: host and port separated with colon
-CMD ["sh", "-c", "serve -s dist -l tcp://0.0.0.0:$PORT -u guest:secretpass"]
+# Copy build output + server
+COPY --from=build /app/dist ./dist
+COPY server.js ./server.js
+
+# Expose port and run server
+ENV PORT=8080
+CMD ["node", "server.js"]
