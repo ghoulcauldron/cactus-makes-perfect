@@ -2,6 +2,7 @@ import express from "express";
 import basicAuth from "basic-auth";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import path from "path";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

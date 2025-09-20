@@ -1,4 +1,5 @@
 export default function Welcome() {
+  console.log("Rendering Welcome.tsx component"); // Debug
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-sand relative overflow-hidden">
       {/* risograph grain overlay */}
@@ -32,7 +33,7 @@ export default function Welcome() {
 
       {/* playful desert footer */}
       <footer className="absolute bottom-4 text-sm text-gray-600 font-mono opacity-80">
-        🌞 Santa Fe, NM • September 20XX
+        🌞 Santa Fe, NM • August 2026
       </footer>
     </div>
   );
