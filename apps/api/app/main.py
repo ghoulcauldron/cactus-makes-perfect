@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.api.v1 import auth, rsvps
+from app.v1 import auth, rsvps
 
 app = FastAPI(title="Cactus Makes Perfect API")
 
