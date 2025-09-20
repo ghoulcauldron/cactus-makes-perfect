@@ -7,12 +7,13 @@ RUN npm install
 COPY . ./
 RUN npm run build
 
-# Runtime image
+# Runtime image: use a tiny static server
 FROM node:20-slim
 WORKDIR /app
 
 RUN npm install -g serve
 COPY --from=build /app/dist ./dist
 
-# Railway injects $PORT
-CMD serve -s dist -l $PORT --single
+# Railway injects $PORT, so bind to it
+# Added -u flag for Basic Auth (username:password)
+CMD ["serve", "-s", "dist", "-l", "$PORT", "-u", "guest:secretpass"]
