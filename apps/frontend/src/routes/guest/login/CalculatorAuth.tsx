@@ -18,12 +18,27 @@ export default function CalculatorAuth() {
   const submit = async () => {
     if (code.length < 4) return;
     setSubmitting(true);
-    // TODO: call backend /api/v1/auth/verify
-    setTimeout(() => {
-      setSubmitting(false);
-      alert("Auth success (stub) ✅");
+    try {
+      const token = url.searchParams.get("token") || "";
+      const res = await fetch("/api/v1/auth/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, email, code }),
+      });
+      if (!res.ok) {
+        const detail = await res.text();
+        throw new Error(detail || `Request failed: ${res.status}`);
+      }
+      const data = await res.json();
+      // Optionally persist token for subsequent requests
+      if (data?.token) {
+        try { localStorage.setItem("auth_token", data.token); } catch {}
+      }
       window.location.assign("/guest/welcome");
-    }, 600);
+    } catch (err: any) {
+      alert(err?.message || "Verification failed");
+      setSubmitting(false);
+    }
   };
 
   return (
