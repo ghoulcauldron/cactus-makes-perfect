@@ -27,8 +27,8 @@ app.use(auth);
 // Serve static assets
 app.use(express.static(join(__dirname, "dist")));
 
-// Catch-all fallback **for SPA routes**
-app.get("*", (req, res) => {
+// Catch-all fallback for SPA (React Router)
+app.get(/.*/, (req, res) => {
   res.sendFile(join(__dirname, "dist", "index.html"));
 });
 
