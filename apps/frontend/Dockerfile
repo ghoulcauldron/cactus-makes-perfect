@@ -14,5 +14,5 @@ WORKDIR /app
 RUN npm install -g serve
 COPY --from=build /app/dist ./dist
 
-EXPOSE 4173
-CMD ["serve", "-s", "dist", "-l", "4173"]
+# Railway injects $PORT, so bind to it
+CMD ["serve", "-s", "dist", "-l", "${PORT}"]
