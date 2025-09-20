@@ -1,24 +1,27 @@
-# Build stage
+# ---- Build stage ----
 FROM node:20-slim AS build
 WORKDIR /app
 
+# Install only build dependencies (no express/basic-auth here)
 COPY package*.json ./
-RUN npm install
+RUN npm install --omit=dev
 
 COPY . ./
 RUN npm run build
 
-# Runtime stage
+# ---- Runtime stage ----
 FROM node:20-slim
 WORKDIR /app
 
-# Install only runtime deps
+# Install only what's needed at runtime: express + basic-auth
+COPY package*.json ./
 RUN npm install express basic-auth
 
-# Copy build output + server
+# Copy built frontend assets and server
 COPY --from=build /app/dist ./dist
 COPY server.js ./server.js
 
-# Expose port and run server
-ENV PORT=8080
+ENV NODE_ENV=production
+EXPOSE 8080
+
 CMD ["node", "server.js"]
