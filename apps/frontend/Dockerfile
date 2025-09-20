@@ -12,13 +12,12 @@ RUN npm run build
 FROM node:20-slim
 WORKDIR /app
 
-# Only install runtime deps
+# Copy only what’s needed: dist, server.js, and package.json
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/server.js ./server.js
+COPY --from=build /app/package.json ./package.json
+
 RUN npm install express basic-auth
 
-# Copy built frontend and server
-COPY --from=build /app/dist ./dist
-COPY server.js ./server.js
-
-ENV NODE_ENV=production
 EXPOSE 8080
 CMD ["node", "server.js"]
