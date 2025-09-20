@@ -1,6 +1,7 @@
 {
   "name": "cactus-makes-perfect-frontend",
   "version": "0.1.0",
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

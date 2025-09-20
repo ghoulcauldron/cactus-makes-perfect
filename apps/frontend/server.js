@@ -27,10 +27,10 @@ app.use(auth);
 // Serve static dist
 app.use(express.static(join(__dirname, "dist")));
 
-// Catch-all for React Router
-app.get("/*", (req, res) => {
-  res.sendFile(join(__dirname, "dist", "index.html"));
-});
+// Catch-all fallback for SPA
+app.use((req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'))
+})
 
 app.listen(port, "0.0.0.0", () => {
   console.log(`Frontend running at http://0.0.0.0:${port}`);
