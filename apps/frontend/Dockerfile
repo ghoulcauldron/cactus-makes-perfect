@@ -15,4 +15,5 @@ RUN npm install -g serve
 COPY --from=build /app/dist ./dist
 
 # Railway injects $PORT, so bind to it
+RUN ls -R ./dist
 CMD serve -s dist -l tcp://0.0.0.0:$PORT
