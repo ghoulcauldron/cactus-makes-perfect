@@ -4,6 +4,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import CalculatorAuth from './routes/guest/login/CalculatorAuth'
 import Welcome from './routes/guest/welcome/Welcome'
 import RSVP from './routes/guest/rsvp/RSVP'
+import './index.css'
 
 const router = createBrowserRouter([
   { path: '/', element: <Welcome /> },

@@ -42,7 +42,7 @@ export default function CalculatorAuth() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-sand relative overflow-hidden">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-cactus-sand relative overflow-hidden">
       {/* risograph grain overlay */}
       <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/asfalt-dark.png')] opacity-10"></div>
 
