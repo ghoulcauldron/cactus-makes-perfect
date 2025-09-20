@@ -1,8 +1,7 @@
 import express from "express";
 import basicAuth from "basic-auth";
-import { join, dirname } from "path";
+import { dirname, join } from "path";
 import { fileURLToPath } from "url";
-import path from "path";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -10,7 +9,7 @@ const __dirname = dirname(__filename);
 const app = express();
 const port = process.env.PORT || 8080;
 
-// HTTP Basic Auth
+// Basic auth
 const auth = (req, res, next) => {
   const user = basicAuth(req);
   const username = process.env.BASIC_AUTH_USER || "guest";
@@ -25,13 +24,13 @@ const auth = (req, res, next) => {
 
 app.use(auth);
 
-// Serve static dist
+// Serve static assets
 app.use(express.static(join(__dirname, "dist")));
 
-// Catch-all fallback for SPA
-app.use((req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'))
-})
+// Catch-all fallback **for SPA routes**
+app.get("*", (req, res) => {
+  res.sendFile(join(__dirname, "dist", "index.html"));
+});
 
 app.listen(port, "0.0.0.0", () => {
   console.log(`Frontend running at http://0.0.0.0:${port}`);
