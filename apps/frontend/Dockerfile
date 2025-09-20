@@ -7,12 +7,12 @@ RUN npm install
 COPY . ./
 RUN npm run build
 
-# Runtime image: use a tiny static server
+# Runtime image
 FROM node:20-slim
 WORKDIR /app
 
 RUN npm install -g serve
 COPY --from=build /app/dist ./dist
 
-# Railway injects $PORT, so bind to it
+# Railway injects $PORT
 CMD serve -s dist -l $PORT --single

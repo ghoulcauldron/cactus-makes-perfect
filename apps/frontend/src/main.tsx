@@ -6,6 +6,7 @@ import Welcome from './routes/guest/welcome/Welcome'
 import RSVP from './routes/guest/rsvp/RSVP'
 
 const router = createBrowserRouter([
+  { path: '/', element: <Welcome /> },
   { path: '/guest/login', element: <CalculatorAuth/> },
   { path: '/guest/welcome', element: <Welcome/> },
   { path: '/guest/rsvp', element: <RSVP/> },
