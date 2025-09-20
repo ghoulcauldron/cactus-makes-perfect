@@ -14,6 +14,5 @@ WORKDIR /app
 RUN npm install -g serve
 COPY --from=build /app/dist ./dist
 
-# Railway injects $PORT, so bind to it
-# Use exec form to avoid shell quirks
-CMD ["serve", "-s", "dist", "-l", "0.0.0.0:$PORT", "-u", "guest:secretpass"]
+# Correct listen flag: host and port separated with colon
+CMD ["sh", "-c", "serve -s dist -l tcp://0.0.0.0:$PORT -u guest:secretpass"]
