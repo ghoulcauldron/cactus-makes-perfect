@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply font-body bg-sand text-gray-800;
+}
+
+h1, h2, h3, h4 {
+  @apply font-display text-cactus-green;
+}
+
+button {
+  @apply rounded-lg px-4 py-2 bg-cactus-green text-white hover:bg-cactus-green/80;
+}

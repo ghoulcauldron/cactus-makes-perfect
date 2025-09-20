@@ -1,0 +1,29 @@
+{
+  "services": [
+    {
+      "name": "api",
+      "source": {
+        "path": "apps/api",
+        "dockerfile": "Dockerfile.api"
+      },
+      "envs": [
+        { "key": "SECRET_KEY", "value": "change-me" },
+        { "key": "DATABASE_URL", "value": "postgresql://user:pass@host:5432/dbname" },
+        { "key": "APP_BASE_URL", "value": "https://cactusmakesperfect.org" },
+        { "key": "MAILTRAP_API_TOKEN", "value": "" },
+        { "key": "MAILTRAP_SENDER_EMAIL", "value": "" }
+      ]
+    },
+    {
+      "name": "web",
+      "source": {
+        "path": "apps/frontend",
+        "dockerfile": "Dockerfile.frontend"
+      },
+      "envs": [
+        { "key": "VITE_API_BASE_URL", "value": "https://api.cactusmakesperfect.org" },
+        { "key": "VITE_APP_NAME", "value": "Cactus Makes Perfect" }
+      ]
+    }
+  ]
+}
