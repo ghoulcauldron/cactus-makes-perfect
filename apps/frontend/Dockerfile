@@ -1,21 +1,18 @@
 FROM node:20-slim AS build
 WORKDIR /app
 
-# Copy dependency manifests first
 COPY package*.json ./
 RUN npm install
 
-# Copy source
 COPY . ./
 RUN npm run build
 
-# Serve built site
+# Runtime image: use a tiny static server
 FROM node:20-slim
 WORKDIR /app
 
+RUN npm install -g serve
 COPY --from=build /app/dist ./dist
-COPY package*.json ./
-RUN npm install --omit=dev
 
 EXPOSE 4173
-CMD ["npm", "run", "preview", "--", "--host", "0.0.0.0", "--port", "4173"]
+CMD ["serve", "-s", "dist", "-l", "4173"]
