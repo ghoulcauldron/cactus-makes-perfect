@@ -2,9 +2,8 @@
 FROM node:20-slim AS build
 WORKDIR /app
 
-# Install only build dependencies (no express/basic-auth here)
 COPY package*.json ./
-RUN npm install --omit=dev
+RUN npm install   # include devDependencies so vite is available
 
 COPY . ./
 RUN npm run build
@@ -13,15 +12,13 @@ RUN npm run build
 FROM node:20-slim
 WORKDIR /app
 
-# Install only what's needed at runtime: express + basic-auth
-COPY package*.json ./
+# Only install runtime deps
 RUN npm install express basic-auth
 
-# Copy built frontend assets and server
+# Copy built frontend and server
 COPY --from=build /app/dist ./dist
 COPY server.js ./server.js
 
 ENV NODE_ENV=production
 EXPOSE 8080
-
 CMD ["node", "server.js"]
