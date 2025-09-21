@@ -1,18 +1,17 @@
 import { Navigate } from "react-router-dom";
 
-export default function ProtectedRoute({ children }: { children: JSX.Element }) {
-  let isAuthenticated = false;
+interface ProtectedRouteProps {
+  children: JSX.Element;
+}
 
-  try {
-    // ✅ check if auth_token exists
-    const token = localStorage.getItem("auth_token");
-    isAuthenticated = !!token;
-  } catch {
-    isAuthenticated = false;
-  }
+export default function ProtectedRoute({ children }: ProtectedRouteProps) {
+  const token = localStorage.getItem("auth_token");
 
-  if (!isAuthenticated) {
-    // redirect to calculator at root
+  if (!token) {
+    try {
+      // extra safety: clear any stale auth
+      localStorage.removeItem("auth_token");
+    } catch {}
     return <Navigate to="/" replace />;
   }
 

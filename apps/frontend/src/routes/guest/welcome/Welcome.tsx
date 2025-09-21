@@ -1,13 +1,15 @@
+import { useNavigate } from "react-router-dom";
+
 export default function Welcome() {
   console.log("Rendering Welcome.tsx component"); // Debug
   const showReset = import.meta.env.VITE_SHOW_RESET_BUTTON === "true";
-
+  const navigate = useNavigate();
 
   const handleLogout = () => {
     try {
-      localStorage.removeItem("auth_token");
+      localStorage.removeItem("auth_token"); // match CalculatorAuth
     } catch {}
-    window.location.replace("/"); // force back to calculator
+    navigate("/", { replace: true }); // ✅ clean redirect back to CalculatorAuth
   };
 
   return (
@@ -40,20 +42,15 @@ export default function Welcome() {
           </button>
         </div>
 
+        {/* 🔑 Dev-only reset button */}
         {showReset && (
-        <button
-            onClick={() => {
-            try {
-                localStorage.removeItem("auth_token"); // match CalculatorAuth
-            } catch {}
-            window.location.replace("/"); // go back to calculator
-            }}
+          <button
+            onClick={handleLogout}
             className="mt-6 px-6 py-2 rounded-lg bg-red-500 text-white font-bold shadow-md hover:bg-red-600 transition"
-        >
+          >
             🔑 Log out / Reset auth
-        </button>
+          </button>
         )}
-
       </div>
 
       {/* playful desert footer */}
