@@ -10,17 +10,16 @@ import './index.css'
 const router = createBrowserRouter([
   {
     path: '/',
-    // If already authed, skip calculator and go straight to Welcome
     loader: () => {
-      try {
-        if (localStorage.getItem('auth_ok') === 'true') {
-          return redirect('/guest/welcome')
+        try {
+        if (localStorage.getItem('auth_token')) {
+            return redirect('/guest/welcome');
         }
-      } catch {}
-      return null
+        } catch {}
+        return null;
     },
     element: <CalculatorAuth />
-  },
+    },
   { path: '/guest/login', element: <CalculatorAuth /> },
   { 
     path: '/guest/welcome',
