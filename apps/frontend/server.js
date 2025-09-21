@@ -24,11 +24,14 @@ const auth = (req, res, next) => {
 
 app.use(auth);
 
-// Serve static assets
+// Serve static dist first
 app.use(express.static(join(__dirname, "dist")));
 
-// Catch-all fallback for SPA (React Router)
-app.get(/.*/, (req, res) => {
+// Only fallback for non-file requests
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/assets') || req.path.endsWith('.js') || req.path.endsWith('.css') || req.path.endsWith('.svg')) {
+    return next(); // let express.static handle it
+  }
   res.sendFile(join(__dirname, "dist", "index.html"));
 });
 
