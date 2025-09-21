@@ -17,15 +17,12 @@ export default function Welcome() {
     <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden bg-cactus-sand">
       {/* background video */}
       {videoUrl && (
-        <video
-          className="absolute inset-0 w-full h-full object-cover z-0"
-          src={videoUrl}
-          autoPlay
-          muted
-          loop
-          playsInline
+        <img
+            src={videoUrl}
+            alt="Background animation"
+            className="absolute inset-0 w-full h-full object-cover z-0"
         />
-      )}
+        )}
 
       {/* risograph grain overlay */}
       <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/asfalt-dark.png')] opacity-10 z-10"></div>
