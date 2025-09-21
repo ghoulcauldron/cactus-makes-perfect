@@ -1,5 +1,7 @@
 export default function Welcome() {
   console.log("Rendering Welcome.tsx component"); // Debug
+  const showReset = import.meta.env.VITE_SHOW_RESET_BUTTON === "true";
+
 
   const handleLogout = () => {
     try {
@@ -7,8 +9,6 @@ export default function Welcome() {
     } catch {}
     window.location.replace("/"); // force back to calculator
   };
-
-  const isDev = import.meta.env.MODE === "development";
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-cactus-sand relative overflow-hidden">
@@ -40,16 +40,16 @@ export default function Welcome() {
           </button>
         </div>
 
-        {/* Logout / Reset auth button (dev/test only) */}
-        {isDev && (
-          <div className="mt-8">
-            <button
-              onClick={handleLogout}
-              className="px-6 py-3 rounded-xl bg-gray-700 text-white text-base font-semibold shadow hover:bg-gray-800 transition"
-            >
-              Log out / Reset Auth
-            </button>
-          </div>
+        {showReset && (
+          <button
+            onClick={() => {
+              localStorage.removeItem("isAuthenticated");
+              window.location.href = "/";
+            }}
+            className="mt-6 px-6 py-2 rounded-lg bg-red-500 text-white font-bold shadow-md hover:bg-red-600 transition"
+          >
+            🔑 Log out / Reset auth
+          </button>
         )}
       </div>
 
