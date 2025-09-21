@@ -27,11 +27,8 @@ app.use(auth);
 // Serve static dist first
 app.use(express.static(join(__dirname, "dist")));
 
-// Only fallback for non-file requests
-app.get('*', (req, res, next) => {
-  if (req.path.startsWith('/assets') || req.path.endsWith('.js') || req.path.endsWith('.css') || req.path.endsWith('.svg')) {
-    return next(); // let express.static handle it
-  }
+// Fallback: match anything that hasn't been handled by express.static
+app.get(/.*/, (req, res) => {
   res.sendFile(join(__dirname, "dist", "index.html"));
 });
 
