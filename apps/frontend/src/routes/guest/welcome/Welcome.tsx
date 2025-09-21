@@ -4,6 +4,7 @@ export default function Welcome() {
   console.log("Rendering Welcome.tsx component"); // Debug
   const showReset = import.meta.env.VITE_SHOW_RESET_BUTTON === "true";
   const navigate = useNavigate();
+  const videoUrl = import.meta.env.VITE_WELCOME_VIDEO_URL;
 
   const handleLogout = () => {
     try {
@@ -13,11 +14,28 @@ export default function Welcome() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-cactus-sand relative overflow-hidden">
-      {/* risograph grain overlay */}
-      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/asfalt-dark.png')] opacity-10"></div>
+    <div className="min-h-screen relative overflow-hidden">
+      {/* --- Background video --- */}
+      {videoUrl && (
+        <video
+          className="absolute inset-0 w-full h-full object-cover"
+          src={videoUrl}
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
+        />
+      )}
 
-      <div className="z-10 w-full max-w-2xl mx-auto text-center px-6 py-16">
+      {/* optional overlay tint for readability */}
+      <div className="absolute inset-0 bg-black/20 pointer-events-none" />
+
+      {/* risograph grain overlay */}
+      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/asfalt-dark.png')] opacity-10 z-0"></div>
+
+      {/* Foreground content */}
+      <div className="relative z-10 w-full max-w-2xl mx-auto text-center px-6 py-16">
         <h1 className="text-5xl font-display text-cactus-green drop-shadow-sm mb-6">
           Welcome to <br />
           <span className="text-sunset">Cactus Makes Perfect</span>
@@ -54,7 +72,7 @@ export default function Welcome() {
       </div>
 
       {/* playful desert footer */}
-      <footer className="absolute bottom-4 text-sm text-gray-600 font-mono opacity-80">
+      <footer className="absolute bottom-4 text-sm text-gray-600 font-mono opacity-80 z-10">
         🌞 Santa Fe, NM • August 2026
       </footer>
     </div>
