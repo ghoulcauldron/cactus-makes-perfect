@@ -6,6 +6,11 @@ COPY package*.json ./
 RUN npm install   # include devDependencies so vite is available
 
 COPY . ./
+
+# Make Railway env vars available to Vite at build time
+ARG VITE_SHOW_RESET_BUTTON
+ENV VITE_SHOW_RESET_BUTTON=$VITE_SHOW_RESET_BUTTON
+
 RUN npm run build
 
 # ---- Runtime stage ----
