@@ -4,13 +4,28 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import CalculatorAuth from './routes/guest/login/CalculatorAuth'
 import Welcome from './routes/guest/welcome/Welcome'
 import RSVP from './routes/guest/rsvp/RSVP'
+import ProtectedRoute from './routes/ProtectedRoute'
 import './index.css'
 
 const router = createBrowserRouter([
-  { path: '/', element: <Welcome /> },
-  { path: '/guest/login', element: <CalculatorAuth/> },
-  { path: '/guest/welcome', element: <Welcome/> },
-  { path: '/guest/rsvp', element: <RSVP/> },
+  { path: '/', element: <CalculatorAuth /> },
+  { path: '/guest/login', element: <CalculatorAuth /> },
+  { 
+    path: '/guest/welcome',
+    element: (
+      <ProtectedRoute>
+        <Welcome />
+      </ProtectedRoute>
+    ),
+  },
+  { 
+    path: '/guest/rsvp',
+    element: (
+      <ProtectedRoute>
+        <RSVP />
+      </ProtectedRoute>
+    ),
+  },
 ])
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const DIGITS = ["1","2","3","4","5","6","7","8","9","←","0","✓"];
 
@@ -8,11 +9,12 @@ export default function CalculatorAuth() {
 
   const [code, setCode] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const navigate = useNavigate();
 
   const press = (d: string) => {
     if (d === "←") return setCode(code.slice(0, -1));
     if (d === "✓") return submit();
-    if (/\\d/.test(d) && code.length < 6) setCode(code + d);
+    if (/\d/.test(d) && code.length < 6) setCode(code + d);
   };
 
   const submit = async () => {
@@ -30,11 +32,11 @@ export default function CalculatorAuth() {
         throw new Error(detail || `Request failed: ${res.status}`);
       }
       const data = await res.json();
-      // Optionally persist token for subsequent requests
       if (data?.token) {
         try { localStorage.setItem("auth_token", data.token); } catch {}
       }
-      window.location.assign("/guest/welcome");
+      // ✅ client-side navigation
+      navigate("/guest/welcome");
     } catch (err: any) {
       alert(err?.message || "Verification failed");
       setSubmitting(false);
