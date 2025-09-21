@@ -14,28 +14,24 @@ export default function Welcome() {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* --- Background video --- */}
+    <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden bg-cactus-sand">
+      {/* background video */}
       {videoUrl && (
         <video
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover z-0"
           src={videoUrl}
           autoPlay
           muted
           loop
           playsInline
-          preload="auto"
         />
       )}
 
-      {/* optional overlay tint for readability */}
-      <div className="absolute inset-0 bg-black/20 pointer-events-none" />
-
       {/* risograph grain overlay */}
-      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/asfalt-dark.png')] opacity-10 z-0"></div>
+      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/asfalt-dark.png')] opacity-10 z-10"></div>
 
-      {/* Foreground content */}
-      <div className="relative z-10 w-full max-w-2xl mx-auto text-center px-6 py-16">
+      {/* content */}
+      <div className="relative z-20 w-full max-w-2xl mx-auto text-center px-6 py-16">
         <h1 className="text-5xl font-display text-cactus-green drop-shadow-sm mb-6">
           Welcome to <br />
           <span className="text-sunset">Cactus Makes Perfect</span>
@@ -72,7 +68,7 @@ export default function Welcome() {
       </div>
 
       {/* playful desert footer */}
-      <footer className="absolute bottom-4 text-sm text-gray-600 font-mono opacity-80 z-10">
+      <footer className="absolute bottom-4 text-sm text-gray-600 font-mono opacity-80 z-20">
         🌞 Santa Fe, NM • August 2026
       </footer>
     </div>
