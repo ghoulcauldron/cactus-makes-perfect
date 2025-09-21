@@ -31,18 +31,27 @@ export default function CalculatorAuth() {
         body: JSON.stringify({ token, email, code }),
         });
         if (!res.ok) {
-        throw new Error("Invalid passcode");
+        const detail = await res.text();
+        throw new Error(detail || `Request failed: ${res.status}`);
         }
         const data = await res.json();
+
+        // Persist any backend token (optional)
         if (data?.token) {
         try { localStorage.setItem("auth_token", data.token); } catch {}
         }
-        window.location.assign("/guest/welcome");
-    } catch (err) {
-        setShowInvalid(true);
+
+        // ✅ Mark successful one-time auth
+        try { localStorage.setItem("auth_ok", "true"); } catch {}
+
+        // ✅ Replace history so Back doesn't return to calculator/root
+        window.location.replace("/guest/welcome");
+    } catch (err: any) {
+        alert(err?.message || "Verification failed");
         setSubmitting(false);
     }
     };
+
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-cactus-sand relative overflow-hidden">
