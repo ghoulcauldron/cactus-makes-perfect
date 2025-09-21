@@ -1,5 +1,15 @@
 export default function Welcome() {
   console.log("Rendering Welcome.tsx component"); // Debug
+
+  const handleLogout = () => {
+    try {
+      localStorage.removeItem("auth_token");
+    } catch {}
+    window.location.replace("/"); // force back to calculator
+  };
+
+  const isDev = process.env.NODE_ENV !== "production";
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-cactus-sand relative overflow-hidden">
       {/* risograph grain overlay */}
@@ -29,6 +39,18 @@ export default function Welcome() {
             FAQs
           </button>
         </div>
+
+        {/* Logout / Reset auth button (dev/test only) */}
+        {isDev && (
+          <div className="mt-8">
+            <button
+              onClick={handleLogout}
+              className="px-6 py-3 rounded-xl bg-gray-700 text-white text-base font-semibold shadow hover:bg-gray-800 transition"
+            >
+              Log out / Reset Auth
+            </button>
+          </div>
+        )}
       </div>
 
       {/* playful desert footer */}
