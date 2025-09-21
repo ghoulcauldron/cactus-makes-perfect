@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import InvalidCodeModal from "./InvalidCodeModal";
 
 const DIGITS = ["1","2","3","4","5","6","7","8","9","←","0","✓"];
 
@@ -17,31 +18,31 @@ export default function CalculatorAuth() {
     if (/\d/.test(d) && code.length < 6) setCode(code + d);
   };
 
-  const submit = async () => {
+    const [showInvalid, setShowInvalid] = useState(false);
+
+    const submit = async () => {
     if (code.length < 4) return;
     setSubmitting(true);
     try {
-      const token = url.searchParams.get("token") || "";
-      const res = await fetch("/api/v1/auth/verify", {
+        const token = url.searchParams.get("token") || "";
+        const res = await fetch("/api/v1/auth/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, email, code }),
-      });
-      if (!res.ok) {
-        const detail = await res.text();
-        throw new Error(detail || `Request failed: ${res.status}`);
-      }
-      const data = await res.json();
-      if (data?.token) {
+        });
+        if (!res.ok) {
+        throw new Error("Invalid passcode");
+        }
+        const data = await res.json();
+        if (data?.token) {
         try { localStorage.setItem("auth_token", data.token); } catch {}
-      }
-      // ✅ client-side navigation
-      navigate("/guest/welcome");
-    } catch (err: any) {
-      alert(err?.message || "Verification failed");
-      setSubmitting(false);
+        }
+        window.location.assign("/guest/welcome");
+    } catch (err) {
+        setShowInvalid(true);
+        setSubmitting(false);
     }
-  };
+    };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-cactus-sand relative overflow-hidden">
@@ -68,6 +69,9 @@ export default function CalculatorAuth() {
             </div>
           ))}
         </div>
+
+        {/* existing calculator UI */}
+        <InvalidCodeModal show={showInvalid} onClose={() => setShowInvalid(false)} />
 
         {/* keypad */}
         <div className="grid grid-cols-3 gap-4">
