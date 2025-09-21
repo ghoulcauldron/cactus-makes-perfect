@@ -41,16 +41,19 @@ export default function Welcome() {
         </div>
 
         {showReset && (
-          <button
+        <button
             onClick={() => {
-              localStorage.removeItem("isAuthenticated");
-              window.location.href = "/";
+            try {
+                localStorage.removeItem("auth_token"); // match CalculatorAuth
+            } catch {}
+            window.location.replace("/"); // go back to calculator
             }}
             className="mt-6 px-6 py-2 rounded-lg bg-red-500 text-white font-bold shadow-md hover:bg-red-600 transition"
-          >
+        >
             🔑 Log out / Reset auth
-          </button>
+        </button>
         )}
+
       </div>
 
       {/* playful desert footer */}

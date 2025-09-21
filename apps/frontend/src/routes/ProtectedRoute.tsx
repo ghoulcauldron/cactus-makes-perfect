@@ -1,17 +1,18 @@
-// apps/frontend/src/routes/ProtectedRoute.tsx
-import React from "react";
 import { Navigate } from "react-router-dom";
 
-interface Props {
-  children: React.ReactElement;
-}
+export default function ProtectedRoute({ children }: { children: JSX.Element }) {
+  let isAuthenticated = false;
 
-export default function ProtectedRoute({ children }: Props) {
-  // Look for token in localStorage
-  const token = localStorage.getItem("auth_token");
+  try {
+    // ✅ check if auth_token exists
+    const token = localStorage.getItem("auth_token");
+    isAuthenticated = !!token;
+  } catch {
+    isAuthenticated = false;
+  }
 
-  if (!token) {
-    // Not logged in → redirect back to login ("/")
+  if (!isAuthenticated) {
+    // redirect to calculator at root
     return <Navigate to="/" replace />;
   }
 
