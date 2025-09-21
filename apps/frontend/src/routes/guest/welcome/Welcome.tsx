@@ -8,7 +8,7 @@ export default function Welcome() {
     window.location.replace("/"); // force back to calculator
   };
 
-  const isDev = process.env.NODE_ENV !== "production";
+  const isDev = import.meta.env.MODE === "development";
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-cactus-sand relative overflow-hidden">
