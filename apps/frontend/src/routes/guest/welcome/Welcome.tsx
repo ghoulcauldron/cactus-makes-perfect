@@ -4,7 +4,7 @@ export default function Welcome() {
   console.log("Rendering Welcome.tsx component"); // Debug
   const showReset = import.meta.env.VITE_SHOW_RESET_BUTTON === "true";
   const navigate = useNavigate();
-  const videoUrl = import.meta.env.VITE_WELCOME_VIDEO_URL || "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/CMP2026.gif";
+  const videoUrl = import.meta.env.VITE_WELCOME_VIDEO_URL || "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/Sequence%2002.mp4";
   console.log("Background media URL:", videoUrl); // ✅ Debug log
 
   const handleLogout = () => {
@@ -18,12 +18,19 @@ export default function Welcome() {
     <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden bg-cactus-sand">
       {/* background video */}
       {videoUrl && (
-        <img
-            src={videoUrl}
-            alt="Background animation"
-            className="absolute inset-0 w-full h-full object-cover z-0"
+        <video
+          className="absolute inset-0 w-full h-full object-cover"
+          src={videoUrl}
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
         />
-        )}
+      )}
+
+      {/* optional overlay tint for readability */}
+      <div className="absolute inset-0 bg-black/20 pointer-events-none" />
 
       {/* risograph grain overlay */}
       <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/asfalt-dark.png')] opacity-10 z-10"></div>
