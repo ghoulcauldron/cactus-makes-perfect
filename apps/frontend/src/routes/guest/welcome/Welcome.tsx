@@ -5,6 +5,7 @@ export default function Welcome() {
   const showReset = import.meta.env.VITE_SHOW_RESET_BUTTON === "true";
   const navigate = useNavigate();
   const videoUrl = import.meta.env.VITE_WELCOME_VIDEO_URL;
+  console.log("Background media URL:", videoUrl); // ✅ Debug log
 
   const handleLogout = () => {
     try {
