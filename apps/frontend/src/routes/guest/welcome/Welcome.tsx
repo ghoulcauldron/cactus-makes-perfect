@@ -4,7 +4,7 @@ export default function Welcome() {
   console.log("Rendering Welcome.tsx component"); // Debug
   const showReset = import.meta.env.VITE_SHOW_RESET_BUTTON === "true";
   const navigate = useNavigate();
-  const videoUrl = import.meta.env.VITE_WELCOME_VIDEO_URL || "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/Sunset.mp4";
+  const videoUrl = import.meta.env.VITE_WELCOME_VIDEO_URL || "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/CMPComixLoop.mp4";
   console.log("Background media URL:", videoUrl); // ✅ Debug log
 
   const handleLogout = () => {
