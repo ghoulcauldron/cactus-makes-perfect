@@ -5,10 +5,10 @@ type KeyDef =
   | { id: string; label: string; x: number; y: number; w: number; h: number; kind: "digit" | "submit" | "clear" | "delete" };
 
 const LCD = {
-  x: 885,  // left edge of LCD
+  x: 880,  // left edge of LCD
   y: 230,  // top edge
   w: 450,  // width
-  h: 87,  // height
+  h: 83,  // height
 };
 
 const KEYS: KeyDef[] = [
@@ -49,13 +49,21 @@ export default function PhotoCalculatorAuth({
   const [submitting, setSubmitting] = useState(false);
   const [showInvalid, setShowInvalid] = useState(false);
   const [pressed, setPressed] = useState<string | null>(null);
+  const [cleared, setCleared] = useState(false);
 
   const press = (key: KeyDef) => {
     if (submitting) return;
     if (key.kind === "digit") {
-      setCode((c) => (c.length < 6 ? c + key.label : c));
+      setCode((c) => {
+        if (cleared || c === "0") {
+          setCleared(false);
+          return key.label;
+        }
+        return c.length < 6 ? c + key.label : c;
+      });
     } else if (key.kind === "clear") {
       setCode("0");
+      setCleared(true);
     } else if (key.kind === "delete") {
       setCode((c) => c.slice(0, -1));
     } else if (key.kind === "submit") {
