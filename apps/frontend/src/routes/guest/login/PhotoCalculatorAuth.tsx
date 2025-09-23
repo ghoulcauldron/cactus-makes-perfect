@@ -90,66 +90,82 @@ function SegmentRenderer({ text, x, y, w, h }: { text: string; x: number; y: num
 
         return (
           <g key={i} transform={`translate(${cx},0)`} aria-label={`Character ${ch}`}>
-            {/* Segment a: top horizontal as polygon trapezoid */}
-            <polygon
-              points={`
-                ${segThickness} 0,
-                ${segLengthH} 0,
-                ${segLengthH + segThickness * 0.5} ${segThickness},
-                ${segLengthH} ${2 * segThickness},
-                ${segThickness} ${2 * segThickness},
-                ${segThickness * 0.5} ${segThickness}
-              `}
-              fill={activeSegments.includes("a") ? "#2a2a2a" : "none"}
-            />
-            {/* Segment b: top-right vertical */}
-            <rect
-              x={digitWidth - segThickness}
-              y={segThickness}
-              width={segThickness}
-              height={segLengthV}
-              fill={activeSegments.includes("b") ? "#2a2a2a" : "none"}
-            />
-            {/* Segment c: bottom-right vertical */}
-            <rect
-              x={digitWidth - segThickness}
-              y={segLengthV + 2 * segThickness}
-              width={segThickness}
-              height={segLengthV}
-              fill={activeSegments.includes("c") ? "#2a2a2a" : "none"}
-            />
-            {/* Segment d: bottom horizontal */}
-            <rect
-              x={segThickness}
-              y={digitHeight - segThickness}
-              width={segLengthH}
-              height={segThickness}
-              fill={activeSegments.includes("d") ? "#2a2a2a" : "none"}
-            />
-            {/* Segment e: bottom-left vertical */}
-            <rect
-              x={0}
-              y={segLengthV + 2 * segThickness}
-              width={segThickness}
-              height={segLengthV}
-              fill={activeSegments.includes("e") ? "#2a2a2a" : "none"}
-            />
-            {/* Segment f: top-left vertical */}
-            <rect
-              x={0}
-              y={segThickness}
-              width={segThickness}
-              height={segLengthV}
-              fill={activeSegments.includes("f") ? "#2a2a2a" : "none"}
-            />
-            {/* Segment g: middle horizontal */}
-            <rect
-              x={segThickness}
-              y={digitHeight / 2 - segThickness / 2}
-              width={segLengthH}
-              height={segThickness}
-              fill={activeSegments.includes("g") ? "#2a2a2a" : "none"}
-            />
+            // --- helpers for trapezoid points ---
+            {(() => {
+              const t = segThickness;
+              const slant = t * 0.6;           // bevel size at ends
+              const vWidth = t * 1.25;         // visual width for vertical segments
+
+              function hTrap(x: number, y: number, len: number, t: number, slant: number) {
+                // horizontal trapezoid, height ~ 2t, beveled ends
+                return `
+                  ${x} ${y},
+                  ${x + len} ${y},
+                  ${x + len + slant} ${y + t},
+                  ${x + len} ${y + 2 * t},
+                  ${x} ${y + 2 * t},
+                  ${x - slant} ${y + t}
+                `;
+              }
+
+              function vTrap(x: number, y: number, height: number, t: number, slant: number, width: number) {
+                // vertical trapezoid, width ~ vWidth, beveled top/bottom
+                return `
+                  ${x + slant} ${y},
+                  ${x + width - slant} ${y},
+                  ${x + width} ${y + t},
+                  ${x + width - slant} ${y + height},
+                  ${x + slant} ${y + height},
+                  ${x} ${y + t}
+                `;
+              }
+
+              return (
+                <>
+                  {/* Segment a: top horizontal (trapezoid) */}
+                  <polygon
+                    points={hTrap(segThickness, 0, segLengthH, t, slant)}
+                    fill={activeSegments.includes("a") ? "#2a2a2a" : "none"}
+                  />
+
+                  {/* Segment b: top-right vertical (trapezoid) */}
+                  <polygon
+                    points={vTrap(digitWidth - vWidth, t, segLengthV, t, slant, vWidth)}
+                    fill={activeSegments.includes("b") ? "#2a2a2a" : "none"}
+                  />
+
+                  {/* Segment c: bottom-right vertical (trapezoid) */}
+                  <polygon
+                    points={vTrap(digitWidth - vWidth, segLengthV + 2 * t, segLengthV, t, slant, vWidth)}
+                    fill={activeSegments.includes("c") ? "#2a2a2a" : "none"}
+                  />
+
+                  {/* Segment d: bottom horizontal (trapezoid) */}
+                  <polygon
+                    points={hTrap(segThickness, digitHeight - 2 * t, segLengthH, t, slant)}
+                    fill={activeSegments.includes("d") ? "#2a2a2a" : "none"}
+                  />
+
+                  {/* Segment e: bottom-left vertical (trapezoid) */}
+                  <polygon
+                    points={vTrap(0, segLengthV + 2 * t, segLengthV, t, slant, vWidth)}
+                    fill={activeSegments.includes("e") ? "#2a2a2a" : "none"}
+                  />
+
+                  {/* Segment f: top-left vertical (trapezoid) */}
+                  <polygon
+                    points={vTrap(0, t, segLengthV, t, slant, vWidth)}
+                    fill={activeSegments.includes("f") ? "#2a2a2a" : "none"}
+                  />
+
+                  {/* Segment g: middle horizontal (trapezoid) */}
+                  <polygon
+                    points={hTrap(segThickness, digitHeight / 2 - t, segLengthH, t, slant)}
+                    fill={activeSegments.includes("g") ? "#2a2a2a" : "none"}
+                  />
+                </>
+              );
+            })()}
           </g>
         );
       })}
