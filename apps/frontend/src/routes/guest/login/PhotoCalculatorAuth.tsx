@@ -2,7 +2,7 @@ import { useState } from "react";
 import InvalidCodeModal from "./InvalidCodeModal";
 
 type KeyDef =
-  | { id: string; label: string; x: number; y: number; w: number; h: number; kind: "digit" | "submit" | "clear" };
+  | { id: string; label: string; x: number; y: number; w: number; h: number; kind: "digit" | "submit" | "clear" | "delete" };
 
 const LCD = {
   x: 885,  // left edge of LCD
@@ -25,7 +25,7 @@ const KEYS: KeyDef[] = [
   // Row 3
   { id: "1", label: "1", x: 845, y: 980, w: 110, h: 70, kind: "digit" },
   { id: "2", label: "2", x: 973, y: 980, w: 110, h: 70, kind: "digit" },
-  { id: "3", label: "3", x: 1100, y: 980, w: 110, h: 70, kind: "digit" },
+  { id: "3", label: "3", x: 1100, y: 977, w: 110, h: 70, kind: "digit" },
 
   // Bottom row: ON/C + 0
   { id: "on", label: "ON/C", x: 847, y: 1085, w: 110, h: 70, kind: "clear" },
@@ -33,11 +33,14 @@ const KEYS: KeyDef[] = [
 
   // Big equals bar
   { id: "equals", label: "=", x: 1275, y: 972, w: 110, h: 180, kind: "submit" },
+
+  // MRC button (coordinates to be filled)
+  { id: "mrc", label: "MRC", x: 842, y: 680, w: 110, h: 70, kind: "delete" },
 ];
 
 export default function PhotoCalculatorAuth({
   imgSrc = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/calculatorHand.png",        // or your Supabase URL
-  DEBUG = true,                     // set true to see hotspot outlines
+  DEBUG = false,                     // set true to see hotspot outlines
 }: { imgSrc?: string; DEBUG?: boolean }) {
   const url = new URL(window.location.href);
   const email = url.searchParams.get("email") || "your email";
@@ -52,7 +55,9 @@ export default function PhotoCalculatorAuth({
     if (key.kind === "digit") {
       setCode((c) => (c.length < 6 ? c + key.label : c));
     } else if (key.kind === "clear") {
-      setCode("");
+      setCode("0");
+    } else if (key.kind === "delete") {
+      setCode((c) => c.slice(0, -1));
     } else if (key.kind === "submit") {
       submit();
     }
