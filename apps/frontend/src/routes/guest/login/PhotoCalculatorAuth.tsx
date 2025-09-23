@@ -15,17 +15,17 @@ const KEYS: KeyDef[] = [
   // Row 1
   { id: "7", label: "7", x: 845, y: 780, w: 110, h: 70, kind: "digit" },
   { id: "8", label: "8", x: 970, y: 775, w: 110, h: 70, kind: "digit" },
-  { id: "9", label: "9", x: 1095, y: 772, w: 110, h: 70, kind: "digit" },
+  { id: "9", label: "9", x: 1100, y: 772, w: 110, h: 70, kind: "digit" },
 
   // Row 2
-  { id: "4", label: "4", x: 845, y: 910, w: 110, h: 70, kind: "digit" },
-  { id: "5", label: "5", x: 970, y: 905, w: 110, h: 70, kind: "digit" },
-  { id: "6", label: "6", x: 1095, y: 902, w: 110, h: 70, kind: "digit" },
+  { id: "4", label: "4", x: 845, y: 885, w: 110, h: 70, kind: "digit" },
+  { id: "5", label: "5", x: 970, y: 880, w: 110, h: 70, kind: "digit" },
+  { id: "6", label: "6", x: 1104, y: 882, w: 110, h: 70, kind: "digit" },
 
   // Row 3
-  { id: "1", label: "1", x: 845, y: 1020, w: 110, h: 70, kind: "digit" },
-  { id: "2", label: "2", x: 970, y: 1015, w: 110, h: 70, kind: "digit" },
-  { id: "3", label: "3", x: 1095, y: 1012, w: 110, h: 70, kind: "digit" },
+  { id: "1", label: "1", x: 845, y: 980, w: 110, h: 70, kind: "digit" },
+  { id: "2", label: "2", x: 970, y: 975, w: 110, h: 70, kind: "digit" },
+  { id: "3", label: "3", x: 1106, y: 972, w: 110, h: 70, kind: "digit" },
 
   // Bottom row: ON/C + 0
   { id: "on", label: "ON/C", x: 845, y: 1190, w: 110, h: 70, kind: "clear" },
