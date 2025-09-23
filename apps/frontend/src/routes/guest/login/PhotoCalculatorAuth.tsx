@@ -7,13 +7,13 @@ type KeyDef =
 const LCD = {
   x: 890,  // left edge of LCD
   y: 220,  // top edge
-  w: 680,  // width
-  h: 100,  // height
+  w: 480,  // width
+  h: 90,  // height
 };
 
 const KEYS: KeyDef[] = [
   // Row 1
-  { id: "7", label: "7", x: 870, y: 1030, w: 150, h: 120, kind: "digit" },
+  { id: "7", label: "7", x: 850, y: 830, w: 75, h: 50, kind: "digit" },
   { id: "8", label: "8", x: 38, y: 48, w: 12, h: 9, kind: "digit" },
   { id: "9", label: "9", x: 54, y: 48, w: 12, h: 9, kind: "digit" },
 
