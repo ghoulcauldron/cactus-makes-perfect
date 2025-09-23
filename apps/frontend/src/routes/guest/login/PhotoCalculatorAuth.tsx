@@ -339,16 +339,16 @@ export default function PhotoCalculatorAuth({
         {DEBUG && (
           <rect
             x={830}
-            y={440}
-            width={240}
-            height={90}
+            y={435}
+            width={250}
+            height={80}
             fill="rgba(0,255,0,0.15)"
             stroke="rgba(0,128,0,0.4)"
             strokeWidth="0.25"
           />
         )}
         <rect
-          x={830} y={440} width={240} height={90}
+          x={830} y={435} width={250} height={80}
           fill="transparent"
           style={{ cursor: "pointer", userSelect: "none", WebkitUserSelect: "none" }}
           onPointerDown={() => {
