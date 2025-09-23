@@ -92,14 +92,15 @@ export default function PhotoCalculatorAuth({
           className="w-full h-auto select-none"
         >
           {/* Background photo */}
-          <image
-            href={imgSrc}
+            <image
+            href={imgSrc}              // ✅ keep using Supabase URL
             x="0"
             y="0"
-            width="100"
-            height="100"
+            width="100%"
+            height="100%"
             preserveAspectRatio="xMidYMid meet"
-          />
+            crossOrigin="anonymous"
+            />
 
           {/* LCD display text */}
           <rect
