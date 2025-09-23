@@ -44,22 +44,27 @@ const SEVEN_SEGMENT_MAP: Record<string, string[]> = {
   ' ': [], '0': ['a','b','c','d','e','f'], '1': ['b','c'], '2': ['a','b','g','e','d'], '3': ['a','b','g','c','d'], '4': ['f','g','b','c'], '5': ['a','f','g','c','d'], '6': ['a','f','g','c','d','e'], '7': ['a','b','c'], '8': ['a','b','c','d','e','f','g'], '9': ['a','b','c','d','f','g'], 'L': ['f','e','d'], 'O': ['a','b','c','d','e','f'], 'N': ['a','b','c','e','f'], 'P':['a','b','g','e','f'], 'E': ['a','f','g','e','d'], 'S': ['a','f','g','c','d'], 'Y': ['f','b','g','c','d'],
 };
 
-// The "Blueprint" for a single digit.
-// This defines the precise position and rotation for each of the 7 segments.
-// They are all relative to the center of the digit.
-const SEGMENT_TRANSFORMS: Record<string, string> = {
-  a: "translate(0, -32)",
-  b: "translate(20, -16) rotate(90)",
-  c: "translate(20, 16) rotate(90)",
-  d: "translate(0, 32)",
-  e: "translate(-20, 16) rotate(90)",
-  f: "translate(-20, -16) rotate(90)",
-  g: "translate(0, 0)",
+// --- The New, More Accurate Blueprint System ---
+
+// 1. Define the 3 unique master paths, centered at the origin (0,0).
+// 'a' is your path, but centered. 'b' and 'g' are designed to match its style.
+const MASTER_PATHS = {
+  a: "M -24.5 -2.5 L -21.5 -5.5 L 21.5 -5.5 L 24.5 -2.5 L 16.5 5.5 L -15.5 5.5 Z",
+  b: "M 0 23 L -5.5 20 L -5.5 -20 L 0 -23 L 5.5 -20 L 5.5 20 Z",
+  g: "M -22 0 L -19 -5.5 L 19 -5.5 L 22 0 L 19 5.5 L -19 5.5 Z",
 };
 
-// The master path for a single segment, centered at the origin (0,0).
-// This is based on your hand-drawn path, but centered for easy rotation.
-const MASTER_SEGMENT_PATH = "M -25 -1 L -22 -4 L 21 -4 L 24 -1 L 16 7 L -16 7 Z";
+// 2. Define the blueprint for a complete digit. This version has adjusted translate
+// values to create the padding between the new segment shapes.
+const SEGMENT_BLUEPRINT: Record<string, { pathId: keyof typeof MASTER_PATHS; transform: string }> = {
+  a: { pathId: 'a', transform: "translate(0, -34)" },
+  b: { pathId: 'b', transform: "translate(28, 0)" },
+  c: { pathId: 'b', transform: "translate(28, 0) scale(1, -1)" }, // Reflected 'b'
+  d: { pathId: 'a', transform: "translate(0, 34) scale(1, -1)" }, // Reflected 'a'
+  e: { pathId: 'b', transform: "translate(-28, 0) scale(1, -1)" }, // Reflected 'b'
+  f: { pathId: 'b', transform: "translate(-28, 0)" },
+  g: { pathId: 'g', transform: "translate(0, 0)" },
+};
 
 
 export function SegmentRenderer({
@@ -75,41 +80,43 @@ export function SegmentRenderer({
 }) {
   const chars = text.toUpperCase().split('');
 
-  // The natural size of our blueprint digit is ~77 units tall.
-  // Calculate a single, uniform scale factor.
-  const scale = digitHeight / 77;
+  // The natural height of our new blueprint digit is ~80 units.
+  const scale = digitHeight / 80;
   
-  // The width of a single digit is determined by its height and natural aspect ratio.
-  const digitWidth = 54.4 * scale;
-  const digitSpacing = digitWidth * 0.2;
+  // The width is calculated from the height to maintain the aspect ratio.
+  const digitWidth = 60 * scale; // Adjusted width for new proportions
+  const digitSpacing = digitWidth * 0.25;
 
   return (
     <g transform={`translate(${x},${y})`}>
       <defs>
-        {/* Define our master segment shape once */}
-        <path id="master-segment" d={MASTER_SEGMENT_PATH} />
+        {/* Define our master segment shapes once */}
+        <path id="master-path-a" d={MASTER_PATHS.a} />
+        <path id="master-path-b" d={MASTER_PATHS.b} />
+        <path id="master-path-g" d={MASTER_PATHS.g} />
       </defs>
 
       {chars.map((char, i) => {
         const activeSegments = SEVEN_SEGMENT_MAP[char] || [];
-        const charX = i * (digitWidth + digitSpacing);
+        const charCenterX = i * (digitWidth + digitSpacing) + digitWidth / 2;
+        const charCenterY = digitHeight / 2;
 
         return (
-          // This group positions the entire digit and applies the final scale and slant.
           <g
             key={i}
-            transform={`translate(${charX + digitWidth / 2}, ${digitHeight / 2}) scale(${scale}) skewX(0)`}
+            transform={`translate(${charCenterX}, ${charCenterY}) scale(${scale}) skewX(0)`}
           >
-            {activeSegments.map((segmentKey) => (
-              // For each active segment, stamp a copy of the master path
-              // and apply its specific position/rotation from the blueprint.
-              <use
-                key={segmentKey}
-                href="#master-segment"
-                transform={SEGMENT_TRANSFORMS[segmentKey]}
-                fill={'#202020ff'}
-              />
-            ))}
+            {activeSegments.map((segmentKey) => {
+              const blueprint = SEGMENT_BLUEPRINT[segmentKey as keyof typeof SEGMENT_BLUEPRINT];
+              return (
+                <use
+                  key={segmentKey}
+                  href={`#master-path-${blueprint.pathId}`}
+                  transform={blueprint.transform}
+                  fill={'#202020ff'}
+                />
+              );
+            })}
           </g>
         );
       })}
