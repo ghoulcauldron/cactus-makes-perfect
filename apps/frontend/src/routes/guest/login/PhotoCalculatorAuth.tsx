@@ -13,7 +13,7 @@ const LCD = {
 
 const KEYS: KeyDef[] = [
   // Row 1
-  { id: "7", label: "7", x: 845, y: 770, w: 93, h: 63, kind: "digit" },
+  { id: "7", label: "7", x: 845, y: 780, w: 93, h: 70, kind: "digit" },
   { id: "8", label: "8", x: 38, y: 48, w: 12, h: 9, kind: "digit" },
   { id: "9", label: "9", x: 54, y: 48, w: 12, h: 9, kind: "digit" },
 
