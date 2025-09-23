@@ -6,6 +6,9 @@ import Welcome from './routes/guest/welcome/Welcome'
 import RSVP from './routes/guest/rsvp/RSVP'
 import ProtectedRoute from './routes/ProtectedRoute'
 import './index.css'
+import PhotoCalculatorAuth from './routes/guest/login/PhotoCalculatorAuth'
+
+const DEBUG = true;
 
 const router = createBrowserRouter([
   {
@@ -18,9 +21,9 @@ const router = createBrowserRouter([
         } catch {}
         return null;
     },
-    element: <CalculatorAuth />
+    element: DEBUG ? <div className="w-screen h-screen bg-green-500 flex items-center justify-center text-white text-4xl">DEBUG MODE</div> : <PhotoCalculatorAuth />
     },
-  { path: '/guest/login', element: <CalculatorAuth /> },
+  { path: '/guest/login', element: DEBUG ? <div className="w-screen h-screen bg-green-500 flex items-center justify-center text-white text-4xl">DEBUG MODE</div> : <PhotoCalculatorAuth /> },
   { 
     path: '/guest/welcome',
     element: (

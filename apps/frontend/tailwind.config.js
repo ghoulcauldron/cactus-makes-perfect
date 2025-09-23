@@ -8,7 +8,10 @@ export default {
         neon: '#ff49c3',
         tangerine: '#f5a623',
         graphite: '#2e2e2e',
-        pewter: '#4a4a4a',  
+        pewter: '#4a4a4a',
+        ':root': {
+          neon: '#ff49c3',
+        },
       },
       fontFamily: {
         display: ["'Raleway'", "sans-serif"],
