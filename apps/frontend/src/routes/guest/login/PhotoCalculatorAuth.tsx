@@ -267,25 +267,25 @@ export default function PhotoCalculatorAuth({
           />
         )}
         {specialMsg ? (
-          <SegmentRenderer text={specialMsg} x={LCD.x} y={LCD.y} w={LCD.w} h={LCD.h} />
+          <g style={{ opacity: faded ? 0.15 : 1, transition: "opacity 0.4s" }}>
+            <SegmentRenderer text={specialMsg} x={LCD.x} y={LCD.y} w={LCD.w} h={LCD.h} />
+          </g>
         ) : (
-          <text
-            x={LCD.x + LCD.w - 1.5}
-            y={LCD.y + LCD.h - 1.8}
-            textAnchor="end"
-            style={{
-              fontFamily: '"DSEG7Classic", monospace',
-              fontSize: `${LCD.h * 0.9}px`,
-              fill: "#202020ff",
-              opacity: faded ? 0.15 : 1,
-              transition: "opacity 0.4s",
-            }}
-          >
-            {code || "58008"}
-          </text>
+          <g style={{ opacity: faded ? 0.15 : 1, transition: "opacity 0.4s" }}>
+            <text
+              x={LCD.x + LCD.w - 1.5}
+              y={LCD.y + LCD.h - 1.8}
+              textAnchor="end"
+              style={{
+                fontFamily: '"DSEG7Classic", monospace',
+                fontSize: `${LCD.h * 0.9}px`,
+                fill: "#202020ff",
+              }}
+            >
+              {code || "58008"}
+            </text>
+          </g>
         )}
-
-      <SegmentRenderer text={code || "58008"} x={LCD.x} y={LCD.y} w={LCD.w} h={LCD.h} />
 
         {/* Hotspots */}
         {KEYS.map((k) => (
@@ -340,7 +340,7 @@ export default function PhotoCalculatorAuth({
           <rect
             x={830}
             y={430}
-            width={260}
+            width={265}
             height={80}
             fill="rgba(0,255,0,0.15)"
             stroke="rgba(0,128,0,0.4)"
@@ -348,7 +348,7 @@ export default function PhotoCalculatorAuth({
           />
         )}
         <rect
-          x={830} y={430} width={260} height={80}
+          x={830} y={430} width={265} height={80}
           fill="transparent"
           style={{ cursor: "pointer", userSelect: "none", WebkitUserSelect: "none" }}
           onPointerDown={() => {
