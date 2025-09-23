@@ -47,7 +47,7 @@ const SEVEN_SEGMENT_MAP: Record<string, string[]> = {
 // --- Geometry defined with precise SVG Paths ---
 // These paths are for a 100x200 unit digit. They will be scaled.
 const SEGMENT_PATHS: Record<string, string> = {
-  a: "M 60.64 5.7 L 60.95 5.4 L 65.76 5.4 L 66.08 5.7 L 65.1 6.7 L 61.6 6.7 Z",
+  a: "M16 8 L16.31 7.7 L21.12 7.7 L21.44 8 L20.46 9 L16.96 9 Z",
   b: "M86 14 L90 18 L90 82 L86 86 L82 82 L82 18 Z",
   c: "M86 114 L90 118 L90 182 L86 186 L82 182 L82 118 Z",
   d: "M16 192 L20 188 L80 188 L84 192 L80 196 L20 196 Z",
