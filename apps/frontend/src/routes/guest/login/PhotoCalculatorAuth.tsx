@@ -39,39 +39,23 @@ const KEYS: KeyDef[] = [
 ];
 
 function SegmentRenderer({ text, x, y, w, h }: { text: string; x: number; y: number; w: number; h: number }) {
-  // Define 7 segments as capsule-style rects with rounded ends
-  // Segment order: a,b,c,d,e,f,g
-  // a: top horizontal
-  // b: top-right vertical
-  // c: bottom-right vertical
-  // d: bottom horizontal
-  // e: bottom-left vertical
-  // f: top-left vertical
-  // g: middle horizontal
+  // Implement digit-cell based approach with fixed digitWidth
+  // segment thickness is digitWidth * 0.15
+  // segments: a,b,c,d,e,f,g as horizontal/vertical rects
+  // Align baseline same as LCD digits
 
-  const segThickness = h * 0.25;
-  const segLengthH = w / (text.length + 0.5) - segThickness * 1.5;
-  const segLengthV = h / 2 - segThickness * 0.75;
-
-  // Each segment position relative to a digit cell of width digitWidth and height h
-  // We'll compute digitWidth as w / (chars.length + 0.5)
   const chars = text.toUpperCase().split("");
-  const digitWidth = w / (chars.length + 0.5);
+  const digitWidth = w / chars.length;
+  const segThickness = digitWidth * 0.15;
+  const digitHeight = h;
 
-  // Mapping segments to positions and sizes within digit cell
-  // Horizontal segments: a, d, g
-  // Vertical segments: b, c, e, f
+  // segment coordinates relative to digit origin (0,0)
+  // horizontal segments: a (top), d (bottom), g (middle)
+  // vertical segments: b (top-right), c (bottom-right), e (bottom-left), f (top-left)
 
-  // Segment positions are relative to digit origin (0,0)
-  // a: top horizontal bar
-  // b: top-right vertical bar
-  // c: bottom-right vertical bar
-  // d: bottom horizontal bar
-  // e: bottom-left vertical bar
-  // f: top-left vertical bar
-  // g: middle horizontal bar
-
-  // We'll define each segment as a <rect> with rx and ry for rounded ends
+  // segment lengths
+  const segLengthH = digitWidth - 2 * segThickness;
+  const segLengthV = digitHeight / 2 - 1.5 * segThickness;
 
   // Map characters to active segments
   const charToSegments: Record<string, (keyof typeof segments)[]> = {
@@ -84,7 +68,10 @@ function SegmentRenderer({ text, x, y, w, h }: { text: string; x: number; y: num
     E: ["a", "f", "g", "e", "d"],
   };
 
-  // We'll define segments object here to get typings
+  // Add mappings for letters in "NOPE" and "LOL"
+  // N, O, P, E already defined; add L already defined.
+
+  // segments object for typings only
   const segments = {
     a: true,
     b: true,
@@ -105,72 +92,58 @@ function SegmentRenderer({ text, x, y, w, h }: { text: string; x: number; y: num
           <g key={i} transform={`translate(${cx},0)`} aria-label={`Character ${ch}`}>
             {/* Segment a: top horizontal */}
             <rect
-              x={segThickness / 2}
+              x={segThickness}
               y={0}
               width={segLengthH}
               height={segThickness}
-              rx={segThickness / 2}
-              ry={segThickness / 2}
               fill={activeSegments.includes("a") ? "#2a2a2a" : "none"}
             />
             {/* Segment b: top-right vertical */}
             <rect
-              x={segLengthH + segThickness / 2}
-              y={segThickness / 2}
+              x={digitWidth - segThickness}
+              y={segThickness}
               width={segThickness}
               height={segLengthV}
-              rx={segThickness / 2}
-              ry={segThickness / 2}
               fill={activeSegments.includes("b") ? "#2a2a2a" : "none"}
             />
             {/* Segment c: bottom-right vertical */}
             <rect
-              x={segLengthH + segThickness / 2}
-              y={segLengthV + segThickness}
+              x={digitWidth - segThickness}
+              y={segLengthV + 2 * segThickness}
               width={segThickness}
               height={segLengthV}
-              rx={segThickness / 2}
-              ry={segThickness / 2}
               fill={activeSegments.includes("c") ? "#2a2a2a" : "none"}
             />
             {/* Segment d: bottom horizontal */}
             <rect
-              x={segThickness / 2}
-              y={h - segThickness}
+              x={segThickness}
+              y={digitHeight - segThickness}
               width={segLengthH}
               height={segThickness}
-              rx={segThickness / 2}
-              ry={segThickness / 2}
               fill={activeSegments.includes("d") ? "#2a2a2a" : "none"}
             />
             {/* Segment e: bottom-left vertical */}
             <rect
               x={0}
-              y={segLengthV + segThickness}
+              y={segLengthV + 2 * segThickness}
               width={segThickness}
               height={segLengthV}
-              rx={segThickness / 2}
-              ry={segThickness / 2}
               fill={activeSegments.includes("e") ? "#2a2a2a" : "none"}
             />
             {/* Segment f: top-left vertical */}
             <rect
               x={0}
-              y={segThickness / 2}
+              y={segThickness}
               width={segThickness}
               height={segLengthV}
-              rx={segThickness / 2}
-              ry={segThickness / 2}
               fill={activeSegments.includes("f") ? "#2a2a2a" : "none"}
             />
             {/* Segment g: middle horizontal */}
             <rect
-              x={segThickness / 2}
-              y={h / 2 - segThickness / 2}
+              x={segThickness}
+              y={digitHeight / 2 - segThickness / 2}
               width={segLengthH}
               height={segThickness}
-              rx={segThickness / 2}
-              ry={segThickness / 2}
               fill={activeSegments.includes("g") ? "#2a2a2a" : "none"}
             />
           </g>
