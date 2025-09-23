@@ -18,21 +18,21 @@ const KEYS: KeyDef[] = [
   { id: "9", label: "9", x: 1100, y: 772, w: 110, h: 70, kind: "digit" },
 
   // Row 2
-  { id: "4", label: "4", x: 845, y: 885, w: 110, h: 70, kind: "digit" },
-  { id: "5", label: "5", x: 970, y: 880, w: 110, h: 70, kind: "digit" },
-  { id: "6", label: "6", x: 1104, y: 882, w: 110, h: 70, kind: "digit" },
+  { id: "4", label: "4", x: 845, y: 880, w: 110, h: 70, kind: "digit" },
+  { id: "5", label: "5", x: 970, y: 875, w: 110, h: 70, kind: "digit" },
+  { id: "6", label: "6", x: 1100, y: 872, w: 110, h: 70, kind: "digit" },
 
   // Row 3
   { id: "1", label: "1", x: 845, y: 980, w: 110, h: 70, kind: "digit" },
-  { id: "2", label: "2", x: 970, y: 975, w: 110, h: 70, kind: "digit" },
-  { id: "3", label: "3", x: 1106, y: 972, w: 110, h: 70, kind: "digit" },
+  { id: "2", label: "2", x: 970, y: 980, w: 110, h: 70, kind: "digit" },
+  { id: "3", label: "3", x: 1100, y: 972, w: 110, h: 70, kind: "digit" },
 
   // Bottom row: ON/C + 0
-  { id: "on", label: "ON/C", x: 845, y: 1190, w: 110, h: 70, kind: "clear" },
-  { id: "0",  label: "0",    x: 970, y: 1185, w: 110, h: 70, kind: "digit" },
+  { id: "on", label: "ON/C", x: 850, y: 1015, w: 110, h: 70, kind: "clear" },
+  { id: "0",  label: "0",    x: 980, y: 1010, w: 110, h: 70, kind: "digit" },
 
   // Big equals bar
-  { id: "equals", label: "=", x: 1250, y: 1185, w: 110, h: 170, kind: "submit" },
+  { id: "equals", label: "=", x: 1270, y: 972, w: 110, h: 170, kind: "submit" },
 ];
 
 export default function PhotoCalculatorAuth({
