@@ -90,7 +90,7 @@ export function SegmentRenderer({
           // Group for each character, applying position, scale, and slant
           <g
             key={i}
-            transform={`translate(${charX}, 0) scale(${scaleX} ${scaleY}) skewX(-5)`}
+            transform={`translate(${charX}, 0) scale(${scaleX} ${scaleY}) skewX(0)`}
           >
             {Object.entries(SEGMENT_PATHS).map(([segmentKey, pathData]) => (
               <path
