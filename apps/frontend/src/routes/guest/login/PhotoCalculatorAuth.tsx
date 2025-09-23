@@ -5,10 +5,10 @@ type KeyDef =
   | { id: string; label: string; x: number; y: number; w: number; h: number; kind: "digit" | "submit" | "clear" };
 
 const LCD = {
-  x: 690,  // left edge of LCD
-  y: 120,  // top edge
-  w: 880,  // width
-  h: 180,  // height
+  x: 890,  // left edge of LCD
+  y: 220,  // top edge
+  w: 680,  // width
+  h: 100,  // height
 };
 
 const KEYS: KeyDef[] = [
