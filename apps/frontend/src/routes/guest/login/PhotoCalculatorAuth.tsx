@@ -38,6 +38,132 @@ const KEYS: KeyDef[] = [
   { id: "mrc", label: "MRC", x: 842, y: 680, w: 110, h: 70, kind: "delete" },
 ];
 
+function SegmentRenderer({ text, x, y, w, h }: { text: string; x: number; y: number; w: number; h: number }) {
+  // Define 7 segments polygons relative to a cell bounding box (0,0,w,h)
+  // Segment order: a,b,c,d,e,f,g
+  // a: top horizontal
+  // b: top-right vertical
+  // c: bottom-right vertical
+  // d: bottom horizontal
+  // e: bottom-left vertical
+  // f: top-left vertical
+  // g: middle horizontal
+
+  // We'll define each segment as a polygon with points relative to the box
+  // We'll define a thickness for segments as a fraction of height and width
+  const segThickness = Math.min(w, h) * 0.15;
+  const segLengthH = w - 2 * segThickness;
+  const segLengthV = h / 2 - 1.5 * segThickness;
+
+  // Each segment polygon points are defined clockwise
+
+  const segmentsPoints = {
+    a: [
+      [segThickness, 0],
+      [segThickness + segLengthH, 0],
+      [segThickness + segLengthH - segThickness / 2, segThickness / 2],
+      [segThickness + segThickness / 2, segThickness / 2],
+    ],
+    b: [
+      [w, segThickness],
+      [w, segThickness + segLengthV],
+      [w - segThickness / 2, segThickness + segLengthV - segThickness / 2],
+      [w - segThickness / 2, segThickness + segThickness / 2],
+    ],
+    c: [
+      [w, h / 2 + segThickness / 2],
+      [w, h / 2 + segLengthV + segThickness / 2],
+      [w - segThickness / 2, h / 2 + segLengthV],
+      [w - segThickness / 2, h / 2 + segThickness],
+    ],
+    d: [
+      [segThickness, h],
+      [segThickness + segLengthH, h],
+      [segThickness + segLengthH - segThickness / 2, h - segThickness / 2],
+      [segThickness + segThickness / 2, h - segThickness / 2],
+    ],
+    e: [
+      [0, h / 2 + segThickness / 2],
+      [0, h / 2 + segLengthV + segThickness / 2],
+      [segThickness / 2, h / 2 + segLengthV],
+      [segThickness / 2, h / 2 + segThickness],
+    ],
+    f: [
+      [0, segThickness],
+      [0, segThickness + segLengthV],
+      [segThickness / 2, segThickness + segLengthV - segThickness / 2],
+      [segThickness / 2, segThickness + segThickness / 2],
+    ],
+    g: [
+      [segThickness, h / 2],
+      [segThickness + segLengthH, h / 2],
+      [segThickness + segLengthH - segThickness / 2, h / 2 + segThickness / 2],
+      [segThickness + segThickness / 2, h / 2 + segThickness / 2],
+      [segThickness + segThickness / 2, h / 2 - segThickness / 2],
+      [segThickness + segLengthH - segThickness / 2, h / 2 - segThickness / 2],
+    ],
+  };
+
+  // Map characters to active segments
+  // Y: f b g c d
+  // S: a f g c d
+  // O: a b c d e f
+  // L: f e d
+  // Other chars: no segments active (empty)
+
+  const charToSegments: Record<string, (keyof typeof segmentsPoints)[]> = {
+    Y: ["f", "b", "g", "c", "d"],
+    S: ["a", "f", "g", "c", "d"],
+    O: ["a", "b", "c", "d", "e", "f"],
+    L: ["f", "e", "d"],
+  };
+
+  // We'll render each character spaced evenly horizontally within the total width w
+  // Calculate cell width per char
+  const chars = text.toUpperCase().split("");
+  const cellWidth = w / chars.length;
+
+  return (
+    <g transform={`translate(${x},${y})`} aria-label={`LCD display: ${text}`}>
+      {chars.map((ch, i) => {
+        const activeSegments = charToSegments[ch] || [];
+        const cx = cellWidth * i;
+        const cy = 0;
+        return (
+          <g key={i} transform={`translate(${cx},${cy})`} aria-label={`Character ${ch}`}>
+            {Object.entries(segmentsPoints).map(([seg, points]) => {
+              const isActive = activeSegments.includes(seg as keyof typeof segmentsPoints);
+              const pointsStr = points.map(p => p.join(",")).join(" ");
+              return (
+                <polygon
+                  key={seg}
+                  points={pointsStr}
+                  fill={isActive ? "currentColor" : "none"}
+                  stroke={isActive ? "currentColor" : "none"}
+                  strokeWidth={isActive ? segThickness / 3 : 0}
+                />
+              );
+            })}
+            {/* If no active segments, render a faint rectangle as placeholder */}
+            {activeSegments.length === 0 && (
+              <rect
+                x={segThickness / 2}
+                y={segThickness / 2}
+                width={cellWidth - segThickness}
+                height={h - segThickness}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1}
+                opacity={0.1}
+              />
+            )}
+          </g>
+        );
+      })}
+    </g>
+  );
+}
+
 export default function PhotoCalculatorAuth({
   imgSrc = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/calculatorHand.png",        // or your Supabase URL
   DEBUG = false,                     // set true to see hotspot outlines
@@ -126,18 +252,7 @@ export default function PhotoCalculatorAuth({
             rx="1.5"
           />
         )}
-        <text
-          x={LCD.x + LCD.w - 1.5}
-          y={LCD.y + LCD.h - 1.8}
-          textAnchor="end"
-          style={{
-            fontFamily: '"DSEG7Classic", monospace',
-            fontSize: `${LCD.h * 0.9}px`,
-            fill: "#202020ff",
-          }}
-        >
-          {code || "58008"}
-        </text>
+        <SegmentRenderer text={code || "58008"} x={LCD.x} y={LCD.y} w={LCD.w} h={LCD.h} />
 
         {/* Hotspots */}
         {KEYS.map((k) => (
