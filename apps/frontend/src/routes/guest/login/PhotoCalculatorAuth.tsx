@@ -1,4 +1,3 @@
-// apps/frontend/src/routes/guest/login/PhotoCalculatorAuth.tsx
 import { useState } from "react";
 import InvalidCodeModal from "./InvalidCodeModal";
 
@@ -83,106 +82,103 @@ export default function PhotoCalculatorAuth({
   };
 
   return (
-    <div className="min-h-screen grid place-items-center bg-cactus-sand relative">
-      {/* Photo-as-UI, using SVG so hotspots scale perfectly */}
-      <div className="w-full max-w-sm md:max-w-md">
-        <svg
-          viewBox="0 0 100 100" // percent-based layout space
+    <div className="w-screen h-screen bg-cactus-sand relative overflow-hidden">
+      <svg
+        viewBox="0 0 100 100" // percent-based layout space
+        preserveAspectRatio="xMidYMid meet"
+        className="w-full h-full select-none"
+      >
+        {/* Background photo */}
+        <image
+          href={imgSrc}              // ✅ keep using Supabase URL
+          x="0"
+          y="0"
+          width="100%"
+          height="100%"
           preserveAspectRatio="xMidYMid meet"
-          className="w-full h-auto select-none"
-        >
-          {/* Background photo */}
-          <image
-            href={imgSrc}              // ✅ keep using Supabase URL
-            x="0"
-            y="0"
-            width="100%"
-            height="100%"
-            preserveAspectRatio="xMidYMid meet"
-            crossOrigin="anonymous"
-          />
+          crossOrigin="anonymous"
+        />
 
-          {/* LCD display text */}
-          {/* Debug LCD outline */}
-          {DEBUG && (
-            <rect
-              x={LCD.x}
-              y={LCD.y}
-              width={LCD.w}
-              height={LCD.h}
-              fill="rgba(0,255,0,0.10)"
-              stroke="rgba(0,128,0,0.5)"
-              strokeWidth="0.6"
-              rx="1.5"
-            />
-          )}
+        {/* LCD display text */}
+        {/* Debug LCD outline */}
+        {DEBUG && (
           <rect
-            x={LCD.x} y={LCD.y} width={LCD.w} height={LCD.h}
-            fill="rgba(0,0,0,0.35)" rx="1.5"
+            x={LCD.x}
+            y={LCD.y}
+            width={LCD.w}
+            height={LCD.h}
+            fill="rgba(0,255,0,0.10)"
+            stroke="rgba(0,128,0,0.5)"
+            strokeWidth="0.6"
+            rx="1.5"
           />
-          <text
-            x={LCD.x + LCD.w - 1.5}
-            y={LCD.y + LCD.h - 1.8}
-            textAnchor="end"
-            className="fill-[var(--neon,#ff49c3)]"
-            style={{
-              fontFamily: '"Share Tech Mono", monospace',
-              fontSize: `${LCD.h * 0.9}px`,
-              filter: "drop-shadow(0 0 6px rgba(255,73,195,.6))",
-            }}
-          >
-            {code || "58008"}
-          </text>
+        )}
+        <rect
+          x={LCD.x} y={LCD.y} width={LCD.w} height={LCD.h}
+          fill="rgba(0,0,0,0.35)" rx="1.5"
+        />
+        <text
+          x={LCD.x + LCD.w - 1.5}
+          y={LCD.y + LCD.h - 1.8}
+          textAnchor="end"
+          className="fill-[var(--neon,#ff49c3)]"
+          style={{
+            fontFamily: '"Share Tech Mono", monospace',
+            fontSize: `${LCD.h * 0.9}px`,
+            filter: "drop-shadow(0 0 6px rgba(255,73,195,.6))",
+          }}
+        >
+          {code || "58008"}
+        </text>
 
-          {/* Hotspots */}
-          {KEYS.map((k) => (
-            <g key={k.id}>
-              {/* Debug overlays for key mapping */}
-              {DEBUG && (
-                <>
-                  <rect
-                    x={k.x}
-                    y={k.y}
-                    width={k.w}
-                    height={k.h}
-                    fill="rgba(0,255,0,0.15)"
-                    stroke="rgba(0,128,0,0.4)"
-                    strokeWidth="0.25"
-                  />
-                  {/* Small label with id and coords */}
-                  <text
-                    x={k.x + 0.6}
-                    y={k.y + 2.5}
-                    fontSize="2.5px"
-                    fill="#008800"
-                    style={{ pointerEvents: "none", userSelect: "none" }}
-                  >
-                    {`${k.id} (${k.x},${k.y})`}
-                  </text>
-                </>
-              )}
-              {/* Actual clickable area */}
+        {/* Hotspots */}
+        {KEYS.map((k) => (
+          <g key={k.id}>
+            {/* Debug overlays for key mapping */}
+            {DEBUG && (
+              <>
+                <rect
+                  x={k.x}
+                  y={k.y}
+                  width={k.w}
+                  height={k.h}
+                  fill="rgba(0,255,0,0.15)"
+                  stroke="rgba(0,128,0,0.4)"
+                  strokeWidth="0.25"
+                />
+                {/* Small label with id and coords */}
+                <text
+                  x={k.x + 0.6}
+                  y={k.y + 2.5}
+                  fontSize="2.5px"
+                  fill="#008800"
+                  style={{ pointerEvents: "none", userSelect: "none" }}
+                >
+                  {`${k.id} (${k.x},${k.y})`}
+                </text>
+              </>
+            )}
+            {/* Actual clickable area */}
+            <rect
+              x={k.x} y={k.y} width={k.w} height={k.h}
+              rx="1.2"
+              fill="transparent"
+              style={{ cursor: "pointer" }}
+              onPointerDown={() => setPressed(k.id)}
+              onPointerUp={() => { setPressed(null); press(k); }}
+              onPointerLeave={() => setPressed(null)}
+              aria-label={k.label}
+            />
+            {/* Press effect overlay */}
+            {pressed === k.id && (
               <rect
                 x={k.x} y={k.y} width={k.w} height={k.h}
-                rx="1.2"
-                fill="transparent"
-                style={{ cursor: "pointer" }}
-                onPointerDown={() => setPressed(k.id)}
-                onPointerUp={() => { setPressed(null); press(k); }}
-                onPointerLeave={() => setPressed(null)}
-                aria-label={k.label}
+                rx="1.2" fill="rgba(0,0,0,0.18)"
               />
-              {/* Press effect overlay */}
-              {pressed === k.id && (
-                <rect
-                  x={k.x} y={k.y} width={k.w} height={k.h}
-                  rx="1.2" fill="rgba(0,0,0,0.18)"
-                />
-              )}
-            </g>
-          ))}
-        </svg>
-      </div>
+            )}
+          </g>
+        ))}
+      </svg>
 
       <InvalidCodeModal show={showInvalid} onClose={() => setShowInvalid(false)} />
     </div>
