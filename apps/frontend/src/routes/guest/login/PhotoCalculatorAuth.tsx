@@ -267,11 +267,11 @@ export default function PhotoCalculatorAuth({
           />
         )}
         {specialMsg ? (
-          <g style={{ opacity: faded ? 0.15 : 1, transition: "opacity 0.4s" }}>
+          <g style={{ opacity: faded ? 0.15 : 1, transition: "opacity 2s" }}>
             <SegmentRenderer text={specialMsg} x={LCD.x} y={LCD.y} w={LCD.w} h={LCD.h} />
           </g>
         ) : (
-          <g style={{ opacity: faded ? 0.15 : 1, transition: "opacity 0.4s" }}>
+          <g style={{ opacity: faded ? 0.15 : 1, transition: "opacity 2s" }}>
             <text
               x={LCD.x + LCD.w - 1.5}
               y={LCD.y + LCD.h - 1.8}
