@@ -103,6 +103,19 @@ export default function PhotoCalculatorAuth({
           />
 
           {/* LCD display text */}
+          {/* Debug LCD outline */}
+          {DEBUG && (
+            <rect
+              x={LCD.x}
+              y={LCD.y}
+              width={LCD.w}
+              height={LCD.h}
+              fill="rgba(0,255,0,0.10)"
+              stroke="rgba(0,128,0,0.5)"
+              strokeWidth="0.6"
+              rx="1.5"
+            />
+          )}
           <rect
             x={LCD.x} y={LCD.y} width={LCD.w} height={LCD.h}
             fill="rgba(0,0,0,0.35)" rx="1.5"
@@ -124,14 +137,30 @@ export default function PhotoCalculatorAuth({
           {/* Hotspots */}
           {KEYS.map((k) => (
             <g key={k.id}>
-              {/* Optional outlines for tuning */}
-              {DEBUG ? (
-                <rect
-                  x={k.x} y={k.y} width={k.w} height={k.h}
-                  fill="rgba(0,255,0,0.15)"
-                  stroke="rgba(0,0,0,0.4)" strokeWidth="0.25"
-                />
-              ) : null}
+              {/* Debug overlays for key mapping */}
+              {DEBUG && (
+                <>
+                  <rect
+                    x={k.x}
+                    y={k.y}
+                    width={k.w}
+                    height={k.h}
+                    fill="rgba(0,255,0,0.15)"
+                    stroke="rgba(0,128,0,0.4)"
+                    strokeWidth="0.25"
+                  />
+                  {/* Small label with id and coords */}
+                  <text
+                    x={k.x + 0.6}
+                    y={k.y + 2.5}
+                    fontSize="2.5px"
+                    fill="#008800"
+                    style={{ pointerEvents: "none", userSelect: "none" }}
+                  >
+                    {`${k.id} (${k.x},${k.y})`}
+                  </text>
+                </>
+              )}
               {/* Actual clickable area */}
               <rect
                 x={k.x} y={k.y} width={k.w} height={k.h}
