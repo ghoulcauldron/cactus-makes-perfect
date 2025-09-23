@@ -39,134 +39,66 @@ const KEYS: KeyDef[] = [
   { id: "mrc", label: "MRC", x: 842, y: 680, w: 110, h: 70, kind: "delete" },
 ];
 
-function SegmentRenderer({ text, x, y, w, h }: { text: string; x: number; y: number; w: number; h: number }) {
-  // Implement digit-cell based approach with fixed digitWidth
-  // segment thickness is digitWidth * 0.15
-  // segments: a,b,c,d,e,f,g as horizontal/vertical rects
-  // Align baseline same as LCD digits
+// Expanded map, same as before
+const SEVEN_SEGMENT_MAP: Record<string, string[]> = {
+  ' ': [], '0': ['a','b','c','d','e','f'], '1': ['b','c'], '2': ['a','b','g','e','d'], '3': ['a','b','g','c','d'], '4': ['f','g','b','c'], '5': ['a','f','g','c','d'], '6': ['a','f','g','c','d','e'], '7': ['a','b','c'], '8': ['a','b','c','d','e','f','g'], '9': ['a','b','c','d','f','g'], 'L': ['f','e','d'], 'O': ['a','b','c','d','e','f'], // etc.
+};
 
-  const chars = text.toUpperCase().split("");
-  const digitWidth = w / chars.length;
-  const segThickness = digitWidth * 0.15;
-  const digitHeight = h;
+// --- Geometry defined with precise SVG Paths ---
+// These paths are for a 100x200 unit digit. They will be scaled.
+const SEGMENT_PATHS: Record<string, string> = {
+  a: "M16 8 L20 4 L80 4 L84 8 L80 12 L20 12 Z",
+  b: "M86 14 L90 18 L90 82 L86 86 L82 82 L82 18 Z",
+  c: "M86 114 L90 118 L90 182 L86 186 L82 182 L82 118 Z",
+  d: "M16 192 L20 188 L80 188 L84 192 L80 196 L20 196 Z",
+  e: "M14 114 L18 118 L18 182 L14 186 L10 182 L10 118 Z",
+  f: "M14 14 L18 18 L18 82 L14 86 L10 82 L10 18 Z",
+  g: "M16 100 L20 96 L80 96 L84 100 L80 104 L20 104 Z"
+};
 
-  // segment coordinates relative to digit origin (0,0)
-  // horizontal segments: a (top), d (bottom), g (middle)
-  // vertical segments: b (top-right), c (bottom-right), e (bottom-left), f (top-left)
 
-  // segment lengths
-  const segLengthH = digitWidth - 2 * segThickness;
-  const segLengthV = digitHeight / 2 - 1.5 * segThickness;
+export function SegmentRenderer({
+  text,
+  x = 0,
+  y = 0,
+  w,
+  h,
+  digitSpacing = w * 0.05,
+}: {
+  text: string;
+  x?: number;
+  y?: number;
+  w: number;
+  h: number;
+  digitSpacing?: number;
+}) {
+  const chars = text.toUpperCase().split('');
+  const numDigits = chars.length;
+  const digitWidth = (w - (numDigits - 1) * digitSpacing) / numDigits;
 
-  // Map characters to active segments
-  const charToSegments: Record<string, (keyof typeof segments)[]> = {
-    Y: ["f", "b", "g", "c", "d"],
-    S: ["a", "f", "g", "c", "d"],
-    O: ["a", "b", "c", "d", "e", "f"],
-    L: ["f", "e", "d"],
-    N: ["a", "b", "c", "e", "f"],
-    P: ["a", "b", "g", "e", "f"],
-    E: ["a", "f", "g", "e", "d"],
-  };
-
-  // Add mappings for letters in "NOPE" and "LOL"
-  // N, O, P, E already defined; add L already defined.
-
-  // segments object for typings only
-  const segments = {
-    a: true,
-    b: true,
-    c: true,
-    d: true,
-    e: true,
-    f: true,
-    g: true,
-  };
+  // Calculate scaling factors based on our 100x200 unit paths
+  const scaleX = digitWidth / 100;
+  const scaleY = h / 200;
 
   return (
-    <g transform={`translate(${x},${y})`} aria-label={`LCD display: ${text}`}>
-      {chars.map((ch, i) => {
-        const activeSegments = charToSegments[ch] || [];
-        const cx = i * digitWidth;
+    <g transform={`translate(${x},${y})`}>
+      {chars.map((char, i) => {
+        const activeSegments = SEVEN_SEGMENT_MAP[char] || [];
+        const charX = i * (digitWidth + digitSpacing);
 
         return (
-          <g key={i} transform={`translate(${cx},0)`} aria-label={`Character ${ch}`}>
-            // --- helpers for trapezoid points ---
-            {(() => {
-              const t = segThickness;
-              const slant = t * 0.6;           // bevel size at ends
-              const vWidth = t * 1.25;         // visual width for vertical segments
-
-              function hTrap(x: number, y: number, len: number, t: number, slant: number) {
-                // horizontal trapezoid, height ~ 2t, beveled ends
-                return `
-                  ${x} ${y},
-                  ${x + len} ${y},
-                  ${x + len + slant} ${y + t},
-                  ${x + len} ${y + 2 * t},
-                  ${x} ${y + 2 * t},
-                  ${x - slant} ${y + t}
-                `;
-              }
-
-              function vTrap(x: number, y: number, height: number, t: number, slant: number, width: number) {
-                // vertical trapezoid, width ~ vWidth, beveled top/bottom
-                return `
-                  ${x + slant} ${y},
-                  ${x + width - slant} ${y},
-                  ${x + width} ${y + t},
-                  ${x + width - slant} ${y + height},
-                  ${x + slant} ${y + height},
-                  ${x} ${y + t}
-                `;
-              }
-
-              return (
-                <>
-                  {/* Segment a: top horizontal (trapezoid) */}
-                  <polygon
-                    points={hTrap(segThickness, 0, segLengthH, t, slant)}
-                    fill={activeSegments.includes("a") ? "#2a2a2a" : "none"}
-                  />
-
-                  {/* Segment b: top-right vertical (trapezoid) */}
-                  <polygon
-                    points={vTrap(digitWidth - vWidth, t, segLengthV, t, slant, vWidth)}
-                    fill={activeSegments.includes("b") ? "#2a2a2a" : "none"}
-                  />
-
-                  {/* Segment c: bottom-right vertical (trapezoid) */}
-                  <polygon
-                    points={vTrap(digitWidth - vWidth, segLengthV + 2 * t, segLengthV, t, slant, vWidth)}
-                    fill={activeSegments.includes("c") ? "#2a2a2a" : "none"}
-                  />
-
-                  {/* Segment d: bottom horizontal (trapezoid) */}
-                  <polygon
-                    points={hTrap(segThickness, digitHeight - 2 * t, segLengthH, t, slant)}
-                    fill={activeSegments.includes("d") ? "#2a2a2a" : "none"}
-                  />
-
-                  {/* Segment e: bottom-left vertical (trapezoid) */}
-                  <polygon
-                    points={vTrap(0, segLengthV + 2 * t, segLengthV, t, slant, vWidth)}
-                    fill={activeSegments.includes("e") ? "#2a2a2a" : "none"}
-                  />
-
-                  {/* Segment f: top-left vertical (trapezoid) */}
-                  <polygon
-                    points={vTrap(0, t, segLengthV, t, slant, vWidth)}
-                    fill={activeSegments.includes("f") ? "#2a2a2a" : "none"}
-                  />
-
-                  {/* Segment g: middle horizontal (trapezoid) */}
-                  <polygon
-                    points={hTrap(segThickness, digitHeight / 2 - t, segLengthH, t, slant)}
-                    fill={activeSegments.includes("g") ? "#2a2a2a" : "none"}
-                  />
-                </>
-              );
-            })()}
+          // Group for each character, applying position, scale, and slant
+          <g
+            key={i}
+            transform={`translate(${charX}, 0) scale(${scaleX} ${scaleY}) skewX(-5)`}
+          >
+            {Object.entries(SEGMENT_PATHS).map(([segmentKey, pathData]) => (
+              <path
+                key={segmentKey}
+                d={pathData}
+                fill={activeSegments.includes(segmentKey) ? 'black' : 'none'}
+              />
+            ))}
           </g>
         );
       })}
