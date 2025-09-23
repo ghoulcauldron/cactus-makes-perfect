@@ -39,8 +39,6 @@ const KEYS: KeyDef[] = [
   { id: "mrc", label: "MRC", x: 842, y: 680, w: 110, h: 70, kind: "delete" },
 ];
 
-// --- START: Replace your old SegmentRenderer and SEGMENT_PATHS with this ---
-
 // The map of which segments are active for each character
 const SEVEN_SEGMENT_MAP: Record<string, string[]> = {
   ' ': [], '0': ['a','b','c','d','e','f'], '1': ['b','c'], '2': ['a','b','g','e','d'], '3': ['a','b','g','c','d'], '4': ['f','g','b','c'], '5': ['a','f','g','c','d'], '6': ['a','f','g','c','d','e'], '7': ['a','b','c'], '8': ['a','b','c','d','e','f','g'], '9': ['a','b','c','d','f','g'], 'L': ['f','e','d'], 'O': ['a','b','c','d','e','f'], 'N': ['a','b','c','e','f'], 'P':['a','b','g','e','f'], 'E': ['a','f','g','e','d'], 'S': ['a','f','g','c','d'], 'Y': ['f','b','g','c','d'],
