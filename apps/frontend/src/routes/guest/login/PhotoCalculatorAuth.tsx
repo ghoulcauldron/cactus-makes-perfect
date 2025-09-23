@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import InvalidCodeModal from "./InvalidCodeModal";
 
 type KeyDef =
@@ -166,7 +166,7 @@ function SegmentRenderer({ text, x, y, w, h }: { text: string; x: number; y: num
 
 export default function PhotoCalculatorAuth({
   imgSrc = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/calculatorHand.png",        // or your Supabase URL
-  DEBUG = true,                     // set true to see hotspot outlines
+  DEBUG = false,                     // set true to see hotspot outlines
 }: { imgSrc?: string; DEBUG?: boolean }) {
   const url = new URL(window.location.href);
   const email = url.searchParams.get("email") || "your email";
@@ -175,21 +175,17 @@ export default function PhotoCalculatorAuth({
   const [submitting, setSubmitting] = useState(false);
   const [showInvalid, setShowInvalid] = useState(false);
   const [pressed, setPressed] = useState<string | null>(null);
-  const [cleared, setCleared] = useState(false);
+
+  const [faded, setFaded] = useState(false);
+  const solarTimer = useRef<number | null>(null);
+  const [specialMsg, setSpecialMsg] = useState<string | null>(null);
 
   const press = (key: KeyDef) => {
     if (submitting) return;
     if (key.kind === "digit") {
-      setCode((c) => {
-        if (cleared || c === "0") {
-          setCleared(false);
-          return key.label;
-        }
-        return c.length < 6 ? c + key.label : c;
-      });
+      setCode((c) => (c.length < 6 ? c + key.label : c));
     } else if (key.kind === "clear") {
       setCode("0");
-      setCleared(true);
     } else if (key.kind === "delete") {
       setCode((c) => c.slice(0, -1));
     } else if (key.kind === "submit") {
@@ -213,10 +209,17 @@ export default function PhotoCalculatorAuth({
         try { localStorage.setItem("auth_token", data.token); } catch {}
       }
       try { localStorage.setItem("auth_ok", "true"); } catch {}
-      window.location.replace("/guest/welcome");
+      setSpecialMsg("YES");
+      setTimeout(() => {
+        window.location.replace("/guest/welcome");
+      }, 500);
     } catch {
-      setShowInvalid(true);
-      setSubmitting(false);
+      setSpecialMsg("NOPE");
+      setTimeout(() => {
+        setShowInvalid(true);
+        setSubmitting(false);
+        setSpecialMsg(null);
+      }, 500);
     }
   };
 
@@ -252,7 +255,26 @@ export default function PhotoCalculatorAuth({
             rx="1.5"
           />
         )}
-        <SegmentRenderer text={code || "58008"} x={LCD.x} y={LCD.y} w={LCD.w} h={LCD.h} />
+        {specialMsg ? (
+          <SegmentRenderer text={specialMsg} x={LCD.x} y={LCD.y} w={LCD.w} h={LCD.h} />
+        ) : (
+          <text
+            x={LCD.x + LCD.w - 1.5}
+            y={LCD.y + LCD.h - 1.8}
+            textAnchor="end"
+            style={{
+              fontFamily: '"DSEG7Classic", monospace',
+              fontSize: `${LCD.h * 0.9}px`,
+              fill: "#202020ff",
+              opacity: faded ? 0.15 : 1,
+              transition: "opacity 0.4s",
+            }}
+          >
+            {code || "58008"}
+          </text>
+        )}
+
+      <SegmentRenderer text={code || "58008"} x={LCD.x} y={LCD.y} w={LCD.w} h={LCD.h} />
 
         {/* Hotspots */}
         {KEYS.map((k) => (
@@ -286,7 +308,7 @@ export default function PhotoCalculatorAuth({
               x={k.x} y={k.y} width={k.w} height={k.h}
               rx="1.2"
               fill="transparent"
-              style={{ cursor: "pointer" }}
+              style={{ cursor: "pointer", userSelect: "none", WebkitUserSelect: "none" }}
               onPointerDown={() => setPressed(k.id)}
               onPointerUp={() => { setPressed(null); press(k); }}
               onPointerLeave={() => setPressed(null)}
@@ -301,6 +323,30 @@ export default function PhotoCalculatorAuth({
             )}
           </g>
         ))}
+
+        {/* Solar panel hotspot */}
+        <rect
+          x={750} y={160} width={250} height={60}
+          fill="transparent"
+          style={{ cursor: "pointer", userSelect: "none", WebkitUserSelect: "none" }}
+          onPointerDown={() => {
+            solarTimer.current = window.setTimeout(() => {
+              setFaded(true);
+              setSpecialMsg("LOL");
+            }, 600);
+          }}
+          onPointerUp={() => {
+            if (solarTimer.current) clearTimeout(solarTimer.current);
+            setFaded(false);
+            setSpecialMsg(null);
+          }}
+          onPointerLeave={() => {
+            if (solarTimer.current) clearTimeout(solarTimer.current);
+            setFaded(false);
+            setSpecialMsg(null);
+          }}
+          aria-label="solar-panel"
+        />
       </svg>
 
       <InvalidCodeModal show={showInvalid} onClose={() => setShowInvalid(false)} />
