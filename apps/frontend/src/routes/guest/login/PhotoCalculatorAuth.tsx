@@ -116,6 +116,9 @@ function SegmentRenderer({ text, x, y, w, h }: { text: string; x: number; y: num
     S: ["a", "f", "g", "c", "d"],
     O: ["a", "b", "c", "d", "e", "f"],
     L: ["f", "e", "d"],
+    N: ["a", "b", "c", "e", "f"],
+    P: ["a", "b", "g", "e", "f"],
+    E: ["a", "f", "g", "e", "d"],
   };
 
   // We'll render each character spaced evenly horizontally within the total width w
@@ -180,12 +183,20 @@ export default function PhotoCalculatorAuth({
   const solarTimer = useRef<number | null>(null);
   const [specialMsg, setSpecialMsg] = useState<string | null>(null);
 
+  const [cleared, setCleared] = useState(false);
+
   const press = (key: KeyDef) => {
     if (submitting) return;
     if (key.kind === "digit") {
-      setCode((c) => (c.length < 6 ? c + key.label : c));
+      if (cleared) {
+        setCode(key.label);
+        setCleared(false);
+      } else {
+        setCode((c) => (c.length < 6 ? c + key.label : c));
+      }
     } else if (key.kind === "clear") {
       setCode("0");
+      setCleared(true);
     } else if (key.kind === "delete") {
       setCode((c) => c.slice(0, -1));
     } else if (key.kind === "submit") {
