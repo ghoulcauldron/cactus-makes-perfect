@@ -50,7 +50,7 @@ const SEVEN_SEGMENT_MAP: Record<string, string[]> = {
 // 'a' is your path, but centered. 'b' and 'g' are designed to match its style.
 const MASTER_PATHS = {
   a: "M -24.5 -2.5 L -21.5 -5.5 L 21.5 -5.5 L 24.5 -2.5 L 16.5 5.5 L -15.5 5.5 Z",
-  b: "M 0 23 L -5.5 20 L -5.5 -20 L 0 -23 L 5.5 -20 L 5.5 20 Z",
+  b: "M 0 19 L -6 13 L -6 -14 L 3 -23 L 6 -20 L 6 19 Z",
   g: "M -22 0 L -19 -5.5 L 19 -5.5 L 22 0 L 19 5.5 L -19 5.5 Z",
 };
 
