@@ -59,7 +59,7 @@ const SEGMENT_TRANSFORMS: Record<string, string> = {
 
 // The master path for a single segment, centered at the origin (0,0).
 // This is based on your hand-drawn path, but centered for easy rotation.
-const MASTER_SEGMENT_PATH = "M-27.2 -6.5 L-24.1 -3.5 L24.1 -3.5 L27.2 -6.5 L17.4 6.5 L-17.6 6.5 Z";
+const MASTER_SEGMENT_PATH = "M -25 -1 L -22 -4 L 21 -4 L 24 -1 L 16 7 L -16 7 Z";
 
 
 export function SegmentRenderer({
