@@ -61,54 +61,40 @@ export default function CalculatorAuth() {
     };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-cactus-sand relative overflow-hidden">
-      {/* risograph grain overlay */}
-      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/asfalt-dark.png')] opacity-10"></div>
-
-      <div className="relative z-10 w-[350px] rounded-3xl bg-cactus-green/10 backdrop-blur-sm shadow-2xl">
-        <div className="border-8 border-cactus-green rounded-3xl p-6">
-          <div className="bg-cactus-green rounded-2xl p-8 flex flex-col items-center">
-            <div className="w-full mb-6">
-              <div className="flex justify-center gap-3">
-                {[...Array(6)].map((_, i) => (
-                  <div
-                    key={i}
-                    className={`w-12 h-16 rounded-lg border-4 flex items-center justify-center text-3xl font-mono 
-                      ${i < code.length ? "bg-sunset border-sunset text-white" : "border-cactus-green bg-white"}`}
-                  >
-                    {code[i] || ""}
-                  </div>
-                ))}
-              </div>
-              <p className="mt-4 text-center text-sm text-cactus-green/80">
-                Code sent to <span className="font-semibold">{email}</span>
-              </p>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4 w-full">
-              {DIGITS.map((d) => (
+    <div className="min-h-screen flex items-center justify-center bg-graphite relative overflow-hidden">
+      <div className="rounded-3xl bg-graphite p-8 shadow-lg">
+        <div className="rounded-2xl bg-pewter p-6 flex flex-col items-center space-y-6">
+          <div className="w-full rounded-lg bg-black/90 px-6 py-4 font-segment text-5xl text-neon glow-neon text-center select-none">
+            {code || "58008"}
+          </div>
+          <div className="grid grid-cols-3 gap-4 w-[350px]">
+            {DIGITS.map((d) => {
+              const isDelete = d === "←";
+              const isSubmit = d === "✓";
+              const baseClasses = "aspect-square flex items-center justify-center text-3xl font-bold rounded-2xl shadow-[inset_0_-6px_0_rgba(0,0,0,0.25)] transition-transform transform active:translate-y-[2px] select-none";
+              let classes = "";
+              if (isSubmit) {
+                classes = "bg-neon text-white";
+              } else if (isDelete) {
+                classes = "bg-neon/90 text-white";
+              } else {
+                classes = "bg-tangerine text-black";
+              }
+              return (
                 <button
                   key={d}
                   disabled={submitting}
                   onClick={() => press(d)}
-                  className={`aspect-square flex items-center justify-center text-3xl font-bold rounded-2xl shadow-md 
-                    transition-transform transform active:scale-95
-                    ${
-                      d === "✓"
-                        ? "bg-cactus-green text-white hover:bg-cactus-green/80"
-                        : d === "←"
-                        ? "bg-sky text-white hover:bg-sky/80"
-                        : "bg-sunset text-white hover:bg-sunset/80"
-                    }`}
+                  className={`${baseClasses} ${classes}`}
+                  type="button"
                 >
                   {d}
                 </button>
-              ))}
-            </div>
+              );
+            })}
           </div>
         </div>
       </div>
-
       {showInvalid && <InvalidCodeModal show={showInvalid} onClose={() => setShowInvalid(false)} />}
     </div>
   );
