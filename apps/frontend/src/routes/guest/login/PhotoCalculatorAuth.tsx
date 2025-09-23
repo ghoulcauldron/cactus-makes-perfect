@@ -39,64 +39,77 @@ const KEYS: KeyDef[] = [
   { id: "mrc", label: "MRC", x: 842, y: 680, w: 110, h: 70, kind: "delete" },
 ];
 
-// Expanded map, same as before
+// --- START: Replace your old SegmentRenderer and SEGMENT_PATHS with this ---
+
+// The map of which segments are active for each character
 const SEVEN_SEGMENT_MAP: Record<string, string[]> = {
-  ' ': [], '0': ['a','b','c','d','e','f'], '1': ['b','c'], '2': ['a','b','g','e','d'], '3': ['a','b','g','c','d'], '4': ['f','g','b','c'], '5': ['a','f','g','c','d'], '6': ['a','f','g','c','d','e'], '7': ['a','b','c'], '8': ['a','b','c','d','e','f','g'], '9': ['a','b','c','d','f','g'], 'L': ['f','e','d'], 'O': ['a','b','c','d','e','f'], // etc.
+  ' ': [], '0': ['a','b','c','d','e','f'], '1': ['b','c'], '2': ['a','b','g','e','d'], '3': ['a','b','g','c','d'], '4': ['f','g','b','c'], '5': ['a','f','g','c','d'], '6': ['a','f','g','c','d','e'], '7': ['a','b','c'], '8': ['a','b','c','d','e','f','g'], '9': ['a','b','c','d','f','g'], 'L': ['f','e','d'], 'O': ['a','b','c','d','e','f'], 'N': ['a','b','c','e','f'], 'P':['a','b','g','e','f'], 'E': ['a','f','g','e','d'], 'S': ['a','f','g','c','d'], 'Y': ['f','b','g','c','d'],
 };
 
-// --- Geometry defined with precise SVG Paths ---
-// These paths are for a 100x200 unit digit. They will be scaled.
-const SEGMENT_PATHS: Record<string, string> = {
-  a: "M160 80 L163.1 77 L211.2 77 L214.4 80 L204.6 90 L169.6 90 Z",
-  b: "M86 14 L90 18 L90 82 L86 86 L82 82 L82 18 Z",
-  c: "M86 114 L90 118 L90 182 L86 186 L82 182 L82 118 Z",
-  d: "M16 192 L20 188 L80 188 L84 192 L80 196 L20 196 Z",
-  e: "M14 114 L18 118 L18 182 L14 186 L10 182 L10 118 Z",
-  f: "M14 14 L18 18 L18 82 L14 86 L10 82 L10 18 Z",
-  g: "M16 100 L20 96 L80 96 L84 100 L80 104 L20 104 Z"
+// The "Blueprint" for a single digit.
+// This defines the precise position and rotation for each of the 7 segments.
+// They are all relative to the center of the digit.
+const SEGMENT_TRANSFORMS: Record<string, string> = {
+  a: "translate(0, -32)",
+  b: "translate(20, -16) rotate(90)",
+  c: "translate(20, 16) rotate(90)",
+  d: "translate(0, 32)",
+  e: "translate(-20, 16) rotate(90)",
+  f: "translate(-20, -16) rotate(90)",
+  g: "translate(0, 0)",
 };
+
+// The master path for a single segment, centered at the origin (0,0).
+// This is based on your hand-drawn path, but centered for easy rotation.
+const MASTER_SEGMENT_PATH = "M-27.2 -6.5 L-24.1 -3.5 L24.1 -3.5 L27.2 -6.5 L17.4 6.5 L-17.6 6.5 Z";
 
 
 export function SegmentRenderer({
   text,
   x = 0,
   y = 0,
-  w,
-  h,
-  digitSpacing = w * 0.05,
+  digitHeight = 80, // Control size with a single height property
 }: {
   text: string;
   x?: number;
   y?: number;
-  w: number;
-  h: number;
-  digitSpacing?: number;
+  digitHeight?: number;
 }) {
   const chars = text.toUpperCase().split('');
-  const numDigits = chars.length;
-  const digitWidth = (w - (numDigits - 1) * digitSpacing) / numDigits;
 
-  // Calculate scaling factors based on our 100x200 unit paths
-  const scaleX = digitWidth / 100;
-  const scaleY = h / 200;
+  // The natural size of our blueprint digit is ~77 units tall.
+  // Calculate a single, uniform scale factor.
+  const scale = digitHeight / 77;
+  
+  // The width of a single digit is determined by its height and natural aspect ratio.
+  const digitWidth = 54.4 * scale;
+  const digitSpacing = digitWidth * 0.2;
 
   return (
     <g transform={`translate(${x},${y})`}>
+      <defs>
+        {/* Define our master segment shape once */}
+        <path id="master-segment" d={MASTER_SEGMENT_PATH} />
+      </defs>
+
       {chars.map((char, i) => {
         const activeSegments = SEVEN_SEGMENT_MAP[char] || [];
         const charX = i * (digitWidth + digitSpacing);
 
         return (
-          // Group for each character, applying position, scale, and slant
+          // This group positions the entire digit and applies the final scale and slant.
           <g
             key={i}
-            transform={`translate(${charX}, 0) scale(${scaleX} ${scaleY}) skewX(0)`}
+            transform={`translate(${charX + digitWidth / 2}, ${digitHeight / 2}) scale(${scale}) skewX(-5)`}
           >
-            {Object.entries(SEGMENT_PATHS).map(([segmentKey, pathData]) => (
-              <path
+            {activeSegments.map((segmentKey) => (
+              // For each active segment, stamp a copy of the master path
+              // and apply its specific position/rotation from the blueprint.
+              <use
                 key={segmentKey}
-                d={pathData}
-                fill={activeSegments.includes(segmentKey) ? 'black' : 'none'}
+                href="#master-segment"
+                transform={SEGMENT_TRANSFORMS[segmentKey]}
+                fill={'#202020ff'}
               />
             ))}
           </g>
@@ -207,8 +220,7 @@ export default function PhotoCalculatorAuth({
         )}
         {specialMsg ? (
           <g style={{ opacity: faded ? 0.15 : 1, transition: "opacity 2s" }}>
-            <SegmentRenderer text={specialMsg} x={LCD.x} y={LCD.y} w={LCD.w} h={LCD.h} />
-          </g>
+          <SegmentRenderer text={specialMsg} x={LCD.x + 10} y={LCD.y + 5} digitHeight={LCD.h * 0.9} />          </g>
         ) : (
           <g style={{ opacity: faded ? 0.15 : 1, transition: "opacity 2s" }}>
             <text
