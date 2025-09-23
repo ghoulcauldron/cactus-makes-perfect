@@ -166,7 +166,7 @@ function SegmentRenderer({ text, x, y, w, h }: { text: string; x: number; y: num
 
 export default function PhotoCalculatorAuth({
   imgSrc = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/calculatorHand.png",        // or your Supabase URL
-  DEBUG = false,                     // set true to see hotspot outlines
+  DEBUG = true,                     // set true to see hotspot outlines
 }: { imgSrc?: string; DEBUG?: boolean }) {
   const url = new URL(window.location.href);
   const email = url.searchParams.get("email") || "your email";
