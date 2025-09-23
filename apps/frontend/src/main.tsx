@@ -7,6 +7,7 @@ import RSVP from './routes/guest/rsvp/RSVP'
 import ProtectedRoute from './routes/ProtectedRoute'
 import './index.css'
 import PhotoCalculatorAuth from './routes/guest/login/PhotoCalculatorAuth'
+import './fonts.css';
 
 const DEBUG = true;
 

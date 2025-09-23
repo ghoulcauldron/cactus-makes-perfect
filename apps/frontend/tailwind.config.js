@@ -16,7 +16,8 @@ export default {
       fontFamily: {
         display: ["'Raleway'", "sans-serif"],
         body: ["'Inter'", "sans-serif"],
-        segment: ['"Share Tech Mono"', 'monospace']
+        segment: ['"Share Tech Mono"', 'monospace'],
+        lcd: ['"LCD14"', 'monospace'],
       }
     }
   },

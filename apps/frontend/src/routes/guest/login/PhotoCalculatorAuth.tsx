@@ -107,25 +107,20 @@ export default function PhotoCalculatorAuth({
             y={LCD.y}
             width={LCD.w}
             height={LCD.h}
-            fill="rgba(0,255,0,0.10)"
-            stroke="rgba(0,128,0,0.5)"
-            strokeWidth="0.6"
+            fill="rgba(0,255,0,0.25)"
+            stroke="rgba(0,200,0,0.9)"
+            strokeWidth="1"
             rx="1.5"
           />
         )}
-        <rect
-          x={LCD.x} y={LCD.y} width={LCD.w} height={LCD.h}
-          fill="rgba(0,0,0,0.35)" rx="1.5"
-        />
         <text
           x={LCD.x + LCD.w - 1.5}
           y={LCD.y + LCD.h - 1.8}
           textAnchor="end"
-          className="fill-[var(--neon,#ff49c3)]"
           style={{
-            fontFamily: '"Share Tech Mono", monospace',
+            fontFamily: '"LCD14", monospace',
             fontSize: `${LCD.h * 0.9}px`,
-            filter: "drop-shadow(0 0 6px rgba(255,73,195,.6))",
+            fill: "#A9A9A9",
           }}
         >
           {code || "58008"}
