@@ -17,7 +17,7 @@ export default {
         display: ["'Raleway'", "sans-serif"],
         body: ["'Inter'", "sans-serif"],
         segment: ['"Share Tech Mono"', 'monospace'],
-        lcd: ['"LCD14"', 'monospace'],
+        lcd: ['"DSEG7Classic"', 'monospace'],
       }
     }
   },

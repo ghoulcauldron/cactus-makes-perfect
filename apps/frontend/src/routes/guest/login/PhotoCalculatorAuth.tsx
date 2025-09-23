@@ -36,7 +36,7 @@ const KEYS: KeyDef[] = [
 ];
 
 export default function PhotoCalculatorAuth({
-  imgSrc = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/DSEG7Classic-Bold.ttf",        // or your Supabase URL
+  imgSrc = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/calculatorHand.png",        // or your Supabase URL
   DEBUG = true,                     // set true to see hotspot outlines
 }: { imgSrc?: string; DEBUG?: boolean }) {
   const url = new URL(window.location.href);
@@ -118,7 +118,7 @@ export default function PhotoCalculatorAuth({
           y={LCD.y + LCD.h - 1.8}
           textAnchor="end"
           style={{
-            fontFamily: '"LCD14", monospace',
+            fontFamily: '"DSEG7Classic", monospace',
             fontSize: `${LCD.h * 0.9}px`,
             fill: "#202020ff",
           }}
