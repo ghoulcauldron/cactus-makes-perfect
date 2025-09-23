@@ -18,9 +18,9 @@ const KEYS: KeyDef[] = [
   { id: "9", label: "9", x: 1095, y: 772, w: 110, h: 70, kind: "digit" },
 
   // Row 2
-  { id: "4", label: "4", x: 845, y: 950, w: 110, h: 70, kind: "digit" },
-  { id: "5", label: "5", x: 970, y: 945, w: 110, h: 70, kind: "digit" },
-  { id: "6", label: "6", x: 1095, y: 942, w: 110, h: 70, kind: "digit" },
+  { id: "4", label: "4", x: 845, y: 910, w: 110, h: 70, kind: "digit" },
+  { id: "5", label: "5", x: 970, y: 905, w: 110, h: 70, kind: "digit" },
+  { id: "6", label: "6", x: 1095, y: 902, w: 110, h: 70, kind: "digit" },
 
   // Row 3
   { id: "1", label: "1", x: 845, y: 1020, w: 110, h: 70, kind: "digit" },
