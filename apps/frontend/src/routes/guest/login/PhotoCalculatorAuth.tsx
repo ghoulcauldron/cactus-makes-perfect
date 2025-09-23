@@ -37,7 +37,7 @@ const KEYS: KeyDef[] = [
 
 export default function PhotoCalculatorAuth({
   imgSrc = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/DSEG7Classic-Bold.ttf",        // or your Supabase URL
-  DEBUG = false,                     // set true to see hotspot outlines
+  DEBUG = true,                     // set true to see hotspot outlines
 }: { imgSrc?: string; DEBUG?: boolean }) {
   const url = new URL(window.location.href);
   const email = url.searchParams.get("email") || "your email";
@@ -84,18 +84,18 @@ export default function PhotoCalculatorAuth({
   return (
     <div className="w-screen h-screen bg-cactus-sand relative overflow-hidden">
       <svg
-        viewBox="0 0 100 100" // percent-based layout space
-        preserveAspectRatio="xMidYMid meet"
-        className="w-full h-full select-none"
+        className="absolute inset-0 w-full h-full"
+        viewBox="0 0 2236 1440"
+        preserveAspectRatio="xMidYMid slice"
       >
         {/* Background photo */}
         <image
           href={imgSrc}              // ✅ keep using Supabase URL
           x="0"
           y="0"
-          width="100%"
-          height="100%"
-          preserveAspectRatio="xMidYMid meet"
+          width="2236"
+          height="1440"
+          preserveAspectRatio="xMidYMid slice"
           crossOrigin="anonymous"
         />
 
