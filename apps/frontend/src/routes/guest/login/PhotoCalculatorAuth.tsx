@@ -336,6 +336,17 @@ export default function PhotoCalculatorAuth({
         ))}
 
         {/* Solar panel hotspot */}
+        {DEBUG && (
+          <rect
+            x={750}
+            y={160}
+            width={250}
+            height={60}
+            fill="rgba(0,255,0,0.15)"
+            stroke="rgba(0,128,0,0.4)"
+            strokeWidth="0.25"
+          />
+        )}
         <rect
           x={750} y={160} width={250} height={60}
           fill="transparent"
