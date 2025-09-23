@@ -98,7 +98,7 @@ export function SegmentRenderer({
           // This group positions the entire digit and applies the final scale and slant.
           <g
             key={i}
-            transform={`translate(${charX + digitWidth / 2}, ${digitHeight / 2}) scale(${scale}) skewX(-5)`}
+            transform={`translate(${charX + digitWidth / 2}, ${digitHeight / 2}) scale(${scale}) skewX(0)`}
           >
             {activeSegments.map((segmentKey) => (
               // For each active segment, stamp a copy of the master path
