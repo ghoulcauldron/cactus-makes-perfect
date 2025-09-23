@@ -90,12 +90,16 @@ function SegmentRenderer({ text, x, y, w, h }: { text: string; x: number; y: num
 
         return (
           <g key={i} transform={`translate(${cx},0)`} aria-label={`Character ${ch}`}>
-            {/* Segment a: top horizontal */}
-            <rect
-              x={segThickness}
-              y={0}
-              width={segLengthH}
-              height={segThickness}
+            {/* Segment a: top horizontal as polygon trapezoid */}
+            <polygon
+              points={`
+                ${segThickness} 0,
+                ${segLengthH} 0,
+                ${segLengthH + segThickness * 0.5} ${segThickness},
+                ${segLengthH} ${2 * segThickness},
+                ${segThickness} ${2 * segThickness},
+                ${segThickness * 0.5} ${segThickness}
+              `}
               fill={activeSegments.includes("a") ? "#2a2a2a" : "none"}
             />
             {/* Segment b: top-right vertical */}
