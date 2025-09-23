@@ -92,7 +92,7 @@ export default function PhotoCalculatorAuth({
           className="w-full h-auto select-none"
         >
           {/* Background photo */}
-            <image
+          <image
             href={imgSrc}              // ✅ keep using Supabase URL
             x="0"
             y="0"
@@ -100,7 +100,7 @@ export default function PhotoCalculatorAuth({
             height="100%"
             preserveAspectRatio="xMidYMid meet"
             crossOrigin="anonymous"
-            />
+          />
 
           {/* LCD display text */}
           <rect
@@ -125,13 +125,13 @@ export default function PhotoCalculatorAuth({
           {KEYS.map((k) => (
             <g key={k.id}>
               {/* Optional outlines for tuning */}
-              {DEBUG && (
+              {DEBUG ? (
                 <rect
                   x={k.x} y={k.y} width={k.w} height={k.h}
                   fill="rgba(0,255,0,0.15)"
                   stroke="rgba(0,0,0,0.4)" strokeWidth="0.25"
                 />
-              )}
+              ) : null}
               {/* Actual clickable area */}
               <rect
                 x={k.x} y={k.y} width={k.w} height={k.h}
