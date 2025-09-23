@@ -39,7 +39,7 @@ const KEYS: KeyDef[] = [
 ];
 
 function SegmentRenderer({ text, x, y, w, h }: { text: string; x: number; y: number; w: number; h: number }) {
-  // Define 7 segments polygons relative to a cell bounding box (0,0,w,h)
+  // Define 7 segments as capsule-style rects with rounded ends
   // Segment order: a,b,c,d,e,f,g
   // a: top horizontal
   // b: top-right vertical
@@ -49,69 +49,32 @@ function SegmentRenderer({ text, x, y, w, h }: { text: string; x: number; y: num
   // f: top-left vertical
   // g: middle horizontal
 
-  // We'll define each segment as a polygon with points relative to the box
-  // We'll define a thickness for segments as a fraction of height and width
-  const segThickness = Math.min(w, h) * 0.15;
-  const segLengthH = w - 2 * segThickness;
-  const segLengthV = h / 2 - 1.5 * segThickness;
+  const segThickness = h * 0.25;
+  const segLengthH = w / (text.length + 0.5) - segThickness * 1.5;
+  const segLengthV = h / 2 - segThickness * 0.75;
 
-  // Each segment polygon points are defined clockwise
+  // Each segment position relative to a digit cell of width digitWidth and height h
+  // We'll compute digitWidth as w / (chars.length + 0.5)
+  const chars = text.toUpperCase().split("");
+  const digitWidth = w / (chars.length + 0.5);
 
-  const segmentsPoints = {
-    a: [
-      [segThickness, 0],
-      [segThickness + segLengthH, 0],
-      [segThickness + segLengthH - segThickness / 2, segThickness / 2],
-      [segThickness + segThickness / 2, segThickness / 2],
-    ],
-    b: [
-      [w, segThickness],
-      [w, segThickness + segLengthV],
-      [w - segThickness / 2, segThickness + segLengthV - segThickness / 2],
-      [w - segThickness / 2, segThickness + segThickness / 2],
-    ],
-    c: [
-      [w, h / 2 + segThickness / 2],
-      [w, h / 2 + segLengthV + segThickness / 2],
-      [w - segThickness / 2, h / 2 + segLengthV],
-      [w - segThickness / 2, h / 2 + segThickness],
-    ],
-    d: [
-      [segThickness, h],
-      [segThickness + segLengthH, h],
-      [segThickness + segLengthH - segThickness / 2, h - segThickness / 2],
-      [segThickness + segThickness / 2, h - segThickness / 2],
-    ],
-    e: [
-      [0, h / 2 + segThickness / 2],
-      [0, h / 2 + segLengthV + segThickness / 2],
-      [segThickness / 2, h / 2 + segLengthV],
-      [segThickness / 2, h / 2 + segThickness],
-    ],
-    f: [
-      [0, segThickness],
-      [0, segThickness + segLengthV],
-      [segThickness / 2, segThickness + segLengthV - segThickness / 2],
-      [segThickness / 2, segThickness + segThickness / 2],
-    ],
-    g: [
-      [segThickness, h / 2],
-      [segThickness + segLengthH, h / 2],
-      [segThickness + segLengthH - segThickness / 2, h / 2 + segThickness / 2],
-      [segThickness + segThickness / 2, h / 2 + segThickness / 2],
-      [segThickness + segThickness / 2, h / 2 - segThickness / 2],
-      [segThickness + segLengthH - segThickness / 2, h / 2 - segThickness / 2],
-    ],
-  };
+  // Mapping segments to positions and sizes within digit cell
+  // Horizontal segments: a, d, g
+  // Vertical segments: b, c, e, f
+
+  // Segment positions are relative to digit origin (0,0)
+  // a: top horizontal bar
+  // b: top-right vertical bar
+  // c: bottom-right vertical bar
+  // d: bottom horizontal bar
+  // e: bottom-left vertical bar
+  // f: top-left vertical bar
+  // g: middle horizontal bar
+
+  // We'll define each segment as a <rect> with rx and ry for rounded ends
 
   // Map characters to active segments
-  // Y: f b g c d
-  // S: a f g c d
-  // O: a b c d e f
-  // L: f e d
-  // Other chars: no segments active (empty)
-
-  const charToSegments: Record<string, (keyof typeof segmentsPoints)[]> = {
+  const charToSegments: Record<string, (keyof typeof segments)[]> = {
     Y: ["f", "b", "g", "c", "d"],
     S: ["a", "f", "g", "c", "d"],
     O: ["a", "b", "c", "d", "e", "f"],
@@ -121,45 +84,95 @@ function SegmentRenderer({ text, x, y, w, h }: { text: string; x: number; y: num
     E: ["a", "f", "g", "e", "d"],
   };
 
-  // We'll render each character spaced evenly horizontally within the total width w
-  // Calculate cell width per char
-  const chars = text.toUpperCase().split("");
-  const cellWidth = w / chars.length;
+  // We'll define segments object here to get typings
+  const segments = {
+    a: true,
+    b: true,
+    c: true,
+    d: true,
+    e: true,
+    f: true,
+    g: true,
+  };
 
   return (
     <g transform={`translate(${x},${y})`} aria-label={`LCD display: ${text}`}>
       {chars.map((ch, i) => {
         const activeSegments = charToSegments[ch] || [];
-        const cx = cellWidth * i;
-        const cy = 0;
+        const cx = i * digitWidth;
+
         return (
-          <g key={i} transform={`translate(${cx},${cy})`} aria-label={`Character ${ch}`}>
-            {Object.entries(segmentsPoints).map(([seg, points]) => {
-              const isActive = activeSegments.includes(seg as keyof typeof segmentsPoints);
-              const pointsStr = points.map(p => p.join(",")).join(" ");
-              return (
-                <polygon
-                  key={seg}
-                  points={pointsStr}
-                  fill={isActive ? "currentColor" : "none"}
-                  stroke={isActive ? "currentColor" : "none"}
-                  strokeWidth={isActive ? segThickness / 3 : 0}
-                />
-              );
-            })}
-            {/* If no active segments, render a faint rectangle as placeholder */}
-            {activeSegments.length === 0 && (
-              <rect
-                x={segThickness / 2}
-                y={segThickness / 2}
-                width={cellWidth - segThickness}
-                height={h - segThickness}
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={1}
-                opacity={0.1}
-              />
-            )}
+          <g key={i} transform={`translate(${cx},0)`} aria-label={`Character ${ch}`}>
+            {/* Segment a: top horizontal */}
+            <rect
+              x={segThickness / 2}
+              y={0}
+              width={segLengthH}
+              height={segThickness}
+              rx={segThickness / 2}
+              ry={segThickness / 2}
+              fill={activeSegments.includes("a") ? "#2a2a2a" : "none"}
+            />
+            {/* Segment b: top-right vertical */}
+            <rect
+              x={segLengthH + segThickness / 2}
+              y={segThickness / 2}
+              width={segThickness}
+              height={segLengthV}
+              rx={segThickness / 2}
+              ry={segThickness / 2}
+              fill={activeSegments.includes("b") ? "#2a2a2a" : "none"}
+            />
+            {/* Segment c: bottom-right vertical */}
+            <rect
+              x={segLengthH + segThickness / 2}
+              y={segLengthV + segThickness}
+              width={segThickness}
+              height={segLengthV}
+              rx={segThickness / 2}
+              ry={segThickness / 2}
+              fill={activeSegments.includes("c") ? "#2a2a2a" : "none"}
+            />
+            {/* Segment d: bottom horizontal */}
+            <rect
+              x={segThickness / 2}
+              y={h - segThickness}
+              width={segLengthH}
+              height={segThickness}
+              rx={segThickness / 2}
+              ry={segThickness / 2}
+              fill={activeSegments.includes("d") ? "#2a2a2a" : "none"}
+            />
+            {/* Segment e: bottom-left vertical */}
+            <rect
+              x={0}
+              y={segLengthV + segThickness}
+              width={segThickness}
+              height={segLengthV}
+              rx={segThickness / 2}
+              ry={segThickness / 2}
+              fill={activeSegments.includes("e") ? "#2a2a2a" : "none"}
+            />
+            {/* Segment f: top-left vertical */}
+            <rect
+              x={0}
+              y={segThickness / 2}
+              width={segThickness}
+              height={segLengthV}
+              rx={segThickness / 2}
+              ry={segThickness / 2}
+              fill={activeSegments.includes("f") ? "#2a2a2a" : "none"}
+            />
+            {/* Segment g: middle horizontal */}
+            <rect
+              x={segThickness / 2}
+              y={h / 2 - segThickness / 2}
+              width={segLengthH}
+              height={segThickness}
+              rx={segThickness / 2}
+              ry={segThickness / 2}
+              fill={activeSegments.includes("g") ? "#2a2a2a" : "none"}
+            />
           </g>
         );
       })}
