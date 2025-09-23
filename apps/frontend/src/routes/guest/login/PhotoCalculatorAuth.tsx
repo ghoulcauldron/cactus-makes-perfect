@@ -51,7 +51,7 @@ const SEVEN_SEGMENT_MAP: Record<string, string[]> = {
 const MASTER_PATHS = {
   a: "M -24.5 -2.5 L -21.5 -5.5 L 21.5 -5.5 L 24.5 -2.5 L 16.5 5.5 L -15.5 5.5 Z",
   b: "M 0 19 L -6 13 L -6 -14 L 3 -23 L 6 -20 L 6 19 Z",
-  g: "M -22 0 L -19 -5.5 L 19 -5.5 L 22 0 L 19 5.5 L -19 5.5 Z",
+  g: "M 32 -8 L 0 -8 L -6 -14 L 0 -20 L 31 -20 L 37 -14 Z",
 };
 
 // 2. Define the blueprint for a complete digit. This version has adjusted translate
