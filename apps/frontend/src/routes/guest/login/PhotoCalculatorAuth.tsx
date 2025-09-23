@@ -5,15 +5,15 @@ type KeyDef =
   | { id: string; label: string; x: number; y: number; w: number; h: number; kind: "digit" | "submit" | "clear" };
 
 const LCD = {
-  x: 890,  // left edge of LCD
-  y: 220,  // top edge
-  w: 480,  // width
+  x: 885,  // left edge of LCD
+  y: 230,  // top edge
+  w: 450,  // width
   h: 90,  // height
 };
 
 const KEYS: KeyDef[] = [
   // Row 1
-  { id: "7", label: "7", x: 850, y: 830, w: 75, h: 50, kind: "digit" },
+  { id: "7", label: "7", x: 845, y: 800, w: 85, h: 60, kind: "digit" },
   { id: "8", label: "8", x: 38, y: 48, w: 12, h: 9, kind: "digit" },
   { id: "9", label: "9", x: 54, y: 48, w: 12, h: 9, kind: "digit" },
 
