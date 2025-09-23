@@ -13,3 +13,6 @@ h1, h2, h3, h4 {
 button {
   @apply rounded-lg px-4 py-2 bg-cactus-green text-white hover:bg-cactus-green/80;
 }
+
+/* simple text-glow helper */
+.glow-neon { text-shadow: 0 0 8px rgba(255, 73, 195, 0.65); }

@@ -61,56 +61,55 @@ export default function CalculatorAuth() {
     };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-cactus-sand relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-cactus-sand relative overflow-hidden">
       {/* risograph grain overlay */}
       <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/asfalt-dark.png')] opacity-10"></div>
 
-      <div className="z-10 w-full max-w-md mx-auto text-center px-6 py-10">
-        <h1 className="text-4xl font-display text-cactus-green drop-shadow-sm mb-2">
-          Enter Your Code
-        </h1>
-        <p className="text-sm text-gray-700 mb-6">
-          We sent a code to <span className="font-bold">{email}</span>
-        </p>
-
-        {/* code display */}
-        <div className="flex justify-center gap-2 mb-8">
-          {[...Array(6)].map((_, i) => (
-            <div
-              key={i}
-              className={`w-10 h-14 rounded-md border-2 flex items-center justify-center text-2xl font-mono 
-              ${i < code.length ? "bg-sunset border-sunset text-white" : "border-cactus-green bg-white"}`}
-            >
-              {code[i] || ""}
+      <div className="relative z-10 w-[350px] rounded-3xl bg-cactus-green/10 backdrop-blur-sm shadow-2xl">
+        <div className="border-8 border-cactus-green rounded-3xl p-6">
+          <div className="bg-cactus-green rounded-2xl p-8 flex flex-col items-center">
+            <div className="w-full mb-6">
+              <div className="flex justify-center gap-3">
+                {[...Array(6)].map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-12 h-16 rounded-lg border-4 flex items-center justify-center text-3xl font-mono 
+                      ${i < code.length ? "bg-sunset border-sunset text-white" : "border-cactus-green bg-white"}`}
+                  >
+                    {code[i] || ""}
+                  </div>
+                ))}
+              </div>
+              <p className="mt-4 text-center text-sm text-cactus-green/80">
+                Code sent to <span className="font-semibold">{email}</span>
+              </p>
             </div>
-          ))}
-        </div>
 
-        {/* existing calculator UI */}
-        <InvalidCodeModal show={showInvalid} onClose={() => setShowInvalid(false)} />
-
-        {/* keypad */}
-        <div className="grid grid-cols-3 gap-4">
-          {DIGITS.map((d) => (
-            <button
-              key={d}
-              disabled={submitting}
-              onClick={() => press(d)}
-              className={`aspect-square flex items-center justify-center text-3xl font-bold rounded-2xl shadow-md 
-                transition-transform transform active:scale-95
-                ${
-                  d === "✓"
-                    ? "bg-cactus-green text-white hover:bg-cactus-green/80"
-                    : d === "←"
-                    ? "bg-sky text-white hover:bg-sky/80"
-                    : "bg-sunset text-white hover:bg-sunset/80"
-                }`}
-            >
-              {d}
-            </button>
-          ))}
+            <div className="grid grid-cols-3 gap-4 w-full">
+              {DIGITS.map((d) => (
+                <button
+                  key={d}
+                  disabled={submitting}
+                  onClick={() => press(d)}
+                  className={`aspect-square flex items-center justify-center text-3xl font-bold rounded-2xl shadow-md 
+                    transition-transform transform active:scale-95
+                    ${
+                      d === "✓"
+                        ? "bg-cactus-green text-white hover:bg-cactus-green/80"
+                        : d === "←"
+                        ? "bg-sky text-white hover:bg-sky/80"
+                        : "bg-sunset text-white hover:bg-sunset/80"
+                    }`}
+                >
+                  {d}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
+
+      {showInvalid && <InvalidCodeModal show={showInvalid} onClose={() => setShowInvalid(false)} />}
     </div>
   );
 }
