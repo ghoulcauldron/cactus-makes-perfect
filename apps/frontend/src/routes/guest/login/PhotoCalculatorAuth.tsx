@@ -35,7 +35,7 @@ const KEYS: KeyDef[] = [
   { id: "equals", label: "=", x: 1275, y: 980, w: 110, h: 180, kind: "submit" },
 
   // MRC button (coordinates to be filled)
-  { id: "mrc", label: "MRC", x: 842, y: 673, w: 110, h: 70, kind: "delete" },
+  { id: "mrc", label: "MRC", x: 842, y: 671, w: 110, h: 70, kind: "delete" },
 ];
 
 /* 
