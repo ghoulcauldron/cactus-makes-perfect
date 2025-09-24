@@ -38,6 +38,7 @@ const KEYS: KeyDef[] = [
   { id: "mrc", label: "MRC", x: 842, y: 680, w: 110, h: 70, kind: "delete" },
 ];
 
+/* 
 // The map of which segments are active for each character
 const SEVEN_SEGMENT_MAP: Record<string, string[]> = {
   ' ': [], '0': ['a','b','c','d','e','f'], '1': ['b','c'], '2': ['a','b','g','e','d'], '3': ['a','b','g','c','d'], '4': ['f','g','b','c'], '5': ['a','f','g','c','d'], '6': ['a','f','g','c','d','e'], '7': ['a','b','c'], '8': ['a','b','c','d','e','f','g'], '9': ['a','b','c','d','f','g'], 'L': ['f','e','d'], 'O': ['a','b','c','d','e','f'], 'N': ['a','b','c','e','f'], 'P':['a','b','g','e','f'], 'E': ['a','f','g','e','d'], 'S': ['a','f','g','c','d'], 'Y': ['f','b','g','c','d'],
@@ -64,9 +65,9 @@ const SEGMENT_BLUEPRINT: Record<string, { pathId: keyof typeof MASTER_PATHS; tra
   f: { pathId: 'b', transform: "translate(-28, 0)" },
   g: { pathId: 'g', transform: "translate(0, 0)" },
 };
+*/
 
-
-export function SegmentRenderer({
+/*export function SegmentRenderer({
   text,
   x = 0,
   y = 0,
@@ -89,39 +90,38 @@ export function SegmentRenderer({
   return (
     <g transform={`translate(${x},${y})`}>
       <defs>
-        {/* Define our master segment shapes once */}
-        <path id="master-path-a" d={MASTER_PATHS.a} />
-        <path id="master-path-b" d={MASTER_PATHS.b} />
-        <path id="master-path-g" d={MASTER_PATHS.g} />
-      </defs>
+//         <path id="master-path-a" d={MASTER_PATHS.a} />
+//         <path id="master-path-b" d={MASTER_PATHS.b} />
+//         <path id="master-path-g" d={MASTER_PATHS.g} />
+//       </defs>
 
-      {chars.map((char, i) => {
-        const activeSegments = SEVEN_SEGMENT_MAP[char] || [];
-        const charCenterX = i * (digitWidth + digitSpacing) + digitWidth / 2;
-        const charCenterY = digitHeight / 2;
+//       {chars.map((char, i) => {
+//         const activeSegments = SEVEN_SEGMENT_MAP[char] || [];
+//         const charCenterX = i * (digitWidth + digitSpacing) + digitWidth / 2;
+//         const charCenterY = digitHeight / 2;
 
-        return (
-          <g
-            key={i}
-            transform={`translate(${charCenterX}, ${charCenterY}) scale(${scale}) skewX(0)`}
-          >
-            {activeSegments.map((segmentKey) => {
-              const blueprint = SEGMENT_BLUEPRINT[segmentKey as keyof typeof SEGMENT_BLUEPRINT];
-              return (
-                <use
-                  key={segmentKey}
-                  href={`#master-path-${blueprint.pathId}`}
-                  transform={blueprint.transform}
-                  fill={'#202020ff'}
-                />
-              );
-            })}
-          </g>
-        );
-      })}
-    </g>
-  );
-}
+//         return (
+//           <g
+//             key={i}
+//             transform={`translate(${charCenterX}, ${charCenterY}) scale(${scale}) skewX(0)`}
+//           >
+//             {activeSegments.map((segmentKey) => {
+//               const blueprint = SEGMENT_BLUEPRINT[segmentKey as keyof typeof SEGMENT_BLUEPRINT];
+//               return (
+//                 <use
+//                   key={segmentKey}
+//                   href={`#master-path-${blueprint.pathId}`}
+//                   transform={blueprint.transform}
+//                   fill={'#202020ff'}
+//                 />
+//               );
+//             })}
+//           </g>
+//         );
+//       })}
+//     </g>
+//   );
+// }*/
 
 export default function PhotoCalculatorAuth({
   imgSrc = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/CalculatorHandPaintingCorrected.png",        // or your Supabase URL
@@ -222,25 +222,20 @@ export default function PhotoCalculatorAuth({
             rx="1.5"
           />
         )}
-        {specialMsg ? (
-          <g style={{ opacity: faded ? 0.15 : 1, transition: "opacity 2s" }}>
-          <SegmentRenderer text={specialMsg} x={LCD.x + 10} y={LCD.y + 5} digitHeight={LCD.h * 0.9} />          </g>
-        ) : (
-          <g style={{ opacity: faded ? 0.15 : 1, transition: "opacity 2s" }}>
-            <text
-              x={LCD.x + LCD.w - 1.5}
-              y={LCD.y + LCD.h - 1.8}
-              textAnchor="end"
-              style={{
-                fontFamily: '"DSEG7Classic", monospace',
-                fontSize: `${LCD.h * 0.9}px`,
-                fill: "#202020ff",
-              }}
-            >
-              {code || "58008"}
-            </text>
-          </g>
-        )}
+        <g style={{ opacity: faded ? 0.15 : 1, transition: "opacity 2s" }}>
+          <text
+            x={LCD.x + LCD.w - 1.5}
+            y={LCD.y + LCD.h - 1.8}
+            textAnchor="end"
+            style={{
+              fontFamily: '"DSEG7Classic", monospace',
+              fontSize: `${LCD.h * 0.9}px`,
+              fill: "#202020ff",
+            }}
+          >
+            {specialMsg || code || "58008"}
+          </text>
+        </g>
 
         {/* Hotspots */}
         {KEYS.map((k) => (
