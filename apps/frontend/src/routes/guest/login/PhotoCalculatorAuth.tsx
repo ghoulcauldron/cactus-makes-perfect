@@ -124,7 +124,7 @@ export function SegmentRenderer({
 }
 
 export default function PhotoCalculatorAuth({
-  imgSrc = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/calculatorHand.png",        // or your Supabase URL
+  imgSrc = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/CalculatorHandPainting.png",        // or your Supabase URL
   DEBUG = true,                     // set true to see hotspot outlines
 }: { imgSrc?: string; DEBUG?: boolean }) {
   const url = new URL(window.location.href);
