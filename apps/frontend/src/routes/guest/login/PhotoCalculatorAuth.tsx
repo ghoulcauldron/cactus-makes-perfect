@@ -354,8 +354,8 @@ export default function PhotoCalculatorAuth({
         {/* Solar panel hotspot (with fade + LOL easter egg) */}
         {DEBUG && (
           <rect
-            x={830}
-            y={430}
+            x={840}
+            y={420}
             width={265}
             height={80}
             fill="rgba(0,255,0,0.15)"
@@ -366,7 +366,7 @@ export default function PhotoCalculatorAuth({
           />
         )}
         <rect
-          x={830} y={430} width={265} height={80}
+          x={840} y={420} width={265} height={80}
           fill="transparent"
           style={{ cursor: "pointer", userSelect: "none", WebkitUserSelect: "none" }}
           onPointerDown={() => {
