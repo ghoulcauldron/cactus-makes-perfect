@@ -105,8 +105,10 @@ export default function PhotoCalculatorAuth({
         setCleared(false);
         setWaitingForNext(false);
       } else {
-        // prevent overflowing
-        if ((display || "").length < 12) setDisplay((s) => (s || "") + d);
+        // ✅ limit to 7 characters
+    setDisplay((s) =>
+      s && s.length < 7 ? s + key.label : s
+    );
       }
       return;
     }
