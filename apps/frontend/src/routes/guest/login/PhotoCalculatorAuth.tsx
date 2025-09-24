@@ -36,9 +36,9 @@ const KEYS: KeyDef[] = [
   { id: "equals", label: "=", x: 1277, y: 980, w: 108, h: 180, kind: "submit" },
 
   // Row above MRC
-  { id: "sign", label: "+/-",   x: 970,  y: 671, w: 110, h: 70, kind: "op" },
-  { id: "sqrt", label: "√",     x: 1100, y: 671, w: 110, h: 70, kind: "op" },
-  { id: "percent", label: "%",  x: 1230, y: 671, w: 110, h: 70, kind: "op" },
+  { id: "sign", label: "+/-",   x: 842,  y: 565, w: 110, h: 70, kind: "op" },
+  { id: "sqrt", label: "√",     x: 973, y: 565, w: 110, h: 70, kind: "op" },
+  { id: "percent", label: "%",  x: 1097, y: 565, w: 110, h: 70, kind: "op" },
 
   // Same row as MRC
   { id: "mrc", label: "MRC", x: 842, y: 671, w: 110, h: 70, kind: "delete" },
