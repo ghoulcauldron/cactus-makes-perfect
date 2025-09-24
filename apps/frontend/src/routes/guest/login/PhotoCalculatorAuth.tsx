@@ -1,14 +1,14 @@
 import { useState, useRef } from "react";
 // import InvalidCodeModal from "./InvalidCodeModal";
 
-type KeyDef =
-  | { id: string; label: string; x: number; y: number; w: number; h: number; kind: "digit" | "submit" | "clear" | "delete" };
+type KeyKind = "digit" | "submit" | "clear" | "delete" | "op";
+type KeyDef = { id: string; label: string; x: number; y: number; w: number; h: number; kind: KeyKind };
 
 const LCD = {
-  x: 890,  // left edge of LCD
-  y: 227,  // top edge
-  w: 445,  // width
-  h: 83,  // height
+  x: 890,
+  y: 227,
+  w: 445,
+  h: 83,
 };
 
 const KEYS: KeyDef[] = [
@@ -36,153 +36,201 @@ const KEYS: KeyDef[] = [
   { id: "equals", label: "=", x: 1277, y: 980, w: 108, h: 180, kind: "submit" },
 
   // Row above MRC
-  { id: "sign", label: "+/-",   x: 842,  y: 565, w: 110, h: 70, kind: "op" },
-  { id: "sqrt", label: "√",     x: 973, y: 565, w: 110, h: 70, kind: "op" },
-  { id: "percent", label: "%",  x: 1100, y: 565, w: 110, h: 70, kind: "op" },
+  { id: "sign",    label: "+/-", x: 842, y: 565, w: 110, h: 70, kind: "op" },
+  { id: "sqrt",    label: "√",   x: 973, y: 565, w: 110, h: 70, kind: "op" },
+  { id: "percent", label: "%",   x: 1100, y: 565, w: 110, h: 70, kind: "op" },
 
   // Same row as MRC
-  { id: "mrc", label: "MRC", x: 842, y: 671, w: 110, h: 70, kind: "delete" },
+  { id: "mrc", label: "MRC", x: 842, y: 671, w: 110, h: 70, kind: "delete" }, // still backspace per your decision
   { id: "m-",  label: "M-",  x: 973, y: 671, w: 107, h: 70, kind: "op" },
   { id: "m+",  label: "M+",  x: 1100, y: 671, w: 107, h: 70, kind: "op" },
 
-  // Column next to big equals (right-hand side small ops)
-  { id: "op1", label: "+", x: 1277, y: 777, w: 110, h: 70, kind: "op" },
-  { id: "op2", label: "-", x: 1277, y: 880, w: 110, h: 70, kind: "op" },
-  { id: "op3", label: "×", x: 1277, y: 671, w: 110, h: 70, kind: "op" },
-  { id: "op4", label: "÷", x: 1277, y: 565,w: 110, h: 70, kind: "op" },
+  // Right-hand ops column
+  { id: "mul", label: "×", x: 1277, y: 671, w: 110, h: 70, kind: "op" },
+  { id: "div", label: "÷", x: 1277, y: 565, w: 110, h: 70, kind: "op" },
+  { id: "add", label: "+", x: 1277, y: 777, w: 110, h: 70, kind: "op" },
+  { id: "sub", label: "-", x: 1277, y: 880, w: 110, h: 70, kind: "op" },
 ];
 
-/* 
-// The map of which segments are active for each character
-const SEVEN_SEGMENT_MAP: Record<string, string[]> = {
-  ' ': [], '0': ['a','b','c','d','e','f'], '1': ['b','c'], '2': ['a','b','g','e','d'], '3': ['a','b','g','c','d'], '4': ['f','g','b','c'], '5': ['a','f','g','c','d'], '6': ['a','f','g','c','d','e'], '7': ['a','b','c'], '8': ['a','b','c','d','e','f','g'], '9': ['a','b','c','d','f','g'], 'L': ['f','e','d'], 'O': ['a','b','c','d','e','f'], 'N': ['a','b','c','e','f'], 'P':['a','b','g','e','f'], 'E': ['a','f','g','e','d'], 'S': ['a','f','g','c','d'], 'Y': ['f','b','g','c','d'],
-};
-
-// --- The New, More Accurate Blueprint System ---
-
-// 1. Define the 3 unique master paths, centered at the origin (0,0).
-// 'a' is your path, but centered. 'b' and 'g' are designed to match its style.
-const MASTER_PATHS = {
-  a: "M -24.5 -2.5 L -21.5 -5.5 L 21.5 -5.5 L 24.5 -2.5 L 16.5 5.5 L -15.5 5.5 Z",
-  b: "M 0 19 L -6 13 L -6 -14 L 3 -23 L 6 -20 L 6 19 Z",
-  g: "M 32 -8 L 0 -8 L -6 -14 L 0 -20 L 31 -20 L 37 -14 Z",
-};
-
-// 2. Define the blueprint for a complete digit. This version has adjusted translate
-// values to create the padding between the new segment shapes.
-const SEGMENT_BLUEPRINT: Record<string, { pathId: keyof typeof MASTER_PATHS; transform: string }> = {
-  a: { pathId: 'a', transform: "translate(0, -34)" },
-  b: { pathId: 'b', transform: "translate(28, 0)" },
-  c: { pathId: 'b', transform: "translate(28, 0) scale(1, -1)" }, // Reflected 'b'
-  d: { pathId: 'a', transform: "translate(0, 34) scale(1, -1)" }, // Reflected 'a'
-  e: { pathId: 'b', transform: "translate(-28, 0) scale(1, -1)" }, // Reflected 'b'
-  f: { pathId: 'b', transform: "translate(-28, 0)" },
-  g: { pathId: 'g', transform: "translate(0, 0)" },
-};
-*/
-
-/*export function SegmentRenderer({
-  text,
-  x = 0,
-  y = 0,
-  digitHeight = 80, // Control size with a single height property
-}: {
-  text: string;
-  x?: number;
-  y?: number;
-  digitHeight?: number;
-}) {
-  const chars = text.toUpperCase().split('');
-
-  // The natural height of our new blueprint digit is ~80 units.
-  const scale = digitHeight / 80;
-  
-  // The width is calculated from the height to maintain the aspect ratio.
-  const digitWidth = 60 * scale; // Adjusted width for new proportions
-  const digitSpacing = digitWidth * 0.25;
-
-  return (
-    <g transform={`translate(${x},${y})`}>
-      <defs>
-//         <path id="master-path-a" d={MASTER_PATHS.a} />
-//         <path id="master-path-b" d={MASTER_PATHS.b} />
-//         <path id="master-path-g" d={MASTER_PATHS.g} />
-//       </defs>
-
-//       {chars.map((char, i) => {
-//         const activeSegments = SEVEN_SEGMENT_MAP[char] || [];
-//         const charCenterX = i * (digitWidth + digitSpacing) + digitWidth / 2;
-//         const charCenterY = digitHeight / 2;
-
-//         return (
-//           <g
-//             key={i}
-//             transform={`translate(${charCenterX}, ${charCenterY}) scale(${scale}) skewX(0)`}
-//           >
-//             {activeSegments.map((segmentKey) => {
-//               const blueprint = SEGMENT_BLUEPRINT[segmentKey as keyof typeof SEGMENT_BLUEPRINT];
-//               return (
-//                 <use
-//                   key={segmentKey}
-//                   href={`#master-path-${blueprint.pathId}`}
-//                   transform={blueprint.transform}
-//                   fill={'#202020ff'}
-//                 />
-//               );
-//             })}
-//           </g>
-//         );
-//       })}
-//     </g>
-//   );
-// }*/
-
 export default function PhotoCalculatorAuth({
-  imgSrc = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/CalculatorHandPaintingCorrected.png",        // or your Supabase URL
-  DEBUG = true,                     // set true to see hotspot outlines
+  imgSrc = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/CalculatorHandPaintingCorrected.png",
+  DEBUG = true,
 }: { imgSrc?: string; DEBUG?: boolean }) {
   const url = new URL(window.location.href);
   const email = url.searchParams.get("email") || "your email";
 
-  const [code, setCode] = useState("");
+  /** ===== Calculator state ===== */
+  const [display, setDisplay] = useState<string>("");   // empty gives you the 58008 gag
+  const [acc, setAcc] = useState<number | null>(null);
+  const [op, setOp] = useState<null | "+" | "-" | "*" | "/">(null);
+  const [waitingForNext, setWaitingForNext] = useState(false);
+  const [hasOpUsed, setHasOpUsed] = useState(false);    // <- distinguishes auth vs calc on "="
+  const [memory, setMemory] = useState<number>(0);
+
+  /** ===== Existing UX bits ===== */
   const [submitting, setSubmitting] = useState(false);
   const [showInvalid, setShowInvalid] = useState(false);
   const [pressed, setPressed] = useState<string | null>(null);
-
   const [faded, setFaded] = useState(false);
   const solarTimer = useRef<number | null>(null);
   const [specialMsg, setSpecialMsg] = useState<string | null>(null);
+  const [cleared, setCleared] = useState(false); // ON/C → show "0" and arm first-digit overwrite
 
-  const [cleared, setCleared] = useState(false);
+  /** Helpers */
+  const curVal = () => parseFloat(display || "0");
+  const setVal = (n: number) => setDisplay(Number.isFinite(n) ? trimNum(n) : "Err");
+  const trimNum = (n: number) => {
+    const s = n.toString();
+    // Keep it simple: limit length so it fits LCD
+    return s.length > 12 ? n.toExponential(6) : s;
+  };
 
-  const press = (key: KeyDef) => {
-    if (submitting) return;
-    if (key.kind === "digit") {
-      if (cleared) {
-        setCode(key.label);
-        setCleared(false);
-      } else {
-        setCode((c) => (c.length < 6 ? c + key.label : c));
-      }
-    } else if (key.kind === "clear") {
-      setCode("0");
-      setCleared(true);
-    } else if (key.kind === "delete") {
-      setCode((c) => c.slice(0, -1));
-    } else if (key.kind === "submit") {
-      submit();
+  const doCompute = (a: number, b: number, operator: NonNullable<typeof op>) => {
+    switch (operator) {
+      case "+": return a + b;
+      case "-": return a - b;
+      case "*": return a * b;
+      case "/": return b === 0 ? NaN : a / b;
     }
   };
 
-  const submit = async () => {
-    if (code.length < 4) return;
+  /** Core button handler */
+  const press = (key: KeyDef) => {
+    if (submitting) return;
+
+    if (key.kind === "digit") {
+      const d = key.label;
+      if (cleared || waitingForNext || display === "Err") {
+        setDisplay(d);
+        setCleared(false);
+        setWaitingForNext(false);
+      } else {
+        // prevent overflowing
+        if ((display || "").length < 12) setDisplay((s) => (s || "") + d);
+      }
+      return;
+    }
+
+    if (key.kind === "clear" || key.id === "on") {
+      // ON/C behavior you asked for:
+      // show "0" but DO NOT append leading zero to next digit
+      setDisplay("0");
+      setCleared(true);
+      setAcc(null);
+      setOp(null);
+      setWaitingForNext(false);
+      setHasOpUsed(false);
+      setSpecialMsg(null);
+      return;
+    }
+
+    if (key.kind === "delete" || key.id === "mrc") {
+      // Backspace (per earlier choice)
+      if (!display || display === "0" || display === "Err") {
+        setDisplay("0");
+      } else {
+        const next = display.slice(0, -1);
+        setDisplay(next.length ? next : "0");
+      }
+      return;
+    }
+
+    if (key.kind === "op") {
+      switch (key.id) {
+        case "sign": {
+          if (display === "Err") return;
+          if (!display || display === "0") return;
+          setDisplay(display.startsWith("-") ? display.slice(1) : "-" + display);
+          return;
+        }
+        case "sqrt": {
+          const v = curVal();
+          if (v < 0) {
+            setDisplay("Err");
+          } else {
+            setVal(Math.sqrt(v));
+          }
+          setHasOpUsed(true);
+          setWaitingForNext(true);
+          return;
+        }
+        case "percent": {
+          // Simple %: value / 100
+          setVal(curVal() / 100);
+          setHasOpUsed(true);
+          setWaitingForNext(true);
+          return;
+        }
+        case "m+": {
+          setMemory((m) => m + curVal());
+          return;
+        }
+        case "m-": {
+          setMemory((m) => m - curVal());
+          return;
+        }
+        // arithmetic ops
+        case "add":
+        case "sub":
+        case "mul":
+        case "div": {
+          const opMap: Record<string, "+" | "-" | "*" | "/"> = {
+            add: "+",
+            sub: "-",
+            mul: "*",
+            div: "/",
+          };
+          const nextOp = opMap[key.id];
+          const v = curVal();
+
+          if (op !== null && acc !== null && !waitingForNext && display !== "Err") {
+            const result = doCompute(acc, v, op);
+            setAcc(result);
+            setVal(result);
+          } else {
+            setAcc(v);
+          }
+          setOp(nextOp);
+          setWaitingForNext(true);
+          setHasOpUsed(true);
+          return;
+        }
+        default:
+          return;
+      }
+    }
+
+    if (key.kind === "submit") {
+      onEquals();
+      return;
+    }
+  };
+
+  /** "=" pressed */
+  const onEquals = async () => {
+    // If ANY arithmetic op was used, compute.
+    if (hasOpUsed && acc !== null && op !== null && display !== "Err") {
+      const result = doCompute(acc, curVal(), op);
+      setVal(result);
+      setAcc(result);
+      setOp(null);
+      setWaitingForNext(true);
+      setHasOpUsed(false);
+      return;
+    }
+
+    // Otherwise fall back to AUTH flow (your original behavior)
+    // Only submit if it's at least 4 digits to avoid accidental hits.
+    const pass = (display || "").replace(/[^\d]/g, "");
+    if (pass.length < 4) return;
+
     setSubmitting(true);
     try {
       const token = url.searchParams.get("token") || "";
       const res = await fetch("/api/v1/auth/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, email, code }),
+        body: JSON.stringify({ token, email, code: pass }),
       });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
@@ -213,7 +261,7 @@ export default function PhotoCalculatorAuth({
       >
         {/* Background photo */}
         <image
-          href={imgSrc}              // ✅ keep using Supabase URL
+          href={imgSrc}
           x="0"
           y="0"
           width="2236"
@@ -222,8 +270,7 @@ export default function PhotoCalculatorAuth({
           crossOrigin="anonymous"
         />
 
-        {/* LCD display text */}
-        {/* Debug LCD outline */}
+        {/* LCD outline (debug) */}
         {DEBUG && (
           <rect
             x={LCD.x}
@@ -237,6 +284,8 @@ export default function PhotoCalculatorAuth({
             ry="8"
           />
         )}
+
+        {/* LCD text (fades with solar hold) */}
         <g style={{ opacity: faded ? 0.15 : 1, transition: "opacity 2s" }}>
           <text
             x={LCD.x + LCD.w - 1.5}
@@ -248,14 +297,13 @@ export default function PhotoCalculatorAuth({
               fill: "#202020",
             }}
           >
-            {specialMsg || code || "58008"}
+            {specialMsg || (display === "" ? "58008" : display)}
           </text>
         </g>
 
-        {/* Hotspots */}
+        {/* Button hotspots */}
         {KEYS.map((k) => (
           <g key={k.id}>
-            {/* Debug overlays for key mapping */}
             {DEBUG && (
               <>
                 <rect
@@ -266,8 +314,9 @@ export default function PhotoCalculatorAuth({
                   fill="rgba(0,255,0,0.15)"
                   stroke="rgba(0,128,0,0.4)"
                   strokeWidth="0.25"
+                  rx="6"
+                  ry="6"
                 />
-                {/* Small label with id and coords */}
                 <text
                   x={k.x + 0.6}
                   y={k.y + 2.5}
@@ -279,7 +328,7 @@ export default function PhotoCalculatorAuth({
                 </text>
               </>
             )}
-            {/* Actual clickable area */}
+
             <rect
               x={k.x} y={k.y} width={k.w} height={k.h}
               rx="1.2"
@@ -290,7 +339,7 @@ export default function PhotoCalculatorAuth({
               onPointerLeave={() => setPressed(null)}
               aria-label={k.label}
             />
-            {/* Press effect overlay */}
+
             {pressed === k.id && (
               <rect
                 x={k.x} y={k.y} width={k.w} height={k.h}
@@ -300,7 +349,7 @@ export default function PhotoCalculatorAuth({
           </g>
         ))}
 
-        {/* Solar panel hotspot */}
+        {/* Solar panel hotspot (with fade + LOL easter egg) */}
         {DEBUG && (
           <rect
             x={830}
@@ -310,6 +359,8 @@ export default function PhotoCalculatorAuth({
             fill="rgba(0,255,0,0.15)"
             stroke="rgba(0,128,0,0.4)"
             strokeWidth="0.25"
+            rx="6"
+            ry="6"
           />
         )}
         <rect
@@ -336,7 +387,7 @@ export default function PhotoCalculatorAuth({
         />
       </svg>
 
-     {/* <InvalidCodeModal show={showInvalid} onClose={() => setShowInvalid(false)} /> */}
+      {/* <InvalidCodeModal show={showInvalid} onClose={() => setShowInvalid(false)} /> */}
     </div>
   );
 }
