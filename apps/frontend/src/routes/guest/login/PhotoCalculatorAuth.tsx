@@ -46,10 +46,10 @@ const KEYS: KeyDef[] = [
   { id: "m+",  label: "M+",  x: 1097,y: 671, w: 107, h: 70, kind: "op" },
 
   // Column next to big equals (right-hand side small ops)
-  { id: "op1", label: "+", x: 1390, y: 777, w: 110, h: 70, kind: "op" },
-  { id: "op2", label: "-", x: 1390, y: 880, w: 110, h: 70, kind: "op" },
-  { id: "op3", label: "×", x: 1390, y: 980, w: 110, h: 70, kind: "op" },
-  { id: "op4", label: "÷", x: 1390, y: 1088,w: 110, h: 70, kind: "op" },
+  { id: "op1", label: "+", x: 1277, y: 777, w: 110, h: 70, kind: "op" },
+  { id: "op2", label: "-", x: 1277, y: 880, w: 110, h: 70, kind: "op" },
+  { id: "op3", label: "×", x: 1277, y: 671, w: 110, h: 70, kind: "op" },
+  { id: "op4", label: "÷", x: 1277, y: 565,w: 110, h: 70, kind: "op" },
 ];
 
 /* 
