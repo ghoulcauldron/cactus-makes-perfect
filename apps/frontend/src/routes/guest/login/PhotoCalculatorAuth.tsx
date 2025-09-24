@@ -28,8 +28,8 @@ const KEYS: KeyDef[] = [
   { id: "3", label: "3", x: 1100, y: 980, w: 110, h: 70, kind: "digit" },
 
   // Bottom row: ON/C + 0
-  { id: "on", label: "ON/C", x: 844, y: 1090, w: 110, h: 70, kind: "clear" },
-  { id: "0",  label: "0",    x: 975, y: 1090, w: 110, h: 70, kind: "digit" },
+  { id: "on", label: "ON/C", x: 844, y: 1088, w: 110, h: 70, kind: "clear" },
+  { id: "0",  label: "0",    x: 975, y: 1088, w: 110, h: 70, kind: "digit" },
 
   // Big equals bar
   { id: "equals", label: "=", x: 1275, y: 980, w: 110, h: 180, kind: "submit" },
