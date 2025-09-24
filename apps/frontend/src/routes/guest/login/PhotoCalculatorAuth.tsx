@@ -32,7 +32,7 @@ const KEYS: KeyDef[] = [
   { id: "0",  label: "0",    x: 975, y: 1088, w: 110, h: 70, kind: "digit" },
 
   // Big equals bar
-  { id: "equals", label: "=", x: 1275, y: 980, w: 110, h: 180, kind: "submit" },
+  { id: "equals", label: "=", x: 1277, y: 980, w: 108, h: 180, kind: "submit" },
 
   // MRC button (coordinates to be filled)
   { id: "mrc", label: "MRC", x: 842, y: 671, w: 110, h: 70, kind: "delete" },
