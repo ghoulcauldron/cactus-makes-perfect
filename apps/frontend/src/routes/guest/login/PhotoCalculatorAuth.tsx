@@ -43,7 +43,7 @@ const KEYS: KeyDef[] = [
   // Same row as MRC
   { id: "mrc", label: "MRC", x: 842, y: 671, w: 110, h: 70, kind: "delete" },
   { id: "m-",  label: "M-",  x: 973, y: 671, w: 107, h: 70, kind: "op" },
-  { id: "m+",  label: "M+",  x: 1097,y: 671, w: 107, h: 70, kind: "op" },
+  { id: "m+",  label: "M+",  x: 1100, y: 671, w: 107, h: 70, kind: "op" },
 
   // Column next to big equals (right-hand side small ops)
   { id: "op1", label: "+", x: 1277, y: 777, w: 110, h: 70, kind: "op" },
