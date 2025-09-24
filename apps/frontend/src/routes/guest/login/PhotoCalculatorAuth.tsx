@@ -48,8 +48,8 @@ const KEYS: KeyDef[] = [
   // Right-hand ops column
   { id: "mul", label: "×", x: 1277, y: 671, w: 110, h: 70, kind: "op" },
   { id: "div", label: "÷", x: 1277, y: 565, w: 110, h: 70, kind: "op" },
-  { id: "add", label: "+", x: 1277, y: 777, w: 110, h: 70, kind: "op" },
-  { id: "sub", label: "-", x: 1277, y: 880, w: 110, h: 70, kind: "op" },
+  { id: "add", label: "+", x: 1277, y: 880, w: 110, h: 70, kind: "op" },
+  { id: "sub", label: "-", x: 1277, y: 777, w: 110, h: 70, kind: "op" },
 ];
 
 export default function PhotoCalculatorAuth({
