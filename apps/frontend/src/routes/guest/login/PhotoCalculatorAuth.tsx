@@ -1,6 +1,5 @@
 import { useState, useRef } from "react";
-import InvalidCodeModal from "./InvalidCodeModal";
-import React from "react";
+// import InvalidCodeModal from "./InvalidCodeModal";
 
 type KeyDef =
   | { id: string; label: string; x: number; y: number; w: number; h: number; kind: "digit" | "submit" | "clear" | "delete" };
@@ -327,7 +326,7 @@ export default function PhotoCalculatorAuth({
         />
       </svg>
 
-      <InvalidCodeModal show={showInvalid} onClose={() => setShowInvalid(false)} />
+     {/* <InvalidCodeModal show={showInvalid} onClose={() => setShowInvalid(false)} /> */}
     </div>
   );
 }
