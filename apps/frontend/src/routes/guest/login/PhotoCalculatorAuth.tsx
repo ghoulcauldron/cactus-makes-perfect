@@ -296,7 +296,7 @@ export default function PhotoCalculatorAuth({
             style={{
               fontFamily: '"DSEG7Classic", monospace',
               fontSize: `${LCD.h * 0.9}px`,
-              fill: "#202020",
+              fill: "#333131",
             }}
           >
             {specialMsg || (display === "" ? "58008" : display)}
