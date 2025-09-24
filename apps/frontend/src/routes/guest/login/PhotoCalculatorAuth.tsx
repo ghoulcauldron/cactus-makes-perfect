@@ -5,8 +5,8 @@ type KeyDef =
   | { id: string; label: string; x: number; y: number; w: number; h: number; kind: "digit" | "submit" | "clear" | "delete" };
 
 const LCD = {
-  x: 880,  // left edge of LCD
-  y: 235,  // top edge
+  x: 890,  // left edge of LCD
+  y: 227,  // top edge
   w: 445,  // width
   h: 83,  // height
 };
@@ -14,28 +14,28 @@ const LCD = {
 const KEYS: KeyDef[] = [
   // Row 1
   { id: "7", label: "7", x: 845, y: 780, w: 110, h: 70, kind: "digit" },
-  { id: "8", label: "8", x: 970, y: 775, w: 110, h: 70, kind: "digit" },
-  { id: "9", label: "9", x: 1100, y: 772, w: 110, h: 70, kind: "digit" },
+  { id: "8", label: "8", x: 970, y: 780, w: 110, h: 70, kind: "digit" },
+  { id: "9", label: "9", x: 1100, y: 780, w: 110, h: 70, kind: "digit" },
 
   // Row 2
   { id: "4", label: "4", x: 845, y: 880, w: 110, h: 70, kind: "digit" },
-  { id: "5", label: "5", x: 970, y: 875, w: 110, h: 70, kind: "digit" },
-  { id: "6", label: "6", x: 1100, y: 872, w: 110, h: 70, kind: "digit" },
+  { id: "5", label: "5", x: 970, y: 880, w: 110, h: 70, kind: "digit" },
+  { id: "6", label: "6", x: 1100, y: 880, w: 110, h: 70, kind: "digit" },
 
   // Row 3
   { id: "1", label: "1", x: 845, y: 980, w: 110, h: 70, kind: "digit" },
   { id: "2", label: "2", x: 973, y: 980, w: 110, h: 70, kind: "digit" },
-  { id: "3", label: "3", x: 1100, y: 977, w: 110, h: 70, kind: "digit" },
+  { id: "3", label: "3", x: 1100, y: 980, w: 110, h: 70, kind: "digit" },
 
   // Bottom row: ON/C + 0
-  { id: "on", label: "ON/C", x: 847, y: 1085, w: 110, h: 70, kind: "clear" },
-  { id: "0",  label: "0",    x: 978, y: 1080, w: 110, h: 70, kind: "digit" },
+  { id: "on", label: "ON/C", x: 844, y: 1090, w: 110, h: 70, kind: "clear" },
+  { id: "0",  label: "0",    x: 975, y: 1090, w: 110, h: 70, kind: "digit" },
 
   // Big equals bar
-  { id: "equals", label: "=", x: 1275, y: 972, w: 110, h: 180, kind: "submit" },
+  { id: "equals", label: "=", x: 1275, y: 980, w: 110, h: 180, kind: "submit" },
 
   // MRC button (coordinates to be filled)
-  { id: "mrc", label: "MRC", x: 842, y: 680, w: 110, h: 70, kind: "delete" },
+  { id: "mrc", label: "MRC", x: 842, y: 675, w: 110, h: 70, kind: "delete" },
 ];
 
 /* 
@@ -219,7 +219,8 @@ export default function PhotoCalculatorAuth({
             fill="rgba(0,255,0,0.25)"
             stroke="rgba(0,200,0,0.9)"
             strokeWidth="1"
-            rx="1.5"
+            rx="8"
+            ry="8"
           />
         )}
         <g style={{ opacity: faded ? 0.15 : 1, transition: "opacity 2s" }}>
