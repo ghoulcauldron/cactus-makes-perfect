@@ -27,15 +27,29 @@ const KEYS: KeyDef[] = [
   { id: "2", label: "2", x: 973, y: 980, w: 110, h: 70, kind: "digit" },
   { id: "3", label: "3", x: 1100, y: 980, w: 110, h: 70, kind: "digit" },
 
-  // Bottom row: ON/C + 0
+  // Bottom row: ON/C + 0 + small "="
   { id: "on", label: "ON/C", x: 844, y: 1088, w: 110, h: 70, kind: "clear" },
   { id: "0",  label: "0",    x: 975, y: 1088, w: 110, h: 70, kind: "digit" },
+  { id: "equals-small", label: "=", x: 1100, y: 1088, w: 110, h: 70, kind: "submit" },
 
   // Big equals bar
   { id: "equals", label: "=", x: 1277, y: 980, w: 108, h: 180, kind: "submit" },
 
-  // MRC button (coordinates to be filled)
+  // Row above MRC
+  { id: "sign", label: "+/-",   x: 970,  y: 671, w: 110, h: 70, kind: "op" },
+  { id: "sqrt", label: "√",     x: 1100, y: 671, w: 110, h: 70, kind: "op" },
+  { id: "percent", label: "%",  x: 1230, y: 671, w: 110, h: 70, kind: "op" },
+
+  // Same row as MRC
   { id: "mrc", label: "MRC", x: 842, y: 671, w: 110, h: 70, kind: "delete" },
+  { id: "m-",  label: "M-",  x: 970, y: 671, w: 110, h: 70, kind: "op" },
+  { id: "m+",  label: "M+",  x: 1100,y: 671, w: 110, h: 70, kind: "op" },
+
+  // Column next to big equals (right-hand side small ops)
+  { id: "op1", label: "+", x: 1390, y: 777, w: 110, h: 70, kind: "op" },
+  { id: "op2", label: "-", x: 1390, y: 880, w: 110, h: 70, kind: "op" },
+  { id: "op3", label: "×", x: 1390, y: 980, w: 110, h: 70, kind: "op" },
+  { id: "op4", label: "÷", x: 1390, y: 1088,w: 110, h: 70, kind: "op" },
 ];
 
 /* 
