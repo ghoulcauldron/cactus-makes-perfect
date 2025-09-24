@@ -13,9 +13,9 @@ const LCD = {
 
 const KEYS: KeyDef[] = [
   // Row 1
-  { id: "7", label: "7", x: 845, y: 780, w: 110, h: 70, kind: "digit" },
-  { id: "8", label: "8", x: 970, y: 780, w: 110, h: 70, kind: "digit" },
-  { id: "9", label: "9", x: 1100, y: 780, w: 110, h: 70, kind: "digit" },
+  { id: "7", label: "7", x: 845, y: 777, w: 110, h: 70, kind: "digit" },
+  { id: "8", label: "8", x: 970, y: 777, w: 110, h: 70, kind: "digit" },
+  { id: "9", label: "9", x: 1100, y: 777, w: 110, h: 70, kind: "digit" },
 
   // Row 2
   { id: "4", label: "4", x: 845, y: 880, w: 110, h: 70, kind: "digit" },
