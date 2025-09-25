@@ -76,6 +76,47 @@ export default function PhotoCalculatorAuth({
   const [faded, setFaded] = useState(false);
   const solarTimer = useRef<number | null>(null);
   const [specialMsg, setSpecialMsg] = useState<string | null>(null);
+  const [ticker, setTicker] = useState<number>(0);
+  const tickerRef = useRef<number | null>(null);
+  const SCROLL_SPEED = 250;
+  // Ticker message scroller
+  const startTicker = (msg: string) => {
+    // Clean up any previous ticker
+    if (tickerRef.current !== null) {
+      clearInterval(tickerRef.current);
+      tickerRef.current = null;
+    }
+    setSpecialMsg(msg);
+    setTicker(0);
+    // Message to scroll: pad with spaces on each side
+    const padded = "       " + msg + "       ";
+    let pos = 0;
+    tickerRef.current = window.setInterval(() => {
+      pos++;
+      if (pos > padded.length - 7) {
+        pos = 0;
+      }
+      setTicker(pos);
+    }, SCROLL_SPEED);
+  };
+
+  // Cleanup ticker on unmount or when specialMsg changes
+  useEffect(() => {
+    return () => {
+      if (tickerRef.current !== null) {
+        clearInterval(tickerRef.current);
+        tickerRef.current = null;
+      }
+    };
+  }, []);
+  // Stop ticker when specialMsg is cleared
+  useEffect(() => {
+    if (!specialMsg && tickerRef.current !== null) {
+      clearInterval(tickerRef.current);
+      tickerRef.current = null;
+      setTicker(0);
+    }
+  }, [specialMsg]);
   const [cleared, setCleared] = useState(false); // ON/C → show "0" and arm first-digit overwrite
 
   /** Helpers */
@@ -173,11 +214,11 @@ export default function PhotoCalculatorAuth({
           return;
         }
         case "m+": {
-          setMemory((m) => m + curVal());
+          startTicker("No 5hade");
           return;
         }
         case "m-": {
-          setMemory((m) => m - curVal());
+          startTicker("Too Dry to Cry");
           return;
         }
         // arithmetic ops
@@ -379,7 +420,9 @@ export default function PhotoCalculatorAuth({
                   fill: "#333131",
                 }}
               >
-                {specialMsg || (display === "" ? "58008" : display)}
+                {specialMsg
+                  ? ("       " + specialMsg + "       ").substring(ticker, ticker + 7)
+                  : (display === "" ? "58008" : display)}
               </text>
             </g>
 
