@@ -101,7 +101,7 @@ export default function PhotoCalculatorAuth({
 
     if (key.kind === "digit") {
       const d = key.label;
-      if (cleared || waitingForNext || display === "Err") {
+      if (cleared || waitingForNext || display === "Err" || display === "" || display === "58008") {
         setDisplay(d);
         setCleared(false);
         setWaitingForNext(false);
