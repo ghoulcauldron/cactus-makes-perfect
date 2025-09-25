@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 // import InvalidCodeModal from "./InvalidCodeModal";
 
 type KeyKind = "digit" | "submit" | "clear" | "delete" | "op";
@@ -216,6 +216,66 @@ export default function PhotoCalculatorAuth({
       return;
     }
   };
+
+  useEffect(() => {
+    const keydownHandler = (e: KeyboardEvent) => {
+      if (submitting) return;
+
+      let keyToPress: KeyDef | undefined;
+
+      // Map digits 0-9
+      if (/^[0-9]$/.test(e.key)) {
+        keyToPress = KEYS.find(k => k.kind === "digit" && k.label === e.key);
+      } else {
+        // Map operators and other keys
+        switch (e.key) {
+          case '+':
+            keyToPress = KEYS.find(k => k.id === "add");
+            break;
+          case '-':
+            keyToPress = KEYS.find(k => k.id === "sub");
+            break;
+          case '*':
+          case 'x':
+          case 'X':
+            keyToPress = KEYS.find(k => k.id === "mul");
+            break;
+          case '/':
+            keyToPress = KEYS.find(k => k.id === "div");
+            break;
+          case '%':
+            keyToPress = KEYS.find(k => k.id === "percent");
+            break;
+          case 'Enter':
+          case '=':
+            keyToPress = KEYS.find(k => k.kind === "submit");
+            break;
+          case 'Backspace':
+            keyToPress = KEYS.find(k => k.kind === "delete");
+            break;
+          case 'c':
+          case 'C':
+          case 'Escape':
+            keyToPress = KEYS.find(k => k.kind === "clear");
+            break;
+        }
+      }
+
+      if (keyToPress) {
+        e.preventDefault();
+        setPressed(keyToPress.id);
+        press(keyToPress);
+        setTimeout(() => {
+          setPressed(null);
+        }, 150);
+      }
+    };
+
+    window.addEventListener("keydown", keydownHandler);
+    return () => {
+      window.removeEventListener("keydown", keydownHandler);
+    };
+  }, [press, submitting]);
 
   /** "=" pressed */
   const onEquals = async () => {
