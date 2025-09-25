@@ -59,6 +59,8 @@ export default function PhotoCalculatorAuth({
   const url = new URL(window.location.href);
   const email = url.searchParams.get("email") || "your email";
 
+  const [imgLoaded, setImgLoaded] = useState(false);
+
   /** ===== Calculator state ===== */
   const [display, setDisplay] = useState<string>("");   // empty gives you the 58008 gag
   const [acc, setAcc] = useState<number | null>(null);
@@ -277,123 +279,136 @@ export default function PhotoCalculatorAuth({
           height="1440"
           preserveAspectRatio="xMidYMid slice"
           crossOrigin="anonymous"
+          onLoad={() => setImgLoaded(true)}
         />
 
-        {/* LCD outline (debug) */}
-        {DEBUG && (
-          <rect
-            x={LCD.x}
-            y={LCD.y}
-            width={LCD.w}
-            height={LCD.h}
-            fill="rgba(0,255,0,0.25)"
-            stroke="rgba(0,200,0,0.9)"
-            strokeWidth="1"
-            rx="8"
-            ry="8"
-          />
+        {!imgLoaded && (
+          <foreignObject x="0" y="0" width="2236" height="1440">
+            <div className="w-full h-full flex items-center justify-center bg-cactus-sand text-2xl font-semibold">
+              Loading…
+            </div>
+          </foreignObject>
         )}
 
-        {/* LCD text (fades with solar hold) */}
-        <g style={{ opacity: faded ? 0.15 : 1, transition: "opacity 2s" }}>
-          <text
-            x={LCD.x + LCD.w - 1.5}
-            y={LCD.y + LCD.h - 1.8}
-            textAnchor="end"
-            style={{
-              fontFamily: '"DSEG7Classic", monospace',
-              fontSize: `${LCD.h * 0.9}px`,
-              fill: "#333131",
-            }}
-          >
-            {specialMsg || (display === "" ? "58008" : display)}
-          </text>
-        </g>
-
-        {/* Button hotspots */}
-        {KEYS.map((k) => (
-          <g key={k.id}>
+        {imgLoaded && (
+          <>
+            {/* LCD outline (debug) */}
             {DEBUG && (
-              <>
-                <rect
-                  x={k.x}
-                  y={k.y}
-                  width={k.w}
-                  height={k.h}
-                  fill="rgba(0,255,0,0.15)"
-                  stroke="rgba(0,128,0,0.4)"
-                  strokeWidth="0.25"
-                  rx="6"
-                  ry="6"
-                />
-                <text
-                  x={k.x + 0.6}
-                  y={k.y + 2.5}
-                  fontSize="2.5px"
-                  fill="#008800"
-                  style={{ pointerEvents: "none", userSelect: "none" }}
-                >
-                  {`${k.id} (${k.x},${k.y})`}
-                </text>
-              </>
-            )}
-
-            <rect
-              x={k.x} y={k.y} width={k.w} height={k.h}
-              rx="1.2"
-              fill="transparent"
-              style={{ cursor: "pointer", userSelect: "none", WebkitUserSelect: "none" }}
-              onPointerDown={() => setPressed(k.id)}
-              onPointerUp={() => { setPressed(null); press(k); }}
-              onPointerLeave={() => setPressed(null)}
-              aria-label={k.label}
-            />
-
-            {pressed === k.id && (
               <rect
-                x={k.x} y={k.y} width={k.w} height={k.h}
-                rx="1.2" fill="rgba(0,0,0,0.18)"
+                x={LCD.x}
+                y={LCD.y}
+                width={LCD.w}
+                height={LCD.h}
+                fill="rgba(0,255,0,0.25)"
+                stroke="rgba(0,200,0,0.9)"
+                strokeWidth="1"
+                rx="8"
+                ry="8"
               />
             )}
-          </g>
-        ))}
 
-        {/* Solar panel hotspot (with fade + LOL easter egg) */}
-        {DEBUG && (
-          <rect
-            x={840}
-            y={420}
-            width={265}
-            height={80}
-            fill="rgba(0,255,0,0.15)"
-            stroke="rgba(0,128,0,0.4)"
-            strokeWidth="0.25"
-            rx="6"
-            ry="6"
-          />
+            {/* LCD text (fades with solar hold) */}
+            <g style={{ opacity: faded ? 0.15 : 1, transition: "opacity 2s" }}>
+              <text
+                x={LCD.x + LCD.w - 1.5}
+                y={LCD.y + LCD.h - 1.8}
+                textAnchor="end"
+                style={{
+                  fontFamily: '"DSEG7Classic", monospace',
+                  fontSize: `${LCD.h * 0.9}px`,
+                  fill: "#333131",
+                }}
+              >
+                {specialMsg || (display === "" ? "58008" : display)}
+              </text>
+            </g>
+
+            {/* Button hotspots */}
+            {KEYS.map((k) => (
+              <g key={k.id}>
+                {DEBUG && (
+                  <>
+                    <rect
+                      x={k.x}
+                      y={k.y}
+                      width={k.w}
+                      height={k.h}
+                      fill="rgba(0,255,0,0.15)"
+                      stroke="rgba(0,128,0,0.4)"
+                      strokeWidth="0.25"
+                      rx="6"
+                      ry="6"
+                    />
+                    <text
+                      x={k.x + 0.6}
+                      y={k.y + 2.5}
+                      fontSize="2.5px"
+                      fill="#008800"
+                      style={{ pointerEvents: "none", userSelect: "none" }}
+                    >
+                      {`${k.id} (${k.x},${k.y})`}
+                    </text>
+                  </>
+                )}
+
+                <rect
+                  x={k.x} y={k.y} width={k.w} height={k.h}
+                  rx="1.2"
+                  fill="transparent"
+                  style={{ cursor: "pointer", userSelect: "none", WebkitUserSelect: "none" }}
+                  onPointerDown={() => setPressed(k.id)}
+                  onPointerUp={() => { setPressed(null); press(k); }}
+                  onPointerLeave={() => setPressed(null)}
+                  aria-label={k.label}
+                />
+
+                {pressed === k.id && (
+                  <rect
+                    x={k.x} y={k.y} width={k.w} height={k.h}
+                    rx="1.2" fill="rgba(0,0,0,0.18)"
+                  />
+                )}
+              </g>
+            ))}
+
+            {/* Solar panel hotspot (with fade + LOL easter egg) */}
+            {DEBUG && (
+              <rect
+                x={840}
+                y={420}
+                width={265}
+                height={80}
+                fill="rgba(0,255,0,0.15)"
+                stroke="rgba(0,128,0,0.4)"
+                strokeWidth="0.25"
+                rx="6"
+                ry="6"
+              />
+            )}
+            <rect
+              x={840} y={420} width={265} height={80}
+              fill="transparent"
+              style={{ cursor: "pointer", userSelect: "none", WebkitUserSelect: "none" }}
+              onPointerDown={() => {
+                solarTimer.current = window.setTimeout(() => {
+                  setFaded(true);
+                  setSpecialMsg("LOL");
+                }, 600);
+              }}
+              onPointerUp={() => {
+                if (solarTimer.current) clearTimeout(solarTimer.current);
+                setFaded(false);
+                setSpecialMsg(null);
+              }}
+              onPointerLeave={() => {
+                if (solarTimer.current) clearTimeout(solarTimer.current);
+                setFaded(false);
+                setSpecialMsg(null);
+              }}
+              aria-label="solar-panel"
+            />
+          </>
         )}
-        <rect
-          x={840} y={420} width={265} height={80}
-          fill="transparent"
-          style={{ cursor: "pointer", userSelect: "none", WebkitUserSelect: "none" }}
-          onPointerDown={() => {
-            solarTimer.current = window.setTimeout(() => {
-              setFaded(true);
-              setSpecialMsg("LOL");
-            }, 600);
-          }}
-          onPointerUp={() => {
-            if (solarTimer.current) clearTimeout(solarTimer.current);
-            setFaded(false);
-            setSpecialMsg(null);
-          }}
-          onPointerLeave={() => {
-            if (solarTimer.current) clearTimeout(solarTimer.current);
-            setFaded(false);
-            setSpecialMsg(null);
-          }}
-          aria-label="solar-panel"
-        />
       </svg>
 
       {/* <InvalidCodeModal show={showInvalid} onClose={() => setShowInvalid(false)} /> */}
