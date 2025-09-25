@@ -214,11 +214,11 @@ export default function PhotoCalculatorAuth({
           return;
         }
         case "m+": {
-          startTicker("No 5hade");
+          startTicker("No  5hade");
           return;
         }
         case "m-": {
-          startTicker("Too Dry to Cry");
+          startTicker("Too  Dry  to  Cry");
           return;
         }
         // arithmetic ops
