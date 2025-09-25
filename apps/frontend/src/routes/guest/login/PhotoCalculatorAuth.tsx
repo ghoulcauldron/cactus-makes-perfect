@@ -128,14 +128,20 @@ export default function PhotoCalculatorAuth({
     }
 
     if (key.kind === "delete" || key.id === "mrc") {
-      // Backspace (per earlier choice)
-      if (!display || display === "0" || display === "Err") {
+    // Backspace
+    if (!display || display === "0" || display === "Err") {
         setDisplay("0");
-      } else {
+        setCleared(true);   // ✅ ensures next digit overwrites
+    } else {
         const next = display.slice(0, -1);
-        setDisplay(next.length ? next : "0");
-      }
-      return;
+        if (!next.length) {
+        setDisplay("0");
+        setCleared(true); // ✅ same overwrite flag
+        } else {
+        setDisplay(next);
+        }
+    }
+    return;
     }
 
     if (key.kind === "op") {
