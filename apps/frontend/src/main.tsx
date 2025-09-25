@@ -9,28 +9,6 @@ import './index.css'
 import PhotoCalculatorAuth from './routes/guest/login/PhotoCalculatorAuth'
 import './fonts.css';
 
-const DEBUG = true;
-
-function DebugBadge() {
-  return (
-    <div style={{
-      position: 'fixed',
-      top: 10,
-      right: 10,
-      backgroundColor: 'green',
-      color: 'white',
-      padding: '4px 8px',
-      borderRadius: '4px',
-      fontWeight: 'bold',
-      zIndex: 1000,
-      fontSize: '12px',
-      fontFamily: 'sans-serif'
-    }}>
-      DEBUG
-    </div>
-  );
-}
-
 const router = createBrowserRouter([
   {
     path: '/',
@@ -44,7 +22,6 @@ const router = createBrowserRouter([
     },
     element: (
       <>
-        {DEBUG && <DebugBadge />}
         <PhotoCalculatorAuth />
       </>
     )
@@ -53,7 +30,6 @@ const router = createBrowserRouter([
     path: '/guest/login', 
     element: (
       <>
-        {DEBUG && <DebugBadge />}
         <PhotoCalculatorAuth />
       </>
     ) 
