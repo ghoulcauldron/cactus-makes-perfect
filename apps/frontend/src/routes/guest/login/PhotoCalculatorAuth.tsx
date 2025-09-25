@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from "react";
-// import InvalidCodeModal from "./InvalidCodeModal";
 
 type KeyKind = "digit" | "submit" | "clear" | "delete" | "op";
 type KeyDef = { id: string; label: string; x: number; y: number; w: number; h: number; kind: KeyKind };
@@ -10,6 +9,7 @@ const LCD = {
   w: 445,
   h: 83,
 };
+const LCD_DIGITS = 7;
 
 const KEYS: KeyDef[] = [
   // Row 1
@@ -27,23 +27,23 @@ const KEYS: KeyDef[] = [
   { id: "2", label: "2", x: 973, y: 980, w: 110, h: 70, kind: "digit" },
   { id: "3", label: "3", x: 1100, y: 980, w: 110, h: 70, kind: "digit" },
 
-  // Bottom row: ON/C + 0 + small "="
+  // Bottom row
   { id: "on", label: "ON/C", x: 844, y: 1088, w: 110, h: 70, kind: "clear" },
-  { id: "0",  label: "0",    x: 975, y: 1088, w: 110, h: 70, kind: "digit" },
+  { id: "0", label: "0", x: 975, y: 1088, w: 110, h: 70, kind: "digit" },
   { id: "equals-small", label: "=", x: 1100, y: 1088, w: 110, h: 70, kind: "submit" },
 
   // Big equals bar
   { id: "equals", label: "=", x: 1277, y: 980, w: 108, h: 180, kind: "submit" },
 
   // Row above MRC
-  { id: "sign",    label: "+/-", x: 842, y: 565, w: 110, h: 70, kind: "op" },
-  { id: "sqrt",    label: "√",   x: 973, y: 565, w: 110, h: 70, kind: "op" },
-  { id: "percent", label: "%",   x: 1100, y: 565, w: 110, h: 70, kind: "op" },
+  { id: "sign", label: "+/-", x: 842, y: 565, w: 110, h: 70, kind: "op" },
+  { id: "sqrt", label: "√", x: 973, y: 565, w: 110, h: 70, kind: "op" },
+  { id: "percent", label: "%", x: 1100, y: 565, w: 110, h: 70, kind: "op" },
 
   // Same row as MRC
-  { id: "mrc", label: "MRC", x: 842, y: 671, w: 110, h: 70, kind: "delete" }, // still backspace per your decision
-  { id: "m-",  label: "M-",  x: 973, y: 671, w: 107, h: 70, kind: "op" },
-  { id: "m+",  label: "M+",  x: 1100, y: 671, w: 107, h: 70, kind: "op" },
+  { id: "mrc", label: "MRC", x: 842, y: 671, w: 110, h: 70, kind: "delete" },
+  { id: "m-", label: "M-", x: 973, y: 671, w: 107, h: 70, kind: "op" },
+  { id: "m+", label: "M+", x: 1100, y: 671, w: 107, h: 70, kind: "op" },
 
   // Right-hand ops column
   { id: "mul", label: "×", x: 1277, y: 671, w: 110, h: 70, kind: "op" },
@@ -62,71 +62,57 @@ export default function PhotoCalculatorAuth({
   const [imgLoaded, setImgLoaded] = useState(false);
 
   /** ===== Calculator state ===== */
-  const [display, setDisplay] = useState<string>("");   // empty gives you the 58008 gag
+  const [display, setDisplay] = useState<string>("");
   const [acc, setAcc] = useState<number | null>(null);
   const [op, setOp] = useState<null | "+" | "-" | "*" | "/">(null);
   const [waitingForNext, setWaitingForNext] = useState(false);
-  const [hasOpUsed, setHasOpUsed] = useState(false);    // <- distinguishes auth vs calc on "="
+  const [hasOpUsed, setHasOpUsed] = useState(false);
   const [memory, setMemory] = useState<number>(0);
 
-  /** ===== Existing UX bits ===== */
+  /** ===== UX bits ===== */
   const [submitting, setSubmitting] = useState(false);
   const [showInvalid, setShowInvalid] = useState(false);
   const [pressed, setPressed] = useState<string | null>(null);
   const [faded, setFaded] = useState(false);
   const solarTimer = useRef<number | null>(null);
   const [specialMsg, setSpecialMsg] = useState<string | null>(null);
-  const [ticker, setTicker] = useState<number>(0);
+  const [cleared, setCleared] = useState(false);
+
+  /** ===== Ticker ===== */
+  const [tickerPos, setTickerPos] = useState(0);
+  const [tickerMsg, setTickerMsg] = useState<string | null>(null);
   const tickerRef = useRef<number | null>(null);
   const SCROLL_SPEED = 250;
-  // Ticker message scroller
+
   const startTicker = (msg: string) => {
-    // Clean up any previous ticker
+    stopTicker();
+    const repeated = (" ".repeat(LCD_DIGITS) + msg + "   ").repeat(20);
+    setTickerMsg(repeated);
+    setTickerPos(0);
+    tickerRef.current = window.setInterval(() => {
+      setTickerPos((pos) => (pos + 1) % repeated.length);
+    }, SCROLL_SPEED);
+  };
+
+  const stopTicker = () => {
     if (tickerRef.current !== null) {
       clearInterval(tickerRef.current);
       tickerRef.current = null;
     }
-    setSpecialMsg(msg);
-    setTicker(0);
-    // Message to scroll: pad with spaces on each side
-    const padded = "       " + msg + "       ";
-    let pos = 0;
-    tickerRef.current = window.setInterval(() => {
-      pos++;
-      if (pos > padded.length - 7) {
-        pos = 0;
-      }
-      setTicker(pos);
-    }, SCROLL_SPEED);
+    setTickerMsg(null);
+    setTickerPos(0);
   };
 
-  // Cleanup ticker on unmount or when specialMsg changes
   useEffect(() => {
-    return () => {
-      if (tickerRef.current !== null) {
-        clearInterval(tickerRef.current);
-        tickerRef.current = null;
-      }
-    };
+    return () => stopTicker();
   }, []);
-  // Stop ticker when specialMsg is cleared
-  useEffect(() => {
-    if (!specialMsg && tickerRef.current !== null) {
-      clearInterval(tickerRef.current);
-      tickerRef.current = null;
-      setTicker(0);
-    }
-  }, [specialMsg]);
-  const [cleared, setCleared] = useState(false); // ON/C → show "0" and arm first-digit overwrite
 
   /** Helpers */
   const curVal = () => parseFloat(display || "0");
   const setVal = (n: number) => setDisplay(Number.isFinite(n) ? trimNum(n) : "Err");
   const trimNum = (n: number) => {
     const s = n.toString();
-    // Keep it simple: limit length so it fits LCD
-    if (s.length <= 7) return s;
-    return n.toExponential(2);
+    return s.length <= LCD_DIGITS ? s : n.toExponential(2);
   };
 
   const doCompute = (a: number, b: number, operator: NonNullable<typeof op>) => {
@@ -141,6 +127,7 @@ export default function PhotoCalculatorAuth({
   /** Core button handler */
   const press = (key: KeyDef) => {
     if (submitting) return;
+    if (tickerMsg) stopTicker();
 
     if (key.kind === "digit") {
       const d = key.label;
@@ -149,17 +136,12 @@ export default function PhotoCalculatorAuth({
         setCleared(false);
         setWaitingForNext(false);
       } else {
-        // ✅ limit to 7 characters
-    setDisplay((s) =>
-      s && s.length < 7 ? s + key.label : s
-    );
+        setDisplay((s) => (s && s.length < LCD_DIGITS ? s + key.label : s));
       }
       return;
     }
 
     if (key.kind === "clear" || key.id === "on") {
-      // ON/C behavior you asked for:
-      // show "0" but DO NOT append leading zero to next digit
       setDisplay("0");
       setCleared(true);
       setAcc(null);
@@ -167,87 +149,67 @@ export default function PhotoCalculatorAuth({
       setWaitingForNext(false);
       setHasOpUsed(false);
       setSpecialMsg(null);
+      stopTicker();
       return;
     }
 
     if (key.kind === "delete" || key.id === "mrc") {
-    // Backspace
-    if (!display || display === "0" || display === "Err") {
+      if (!display || display === "0" || display === "Err") {
         setDisplay("0");
-        setCleared(true);   // ✅ ensures next digit overwrites
-    } else {
+        setCleared(true);
+      } else {
         const next = display.slice(0, -1);
         if (!next.length) {
-        setDisplay("0");
-        setCleared(true); // ✅ same overwrite flag
+          setDisplay("0");
+          setCleared(true);
         } else {
-        setDisplay(next);
+          setDisplay(next);
         }
-    }
-    return;
+      }
+      return;
     }
 
     if (key.kind === "op") {
       switch (key.id) {
-        case "sign": {
-          if (display === "Err") return;
-          if (!display || display === "0") return;
-          setDisplay(display.startsWith("-") ? display.slice(1) : "-" + display);
-          return;
-        }
-        case "sqrt": {
-          const v = curVal();
-          if (v < 0) {
-            setDisplay("Err");
-          } else {
-            setVal(Math.sqrt(v));
+        case "sign":
+          if (display !== "Err" && display !== "0" && display) {
+            setDisplay(display.startsWith("-") ? display.slice(1) : "-" + display);
           }
+          return;
+        case "sqrt":
+          const v = curVal();
+          if (v < 0) setDisplay("Err");
+          else setVal(Math.sqrt(v));
           setHasOpUsed(true);
           setWaitingForNext(true);
           return;
-        }
-        case "percent": {
-          // Simple %: value / 100
+        case "percent":
           setVal(curVal() / 100);
           setHasOpUsed(true);
           setWaitingForNext(true);
           return;
-        }
-        case "m+": {
+        case "m+":
           startTicker("No  5hade");
           return;
-        }
-        case "m-": {
+        case "m-":
           startTicker("Too  Dry  to  Cry");
           return;
-        }
-        // arithmetic ops
-        case "add":
-        case "sub":
-        case "mul":
-        case "div": {
+        case "add": case "sub": case "mul": case "div":
           const opMap: Record<string, "+" | "-" | "*" | "/"> = {
-            add: "+",
-            sub: "-",
-            mul: "*",
-            div: "/",
+            add: "+", sub: "-", mul: "*", div: "/",
           };
           const nextOp = opMap[key.id];
-          const v = curVal();
-
+          const val = curVal();
           if (op !== null && acc !== null && !waitingForNext && display !== "Err") {
-            const result = doCompute(acc, v, op);
+            const result = doCompute(acc, val, op);
             setAcc(result);
             setVal(result);
           } else {
-            setAcc(v);
+            setAcc(val);
           }
           setOp(nextOp);
           setWaitingForNext(true);
           setHasOpUsed(true);
-          return;
-        }
-        default:
           return;
       }
     }
@@ -261,44 +223,21 @@ export default function PhotoCalculatorAuth({
   useEffect(() => {
     const keydownHandler = (e: KeyboardEvent) => {
       if (submitting) return;
+      if (tickerMsg) stopTicker();
 
       let keyToPress: KeyDef | undefined;
-
-      // Map digits 0-9
       if (/^[0-9]$/.test(e.key)) {
-        keyToPress = KEYS.find(k => k.kind === "digit" && k.label === e.key);
+        keyToPress = KEYS.find((k) => k.kind === "digit" && k.label === e.key);
       } else {
-        // Map operators and other keys
         switch (e.key) {
-          case '+':
-            keyToPress = KEYS.find(k => k.id === "add");
-            break;
-          case '-':
-            keyToPress = KEYS.find(k => k.id === "sub");
-            break;
-          case '*':
-          case 'x':
-          case 'X':
-            keyToPress = KEYS.find(k => k.id === "mul");
-            break;
-          case '/':
-            keyToPress = KEYS.find(k => k.id === "div");
-            break;
-          case '%':
-            keyToPress = KEYS.find(k => k.id === "percent");
-            break;
-          case 'Enter':
-          case '=':
-            keyToPress = KEYS.find(k => k.kind === "submit");
-            break;
-          case 'Backspace':
-            keyToPress = KEYS.find(k => k.kind === "delete");
-            break;
-          case 'c':
-          case 'C':
-          case 'Escape':
-            keyToPress = KEYS.find(k => k.kind === "clear");
-            break;
+          case "+": keyToPress = KEYS.find(k => k.id === "add"); break;
+          case "-": keyToPress = KEYS.find(k => k.id === "sub"); break;
+          case "*": case "x": case "X": keyToPress = KEYS.find(k => k.id === "mul"); break;
+          case "/": keyToPress = KEYS.find(k => k.id === "div"); break;
+          case "%": keyToPress = KEYS.find(k => k.id === "percent"); break;
+          case "Enter": case "=": keyToPress = KEYS.find(k => k.kind === "submit"); break;
+          case "Backspace": keyToPress = KEYS.find(k => k.kind === "delete"); break;
+          case "c": case "C": case "Escape": keyToPress = KEYS.find(k => k.kind === "clear"); break;
         }
       }
 
@@ -306,21 +245,16 @@ export default function PhotoCalculatorAuth({
         e.preventDefault();
         setPressed(keyToPress.id);
         press(keyToPress);
-        setTimeout(() => {
-          setPressed(null);
-        }, 150);
+        setTimeout(() => setPressed(null), 150);
       }
     };
 
     window.addEventListener("keydown", keydownHandler);
-    return () => {
-      window.removeEventListener("keydown", keydownHandler);
-    };
-  }, [press, submitting]);
+    return () => window.removeEventListener("keydown", keydownHandler);
+  }, [press, submitting, tickerMsg]);
 
   /** "=" pressed */
   const onEquals = async () => {
-    // If ANY arithmetic op was used, compute.
     if (hasOpUsed && acc !== null && op !== null && display !== "Err") {
       const result = doCompute(acc, curVal(), op);
       setVal(result);
@@ -331,8 +265,6 @@ export default function PhotoCalculatorAuth({
       return;
     }
 
-    // Otherwise fall back to AUTH flow (your original behavior)
-    // Only submit if it's at least 4 digits to avoid accidental hits.
     const pass = (display || "").replace(/[^\d]/g, "");
     if (pass.length < 4) return;
 
@@ -346,14 +278,10 @@ export default function PhotoCalculatorAuth({
       });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
-      if (data?.token) {
-        try { localStorage.setItem("auth_token", data.token); } catch {}
-      }
-      try { localStorage.setItem("auth_ok", "true"); } catch {}
+      if (data?.token) localStorage.setItem("auth_token", data.token);
+      localStorage.setItem("auth_ok", "true");
       setSpecialMsg("YES");
-      setTimeout(() => {
-        window.location.replace("/guest/welcome");
-      }, 500);
+      setTimeout(() => window.location.replace("/guest/welcome"), 500);
     } catch {
       setSpecialMsg("NOPE");
       setTimeout(() => {
@@ -371,13 +299,9 @@ export default function PhotoCalculatorAuth({
         viewBox="0 0 2236 1440"
         preserveAspectRatio="xMidYMid slice"
       >
-        {/* Background photo */}
         <image
           href={imgSrc}
-          x="0"
-          y="0"
-          width="2236"
-          height="1440"
+          x="0" y="0" width="2236" height="1440"
           preserveAspectRatio="xMidYMid slice"
           crossOrigin="anonymous"
           onLoad={() => setImgLoaded(true)}
@@ -393,22 +317,14 @@ export default function PhotoCalculatorAuth({
 
         {imgLoaded && (
           <>
-            {/* LCD outline (debug) */}
             {DEBUG && (
               <rect
-                x={LCD.x}
-                y={LCD.y}
-                width={LCD.w}
-                height={LCD.h}
-                fill="rgba(0,255,0,0.25)"
-                stroke="rgba(0,200,0,0.9)"
-                strokeWidth="1"
-                rx="8"
-                ry="8"
+                x={LCD.x} y={LCD.y} width={LCD.w} height={LCD.h}
+                fill="rgba(0,255,0,0.25)" stroke="rgba(0,200,0,0.9)"
+                strokeWidth="1" rx="8" ry="8"
               />
             )}
 
-            {/* LCD text (fades with solar hold) */}
             <g style={{ opacity: faded ? 0.15 : 1, transition: "opacity 2s" }}>
               <text
                 x={LCD.x + LCD.w - 1.5}
@@ -420,44 +336,25 @@ export default function PhotoCalculatorAuth({
                   fill: "#333131",
                 }}
               >
-                {specialMsg
-                  ? ("       " + specialMsg + "       ").substring(ticker, ticker + 7)
-                  : (display === "" ? "58008" : display)}
+                {tickerMsg
+                  ? tickerMsg.substring(tickerPos, tickerPos + LCD_DIGITS)
+                  : (specialMsg || (display === "" ? "58008" : display))}
               </text>
             </g>
 
-            {/* Button hotspots */}
             {KEYS.map((k) => (
               <g key={k.id}>
                 {DEBUG && (
-                  <>
-                    <rect
-                      x={k.x}
-                      y={k.y}
-                      width={k.w}
-                      height={k.h}
-                      fill="rgba(0,255,0,0.15)"
-                      stroke="rgba(0,128,0,0.4)"
-                      strokeWidth="0.25"
-                      rx="6"
-                      ry="6"
-                    />
-                    <text
-                      x={k.x + 0.6}
-                      y={k.y + 2.5}
-                      fontSize="2.5px"
-                      fill="#008800"
-                      style={{ pointerEvents: "none", userSelect: "none" }}
-                    >
-                      {`${k.id} (${k.x},${k.y})`}
-                    </text>
-                  </>
+                  <rect
+                    x={k.x} y={k.y} width={k.w} height={k.h}
+                    fill="rgba(0,255,0,0.15)" stroke="rgba(0,128,0,0.4)"
+                    strokeWidth="0.25" rx="6" ry="6"
+                  />
                 )}
 
                 <rect
                   x={k.x} y={k.y} width={k.w} height={k.h}
-                  rx="1.2"
-                  fill="transparent"
+                  rx="1.2" fill="transparent"
                   style={{ cursor: "pointer", userSelect: "none", WebkitUserSelect: "none" }}
                   onPointerDown={() => setPressed(k.id)}
                   onPointerUp={() => { setPressed(null); press(k); }}
@@ -466,26 +363,17 @@ export default function PhotoCalculatorAuth({
                 />
 
                 {pressed === k.id && (
-                  <rect
-                    x={k.x} y={k.y} width={k.w} height={k.h}
-                    rx="1.2" fill="rgba(0,0,0,0.18)"
-                  />
+                  <rect x={k.x} y={k.y} width={k.w} height={k.h}
+                        rx="1.2" fill="rgba(0,0,0,0.18)" />
                 )}
               </g>
             ))}
 
-            {/* Solar panel hotspot (with fade + LOL easter egg) */}
             {DEBUG && (
               <rect
-                x={840}
-                y={420}
-                width={265}
-                height={80}
-                fill="rgba(0,255,0,0.15)"
-                stroke="rgba(0,128,0,0.4)"
-                strokeWidth="0.25"
-                rx="6"
-                ry="6"
+                x={840} y={420} width={265} height={80}
+                fill="rgba(0,255,0,0.15)" stroke="rgba(0,128,0,0.4)"
+                strokeWidth="0.25" rx="6" ry="6"
               />
             )}
             <rect
@@ -513,8 +401,6 @@ export default function PhotoCalculatorAuth({
           </>
         )}
       </svg>
-
-      {/* <InvalidCodeModal show={showInvalid} onClose={() => setShowInvalid(false)} /> */}
     </div>
   );
 }
