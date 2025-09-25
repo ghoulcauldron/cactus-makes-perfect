@@ -82,7 +82,8 @@ export default function PhotoCalculatorAuth({
   const trimNum = (n: number) => {
     const s = n.toString();
     // Keep it simple: limit length so it fits LCD
-    return s.length > 12 ? n.toExponential(6) : s;
+    if (s.length <= 7) return s;
+    return n.toExponential(2);
   };
 
   const doCompute = (a: number, b: number, operator: NonNullable<typeof op>) => {
