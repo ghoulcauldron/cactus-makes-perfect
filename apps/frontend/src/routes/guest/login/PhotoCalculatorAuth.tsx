@@ -151,7 +151,7 @@ export default function PhotoCalculatorAuth({
       setBlink(false);
       blinkTimerRef.current = window.setTimeout(() => {
         setBlink(true);
-        blinkTimerRef.current = window.setTimeout(() => setBlink(false), 40);
+        blinkTimerRef.current = window.setTimeout(() => setBlink(false), 10);
       }, 40);
     }, 40);
   }, []);
