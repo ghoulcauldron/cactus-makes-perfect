@@ -93,7 +93,7 @@ export default function PhotoCalculatorAuth({
         stopTicker();
 
         // Creates a string that connects back to itself for a seamless loop
-        const base = msg + " ".repeat(11) + msg;
+        const base = msg + " ".repeat(LCD_DIGITS) + msg;
         tickerMsgRef.current = base;
         setTickerPos(0);
 
@@ -102,7 +102,7 @@ export default function PhotoCalculatorAuth({
             if (!tickerMsgRef.current) return 0;
             
             // This makes the loop reset at the perfect moment to create a seamless effect
-            const maxPos = msg.length + 11;
+            const maxPos = msg.length + LCD_DIGITS;
             
             return (pos + 1) % maxPos;
         });
