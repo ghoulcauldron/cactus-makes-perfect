@@ -93,7 +93,7 @@ export default function PhotoCalculatorAuth({
         stopTicker();
 
         // Creates a string that connects back to itself for a seamless loop
-        const base = msg + " ".repeat(LCD_DIGITS) + msg;
+        const base = msg + " ".repeat(9) + msg;
         tickerMsgRef.current = base;
         setTickerPos(0);
 
