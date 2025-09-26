@@ -79,8 +79,7 @@ export default function PhotoCalculatorAuth({
   const [showInvalid, setShowInvalid] = useState(false);
   const [pressed, setPressed] = useState<string | null>(null);
   const [faded, setFaded] = useState(false);
-  const [blink, setBlink] = useState(false);
-  const blinkTimerRef = useRef<number | null>(null);
+  const [flash, setFlash] = useState(false);
   const solarTimer = useRef<number | null>(null);
   const [specialMsg, setSpecialMsg] = useState<string | null>(null);
   const [cleared, setCleared] = useState(false);
@@ -134,27 +133,7 @@ export default function PhotoCalculatorAuth({
     return () => stopTicker();
   }, []);
 
-  useEffect(() => {
-    return () => {
-      if (blinkTimerRef.current !== null) {
-        clearTimeout(blinkTimerRef.current);
-        blinkTimerRef.current = null;
-      }
-    };
-  }, []);
-
-  const triggerBlink = useCallback(() => {
-    if (blinkTimerRef.current !== null) clearTimeout(blinkTimerRef.current);
-
-    setBlink(true);
-    blinkTimerRef.current = window.setTimeout(() => {
-      setBlink(false);
-      blinkTimerRef.current = window.setTimeout(() => {
-        setBlink(true);
-        blinkTimerRef.current = window.setTimeout(() => setBlink(false), 10);
-      }, 40);
-    }, 40);
-  }, []);
+  // Removed blinkTimerRef, blink, and triggerBlink
 
   /** Helpers */
   const curVal = () => parseFloat(display || "0");
@@ -175,7 +154,8 @@ export default function PhotoCalculatorAuth({
 
   /** "=" pressed */
   const onEquals = useCallback(async () => {
-    triggerBlink();
+    setFlash(true);
+    setTimeout(() => setFlash(false), 80);
     if (hasOpUsed && acc !== null && op !== null && display !== "Err") {
       const result = doCompute(acc, curVal(), op);
       setVal(result);
@@ -211,7 +191,7 @@ export default function PhotoCalculatorAuth({
         setSpecialMsg(null);
       }, 500);
     }
-  }, [acc, curVal, display, hasOpUsed, op, url, email, triggerBlink]);
+  }, [acc, curVal, display, hasOpUsed, op, url, email]);
 
   /** Core button handler */
   const press = useCallback((key: KeyDef) => {
@@ -231,7 +211,8 @@ export default function PhotoCalculatorAuth({
     }
 
     if (key.kind === "clear" || key.id === "on") {
-      triggerBlink(150);
+      setFlash(true);
+      setTimeout(() => setFlash(false), 80);
       setDisplay("0");
       setCleared(true);
       setAcc(null);
@@ -376,7 +357,7 @@ export default function PhotoCalculatorAuth({
               />
             )}
 
-            <g style={{ opacity: (faded || blink) ? 0.05 : 1, transition: blink ? "none" : "opacity 2s" }}>
+            <g style={{ opacity: (faded || flash) ? 0.05 : 1, transition: "none" }}>
               <text
                 x={LCD.x + LCD.w - 1.5}
                 y={LCD.y + LCD.h - 1.8}
