@@ -102,7 +102,7 @@ export default function PhotoCalculatorAuth({
             if (!tickerMsgRef.current) return 0;
             
             // This makes the loop reset at the perfect moment to create a seamless effect
-            const maxPos = msg.length + LCD_DIGITS;
+            const maxPos = msg.length + 11;
             
             return (pos + 1) % maxPos;
         });
@@ -110,9 +110,6 @@ export default function PhotoCalculatorAuth({
     };
 
   const stopTicker = () => {
-      // Add these two lines for debugging
-    console.log("stopTicker was called unexpectedly!");
-    console.trace(); // This is the magic line
     if (tickerRef.current !== null) {
       clearInterval(tickerRef.current);
       tickerRef.current = null;
