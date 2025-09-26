@@ -246,10 +246,10 @@ export default function PhotoCalculatorAuth({
           setWaitingForNext(true);
           return;
         case "m+":
-          startTicker("No  shade   ");
+          startTicker("No shade   No shade   No shade   ");
           return;
         case "m-":
-          startTicker("Too  Dry  to  Cry   ");
+          startTicker("Too  Dry  to  Cry   Too  Dry  to  Cry   Too  Dry  to  Cry   ");
           return;
         case "add": case "sub": case "mul": case "div":
           const opMap: Record<string, "+" | "-" | "*" | "/"> = {
