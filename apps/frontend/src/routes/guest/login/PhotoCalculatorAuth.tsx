@@ -374,7 +374,7 @@ export default function PhotoCalculatorAuth({
               />
             )}
 
-            <g style={{ opacity: (faded || blink) ? 0.05 : 1, transition: blink ? "opacity 120ms linear" : "opacity 2s" }}>
+            <g style={{ opacity: (faded || blink) ? 0.05 : 1, transition: blink ? "opacity 60ms linear" : "opacity 2s" }}>
               <text
                 x={LCD.x + LCD.w - 1.5}
                 y={LCD.y + LCD.h - 1.8}
