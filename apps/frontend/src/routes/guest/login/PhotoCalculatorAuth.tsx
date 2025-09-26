@@ -85,20 +85,20 @@ export default function PhotoCalculatorAuth({
 
   /** ===== Ticker ===== */
   const [tickerPos, setTickerPos] = useState(0);
-  const [tickerTrack, setTickerTrack] = useState<string | null>(null);
   const tickerRef = useRef<number | null>(null);
+  const tickerMsgRef = useRef<string | null>(null);
   const SCROLL_SPEED = 250;
 
   const startTicker = (msg: string) => {
     stopTicker();
-    const base = " ".repeat(LCD_DIGITS) + msg + " ".repeat(LCD_DIGITS);
-    setTickerTrack(base);
+    const base = msg + " ".repeat(LCD_DIGITS);
+    tickerMsgRef.current = base;
     setTickerPos(0);
     tickerRef.current = window.setInterval(() => {
       setTickerPos((pos) => {
-        if (tickerTrack === null) return 0;
-        const maxPos = tickerTrack.length - LCD_DIGITS;
-        return pos + 1 > maxPos ? 0 : pos + 1;
+        if (!tickerMsgRef.current) return 0;
+        const maxPos = tickerMsgRef.current.length;
+        return (pos + 1) % maxPos;
       });
     }, SCROLL_SPEED);
   };
@@ -108,7 +108,7 @@ export default function PhotoCalculatorAuth({
       clearInterval(tickerRef.current);
       tickerRef.current = null;
     }
-    setTickerTrack(null);
+    tickerMsgRef.current = null;
     setTickerPos(0);
   };
 
@@ -136,7 +136,7 @@ export default function PhotoCalculatorAuth({
   /** Core button handler */
   const press = (key: KeyDef) => {
     if (submitting) return;
-    if (tickerTrack) stopTicker();
+    if (tickerMsgRef.current) stopTicker();
 
     if (key.kind === "digit") {
       const d = key.label;
@@ -232,7 +232,7 @@ export default function PhotoCalculatorAuth({
   useEffect(() => {
     const keydownHandler = (e: KeyboardEvent) => {
       if (submitting) return;
-      if (tickerTrack) stopTicker();
+      if (tickerMsgRef.current) stopTicker();
 
       let keyToPress: KeyDef | undefined;
       if (/^[0-9]$/.test(e.key)) {
@@ -260,7 +260,7 @@ export default function PhotoCalculatorAuth({
 
     window.addEventListener("keydown", keydownHandler);
     return () => window.removeEventListener("keydown", keydownHandler);
-  }, [press, submitting, tickerTrack]);
+  }, [press, submitting]);
 
   /** "=" pressed */
   const onEquals = async () => {
@@ -345,8 +345,8 @@ export default function PhotoCalculatorAuth({
                   fill: "#333131",
                 }}
               >
-                {tickerTrack
-                  ? tickerTrack.slice(tickerPos, tickerPos + LCD_DIGITS)
+                {tickerMsgRef.current
+                  ? (tickerMsgRef.current.repeat(3)).slice(tickerPos, tickerPos + LCD_DIGITS)
                   : (specialMsg || (display === "" ? "58008" : display))}
               </text>
             </g>
