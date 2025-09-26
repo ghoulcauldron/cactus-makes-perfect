@@ -60,6 +60,11 @@ export default function PhotoCalculatorAuth({
   const email = url.searchParams.get("email") || "your email";
 
   const [imgLoaded, setImgLoaded] = useState(false);
+  const [fontLoaded, setFontLoaded] = useState(false);
+
+  useEffect(() => {
+    document.fonts.load('16px "DSEG7Classic"').then(() => setFontLoaded(true)).catch(() => setFontLoaded(true));
+  }, []);
 
   /** ===== Calculator state ===== */
   const [display, setDisplay] = useState<string>("");
@@ -86,11 +91,13 @@ export default function PhotoCalculatorAuth({
 
   const startTicker = (msg: string) => {
     stopTicker();
-    const repeated = (" ".repeat(LCD_DIGITS) + msg + "   ").repeat(20);
-    setTickerMsg(repeated);
+    // Base loop: phrase + spacer. We render a 7-char window over this base,
+    // wrapping via modulo for a perfectly continuous marquee without seams.
+    const base = msg + "   ";
+    setTickerMsg(base);
     setTickerPos(0);
     tickerRef.current = window.setInterval(() => {
-      setTickerPos((pos) => (pos + 1) % repeated.length);
+      setTickerPos((pos) => (pos + 1) % base.length);
     }, SCROLL_SPEED);
   };
 
@@ -307,7 +314,7 @@ export default function PhotoCalculatorAuth({
           onLoad={() => setImgLoaded(true)}
         />
 
-        {!imgLoaded && (
+        {(!imgLoaded || !fontLoaded) && (
           <foreignObject x="0" y="0" width="2236" height="1440">
             <div className="w-full h-full flex items-center justify-center bg-cactus-sand text-2xl font-semibold">
               Loading…
@@ -315,7 +322,7 @@ export default function PhotoCalculatorAuth({
           </foreignObject>
         )}
 
-        {imgLoaded && (
+        {imgLoaded && fontLoaded && (
           <>
             {DEBUG && (
               <rect
@@ -337,7 +344,7 @@ export default function PhotoCalculatorAuth({
                 }}
               >
                 {tickerMsg
-                  ? tickerMsg.substring(tickerPos, tickerPos + LCD_DIGITS)
+                  ? Array.from({ length: LCD_DIGITS }, (_, i) => tickerMsg[(tickerPos + i) % tickerMsg.length]).join("")
                   : (specialMsg || (display === "" ? "58008" : display))}
               </text>
             </g>
