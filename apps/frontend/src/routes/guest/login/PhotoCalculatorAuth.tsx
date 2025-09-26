@@ -89,19 +89,25 @@ export default function PhotoCalculatorAuth({
   const tickerMsgRef = useRef<string | null>(null);
   const SCROLL_SPEED = 250;
 
-  const startTicker = (msg: string) => {
-    stopTicker();
-    const base = msg + " ".repeat(LCD_DIGITS) + msg;
-    tickerMsgRef.current = base;
-    setTickerPos(0);
-    tickerRef.current = window.setInterval(() => {
-      setTickerPos((pos) => {
-        if (!tickerMsgRef.current) return 0;
-        const maxPos = msg.length + LCD_DIGITS;
-        return (pos + 1) % maxPos;
-      });
-    }, SCROLL_SPEED);
-  };
+    const startTicker = (msg: string) => {
+        stopTicker();
+
+        // Creates a string that connects back to itself for a seamless loop
+        const base = msg + " ".repeat(LCD_DIGITS) + msg;
+        tickerMsgRef.current = base;
+        setTickerPos(0);
+
+        tickerRef.current = window.setInterval(() => {
+        setTickerPos((pos) => {
+            if (!tickerMsgRef.current) return 0;
+            
+            // This makes the loop reset at the perfect moment to create a seamless effect
+            const maxPos = msg.length + LCD_DIGITS;
+            
+            return (pos + 1) % maxPos;
+        });
+        }, SCROLL_SPEED);
+    };
 
   const stopTicker = () => {
       // Add these two lines for debugging
