@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 
 type KeyKind = "digit" | "submit" | "clear" | "delete" | "op";
 type KeyDef = { id: string; label: string; x: number; y: number; w: number; h: number; kind: KeyKind };
@@ -133,8 +133,47 @@ export default function PhotoCalculatorAuth({
     }
   };
 
+  /** "=" pressed */
+  const onEquals = useCallback(async () => {
+    if (hasOpUsed && acc !== null && op !== null && display !== "Err") {
+      const result = doCompute(acc, curVal(), op);
+      setVal(result);
+      setAcc(result);
+      setOp(null);
+      setWaitingForNext(true);
+      setHasOpUsed(false);
+      return;
+    }
+
+    const pass = (display || "").replace(/[^\d]/g, "");
+    if (pass.length < 4) return;
+
+    setSubmitting(true);
+    try {
+      const token = url.searchParams.get("token") || "";
+      const res = await fetch("/api/v1/auth/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, email, code: pass }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      if (data?.token) localStorage.setItem("auth_token", data.token);
+      localStorage.setItem("auth_ok", "true");
+      setSpecialMsg("YES");
+      setTimeout(() => window.location.replace("/guest/welcome"), 500);
+    } catch {
+      setSpecialMsg("NOPE");
+      setTimeout(() => {
+        setShowInvalid(true);
+        setSubmitting(false);
+        setSpecialMsg(null);
+      }, 500);
+    }
+  }, [acc, curVal, display, hasOpUsed, op, url, email]);
+
   /** Core button handler */
-  const press = (key: KeyDef) => {
+  const press = useCallback((key: KeyDef) => {
     if (submitting) return;
     if (tickerMsgRef.current) stopTicker();
 
@@ -227,7 +266,7 @@ export default function PhotoCalculatorAuth({
       onEquals();
       return;
     }
-  };
+  }, [acc, cleared, display, hasOpUsed, op, submitting, waitingForNext, onEquals]);
 
   useEffect(() => {
     const keydownHandler = (e: KeyboardEvent) => {
@@ -261,45 +300,6 @@ export default function PhotoCalculatorAuth({
     window.addEventListener("keydown", keydownHandler);
     return () => window.removeEventListener("keydown", keydownHandler);
   }, [press, submitting]);
-
-  /** "=" pressed */
-  const onEquals = async () => {
-    if (hasOpUsed && acc !== null && op !== null && display !== "Err") {
-      const result = doCompute(acc, curVal(), op);
-      setVal(result);
-      setAcc(result);
-      setOp(null);
-      setWaitingForNext(true);
-      setHasOpUsed(false);
-      return;
-    }
-
-    const pass = (display || "").replace(/[^\d]/g, "");
-    if (pass.length < 4) return;
-
-    setSubmitting(true);
-    try {
-      const token = url.searchParams.get("token") || "";
-      const res = await fetch("/api/v1/auth/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, email, code: pass }),
-      });
-      if (!res.ok) throw new Error(await res.text());
-      const data = await res.json();
-      if (data?.token) localStorage.setItem("auth_token", data.token);
-      localStorage.setItem("auth_ok", "true");
-      setSpecialMsg("YES");
-      setTimeout(() => window.location.replace("/guest/welcome"), 500);
-    } catch {
-      setSpecialMsg("NOPE");
-      setTimeout(() => {
-        setShowInvalid(true);
-        setSubmitting(false);
-        setSpecialMsg(null);
-      }, 500);
-    }
-  };
 
   return (
     <div className="w-screen h-screen bg-cactus-sand relative overflow-hidden">
