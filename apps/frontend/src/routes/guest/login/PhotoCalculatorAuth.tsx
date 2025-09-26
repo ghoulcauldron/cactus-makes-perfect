@@ -79,6 +79,8 @@ export default function PhotoCalculatorAuth({
   const [showInvalid, setShowInvalid] = useState(false);
   const [pressed, setPressed] = useState<string | null>(null);
   const [faded, setFaded] = useState(false);
+  const [blink, setBlink] = useState(false);
+  const blinkTimerRef = useRef<number | null>(null);
   const solarTimer = useRef<number | null>(null);
   const [specialMsg, setSpecialMsg] = useState<string | null>(null);
   const [cleared, setCleared] = useState(false);
@@ -132,6 +134,26 @@ export default function PhotoCalculatorAuth({
     return () => stopTicker();
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (blinkTimerRef.current !== null) {
+        clearTimeout(blinkTimerRef.current);
+        blinkTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  const triggerBlink = useCallback((duration = 150) => {
+    if (blinkTimerRef.current !== null) {
+      clearTimeout(blinkTimerRef.current);
+      blinkTimerRef.current = null;
+    }
+    setBlink(true);
+    blinkTimerRef.current = window.setTimeout(() => {
+      setBlink(false);
+    }, duration);
+  }, []);
+
   /** Helpers */
   const curVal = () => parseFloat(display || "0");
   const setVal = (n: number) => setDisplay(Number.isFinite(n) ? trimNum(n) : "Err");
@@ -151,6 +173,7 @@ export default function PhotoCalculatorAuth({
 
   /** "=" pressed */
   const onEquals = useCallback(async () => {
+    triggerBlink();
     if (hasOpUsed && acc !== null && op !== null && display !== "Err") {
       const result = doCompute(acc, curVal(), op);
       setVal(result);
@@ -186,7 +209,7 @@ export default function PhotoCalculatorAuth({
         setSpecialMsg(null);
       }, 500);
     }
-  }, [acc, curVal, display, hasOpUsed, op, url, email]);
+  }, [acc, curVal, display, hasOpUsed, op, url, email, triggerBlink]);
 
   /** Core button handler */
   const press = useCallback((key: KeyDef) => {
@@ -206,6 +229,7 @@ export default function PhotoCalculatorAuth({
     }
 
     if (key.kind === "clear" || key.id === "on") {
+      triggerBlink(150);
       setDisplay("0");
       setCleared(true);
       setAcc(null);
@@ -350,7 +374,7 @@ export default function PhotoCalculatorAuth({
               />
             )}
 
-            <g style={{ opacity: faded ? 0.15 : 1, transition: "opacity 2s" }}>
+            <g style={{ opacity: (faded || blink) ? 0.05 : 1, transition: blink ? "opacity 120ms linear" : "opacity 2s" }}>
               <text
                 x={LCD.x + LCD.w - 1.5}
                 y={LCD.y + LCD.h - 1.8}
