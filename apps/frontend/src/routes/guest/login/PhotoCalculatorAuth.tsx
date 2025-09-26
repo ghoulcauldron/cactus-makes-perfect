@@ -104,6 +104,9 @@ export default function PhotoCalculatorAuth({
   };
 
   const stopTicker = () => {
+      // Add these two lines for debugging
+    console.log("stopTicker was called unexpectedly!");
+    console.trace(); // This is the magic line
     if (tickerRef.current !== null) {
       clearInterval(tickerRef.current);
       tickerRef.current = null;
