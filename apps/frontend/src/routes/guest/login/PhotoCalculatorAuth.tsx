@@ -143,15 +143,17 @@ export default function PhotoCalculatorAuth({
     };
   }, []);
 
-  const triggerBlink = useCallback((duration = 80) => {
-    if (blinkTimerRef.current !== null) {
-      clearTimeout(blinkTimerRef.current);
-      blinkTimerRef.current = null;
-    }
+  const triggerBlink = useCallback(() => {
+    if (blinkTimerRef.current !== null) clearTimeout(blinkTimerRef.current);
+
     setBlink(true);
     blinkTimerRef.current = window.setTimeout(() => {
       setBlink(false);
-    }, duration);
+      blinkTimerRef.current = window.setTimeout(() => {
+        setBlink(true);
+        blinkTimerRef.current = window.setTimeout(() => setBlink(false), 40);
+      }, 40);
+    }, 40);
   }, []);
 
   /** Helpers */
