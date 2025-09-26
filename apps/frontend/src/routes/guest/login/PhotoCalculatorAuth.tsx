@@ -83,38 +83,48 @@ export default function PhotoCalculatorAuth({
   const [specialMsg, setSpecialMsg] = useState<string | null>(null);
   const [cleared, setCleared] = useState(false);
 
-  /** ===== Ticker ===== */
+  /** ===== Ticker (endless marquee) ===== */
   const [tickerPos, setTickerPos] = useState(0);
-  const tickerRef = useRef<number | null>(null);
-  const tickerMsgRef = useRef<string | null>(null);
-  const SCROLL_SPEED = 250;
+  const tickerTimerRef = useRef<number | null>(null);
+  const tickerBaseRef = useRef<string | null>(null);   // base string: [spaces]+msg+[spaces]
+  const tickerLoopRef = useRef<string | null>(null);   // doubled base for easy wrap
+  const tickerLenRef = useRef<number>(0);              // base length (not doubled)
+  const SCROLL_SPEED = 250; // ms per step
 
-    const startTicker = (msg: string) => {
-        stopTicker();
+  const startTicker = (msg: string) => {
+    // Stop any existing ticker first
+    stopTicker();
 
-        // Creates a string that connects back to itself for a seamless loop
-        const base = msg + " ".repeat(LCD_DIGITS) + msg;
-        tickerMsgRef.current = base;
-        setTickerPos(0);
+    // Build a base string that starts and ends with blanks so the message
+    // "enters from the right", scrolls across, then exits to the left.
+    const blanks = " ".repeat(LCD_DIGITS);
+    const base = blanks + msg + blanks; // e.g., "_______HELLO_______"
+    const loop = base + base;            // doubled for seamless wraparound
 
-        tickerRef.current = window.setInterval(() => {
-        setTickerPos((pos) => {
-            if (!tickerMsgRef.current) return 0;
-            
-            // This makes the loop reset at the perfect moment to create a seamless effect
-            const maxPos = msg.length + LCD_DIGITS;
-            
-            return (pos + 1) % maxPos;
-        });
-        }, SCROLL_SPEED);
-    };
+    tickerBaseRef.current = base;
+    tickerLoopRef.current = loop;
+    tickerLenRef.current = base.length;
+
+    // Start at the far-right blank frame
+    setTickerPos(0);
+
+    // Advance one step every SCROLL_SPEED ms
+    tickerTimerRef.current = window.setInterval(() => {
+      setTickerPos((pos) => {
+        const len = tickerLenRef.current || 1;
+        return (pos + 1) % len;
+      });
+    }, SCROLL_SPEED);
+  };
 
   const stopTicker = () => {
-    if (tickerRef.current !== null) {
-      clearInterval(tickerRef.current);
-      tickerRef.current = null;
+    if (tickerTimerRef.current !== null) {
+      clearInterval(tickerTimerRef.current);
+      tickerTimerRef.current = null;
     }
-    tickerMsgRef.current = null;
+    tickerBaseRef.current = null;
+    tickerLoopRef.current = null;
+    tickerLenRef.current = 0;
     setTickerPos(0);
   };
 
@@ -181,7 +191,7 @@ export default function PhotoCalculatorAuth({
   /** Core button handler */
   const press = useCallback((key: KeyDef) => {
     if (submitting) return;
-    if (tickerMsgRef.current) stopTicker();
+    if (tickerBaseRef.current) stopTicker();
 
     if (key.kind === "digit") {
       const d = key.label;
@@ -243,10 +253,10 @@ export default function PhotoCalculatorAuth({
           setWaitingForNext(true);
           return;
         case "m+":
-          startTicker("No shade   No shade  ");
+          startTicker("No  5hade");
           return;
         case "m-":
-          startTicker("Too  Dry  to  Cry   Too  Dry  to  Cry   ");
+          startTicker("Too  Dry  to  Cry");
           return;
         case "add": case "sub": case "mul": case "div":
           const opMap: Record<string, "+" | "-" | "*" | "/"> = {
@@ -277,7 +287,7 @@ export default function PhotoCalculatorAuth({
   useEffect(() => {
     const keydownHandler = (e: KeyboardEvent) => {
       if (submitting) return;
-      if (tickerMsgRef.current) stopTicker();
+      if (tickerBaseRef.current) stopTicker();
 
       let keyToPress: KeyDef | undefined;
       if (/^[0-9]$/.test(e.key)) {
@@ -351,8 +361,8 @@ export default function PhotoCalculatorAuth({
                   fill: "#333131",
                 }}
               >
-                {tickerMsgRef.current
-                  ? tickerMsgRef.current.substring(tickerPos, tickerPos + LCD_DIGITS)
+                {tickerBaseRef.current && tickerLoopRef.current
+                  ? tickerLoopRef.current.substring(tickerPos, tickerPos + LCD_DIGITS)
                   : (specialMsg || (display === "" ? "58008" : display))}
               </text>
             </g>
