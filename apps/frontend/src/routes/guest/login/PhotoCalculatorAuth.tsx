@@ -93,7 +93,7 @@ export default function PhotoCalculatorAuth({
         stopTicker();
 
         // Creates a string that connects back to itself for a seamless loop
-        const base = msg + " ".repeat(9) + msg;
+        const base = msg + " ".repeat(11) + msg;
         tickerMsgRef.current = base;
         setTickerPos(0);
 
@@ -246,10 +246,10 @@ export default function PhotoCalculatorAuth({
           setWaitingForNext(true);
           return;
         case "m+":
-          startTicker("No shade   No shade   No shade   ");
+          startTicker("No shade   No shade  ");
           return;
         case "m-":
-          startTicker("Too  Dry  to  Cry   Too  Dry  to  Cry   Too  Dry  to  Cry   ");
+          startTicker("Too  Dry  to  Cry   Too  Dry  to  Cry   ");
           return;
         case "add": case "sub": case "mul": case "div":
           const opMap: Record<string, "+" | "-" | "*" | "/"> = {
