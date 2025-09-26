@@ -91,13 +91,13 @@ export default function PhotoCalculatorAuth({
 
   const startTicker = (msg: string) => {
     stopTicker();
-    const base = msg + " ".repeat(LCD_DIGITS);
+    const base = msg + " ".repeat(LCD_DIGITS) + msg;
     tickerMsgRef.current = base;
     setTickerPos(0);
     tickerRef.current = window.setInterval(() => {
       setTickerPos((pos) => {
         if (!tickerMsgRef.current) return 0;
-        const maxPos = tickerMsgRef.current.length;
+        const maxPos = msg.length + LCD_DIGITS;
         return (pos + 1) % maxPos;
       });
     }, SCROLL_SPEED);
@@ -346,7 +346,7 @@ export default function PhotoCalculatorAuth({
                 }}
               >
                 {tickerMsgRef.current
-                  ? (tickerMsgRef.current.repeat(3)).slice(tickerPos, tickerPos + LCD_DIGITS)
+                  ? tickerMsgRef.current.substring(tickerPos, tickerPos + LCD_DIGITS)
                   : (specialMsg || (display === "" ? "58008" : display))}
               </text>
             </g>
