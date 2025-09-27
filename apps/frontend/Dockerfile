@@ -1,25 +1,13 @@
-# ---- Build stage ----
-FROM node:20-slim AS build
-WORKDIR /app
+# apps/frontend/Dockerfile
 
-COPY package*.json ./
-RUN npm install   # include devDependencies so vite is available
+# Use nginx to serve static files
+FROM nginx:alpine
 
-COPY . ./
+# Copy built Vite output into nginx's default html dir
+COPY dist /usr/share/nginx/html
 
-# Make Railway env vars available to Vite at build time
-ARG VITE_SHOW_RESET_BUTTON
-ENV VITE_SHOW_RESET_BUTTON=$VITE_SHOW_RESET_BUTTON
+# Expose nginx default port
+EXPOSE 80
 
-RUN npm run build
-
-# ---- Runtime stage ----
-FROM node:20-slim
-WORKDIR /app
-
-RUN npm install express basic-auth
-COPY --from=build /app/dist ./dist
-COPY server.js ./
-COPY package.json ./
-
-CMD ["node", "server.js"]
+# Run nginx in foreground
+CMD ["nginx", "-g", "daemon off;"]
