@@ -1,13 +1,22 @@
 # apps/frontend/Dockerfile
 
-# Use nginx to serve static files
+# ---- Build stage ----
+FROM node:20-slim AS build
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY . ./
+ARG VITE_SHOW_RESET_BUTTON
+ENV VITE_SHOW_RESET_BUTTON=$VITE_SHOW_RESET_BUTTON
+
+RUN npm run build
+
+# ---- Runtime stage ----
 FROM nginx:alpine
+WORKDIR /usr/share/nginx/html
+COPY --from=build /app/dist ./
 
-# Copy built Vite output into nginx's default html dir
-COPY dist /usr/share/nginx/html
-
-# Expose nginx default port
 EXPOSE 80
-
-# Run nginx in foreground
 CMD ["nginx", "-g", "daemon off;"]
