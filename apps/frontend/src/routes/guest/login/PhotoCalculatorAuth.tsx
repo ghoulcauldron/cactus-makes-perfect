@@ -360,7 +360,7 @@ export default function PhotoCalculatorAuth({
             <g
               style={{
                 opacity: faded || flash ? 0.05 : 1,
-                transition: flash ? "none" : "opacity 0.4s ease-in-out",
+                transition: flash ? "none" : "opacity 0.8s ease-in-out",
               }}
             >
               <text
