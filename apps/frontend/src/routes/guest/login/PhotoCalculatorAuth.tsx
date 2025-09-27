@@ -372,6 +372,8 @@ export default function PhotoCalculatorAuth({
                   fontFamily: '"DSEG7Classic", monospace',
                   fontSize: `${LCD.h * 0.9}px`,
                   fill: "#333131",
+                  opacity: flash ? 0 : 1,
+                  transition: "opacity 0s",
                 }}
               >
                 {tickerBaseRef.current && tickerLoopRef.current
@@ -379,20 +381,6 @@ export default function PhotoCalculatorAuth({
                   : (specialMsg || (display === "" ? "58008" : display))}
               </text>
             </g>
-            {/* Flash overlay layer */}
-            {flash && (
-              <g>
-                <rect
-                  x={LCD.x}
-                  y={LCD.y}
-                  width={LCD.w}
-                  height={LCD.h}
-                  fill="#000"
-                  opacity="0.85"
-                  rx="2"
-                />
-              </g>
-            )}
 
             {KEYS.map((k) => (
               <g key={k.id}>
