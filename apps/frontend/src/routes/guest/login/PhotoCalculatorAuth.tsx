@@ -361,7 +361,7 @@ export default function PhotoCalculatorAuth({
             <g
               style={{
                 opacity: faded ? 0.05 : 1,
-                transition: "opacity 0.8s ease-in-out",
+                transition: "opacity 1s ease-in-out",
               }}
             >
               <text
@@ -381,21 +381,16 @@ export default function PhotoCalculatorAuth({
             </g>
             {/* Flash overlay layer */}
             {flash && (
-              <g style={{ opacity: 0.05 }}>
-                <text
-                  x={LCD.x + LCD.w - 1.5}
-                  y={LCD.y + LCD.h - 1.8}
-                  textAnchor="end"
-                  style={{
-                    fontFamily: '"DSEG7Classic", monospace',
-                    fontSize: `${LCD.h * 0.9}px`,
-                    fill: "#333131",
-                  }}
-                >
-                  {tickerBaseRef.current && tickerLoopRef.current
-                    ? tickerLoopRef.current.substring(tickerPos, tickerPos + LCD_DIGITS)
-                    : (specialMsg || (display === "" ? "58008" : display))}
-                </text>
+              <g>
+                <rect
+                  x={LCD.x}
+                  y={LCD.y}
+                  width={LCD.w}
+                  height={LCD.h}
+                  fill="#000"
+                  opacity="0.85"
+                  rx="2"
+                />
               </g>
             )}
 
