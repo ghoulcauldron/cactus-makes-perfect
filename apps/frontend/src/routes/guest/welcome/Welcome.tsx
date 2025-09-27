@@ -50,13 +50,22 @@ export default function Welcome() {
 
         {/* CTA buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <button className="px-6 py-4 rounded-xl bg-cactus-green text-white text-lg font-bold shadow-md hover:bg-cactus-green/80 transition">
+          <button
+            className="px-6 py-4 rounded-xl bg-cactus-green text-white text-lg font-bold shadow-md hover:bg-cactus-green/80 transition"
+            onClick={() => navigate("/guest/rsvp")}
+          >
             RSVP Now
           </button>
-          <button className="px-6 py-4 rounded-xl bg-sunset text-white text-lg font-bold shadow-md hover:bg-sunset/80 transition">
+          <button
+            className="px-6 py-4 rounded-xl bg-sunset text-white text-lg font-bold shadow-md hover:bg-sunset/80 transition"
+            onClick={() => navigate("/guest/schedule")}
+          >
             View Schedule
           </button>
-          <button className="px-6 py-4 rounded-xl bg-sky text-white text-lg font-bold shadow-md hover:bg-sky/80 transition">
+          <button
+            className="px-6 py-4 rounded-xl bg-sky text-white text-lg font-bold shadow-md hover:bg-sky/80 transition"
+            onClick={() => navigate("/guest/faqs")}
+          >
             FAQs
           </button>
         </div>

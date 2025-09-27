@@ -2,18 +2,34 @@ import { useState } from "react";
 
 export default function RSVP() {
   const [status, setStatus] = useState<"yes" | "no" | "pending">("pending");
-  const [dietary, setDietary] = useState("");
-  const [song, setSong] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    // TODO: POST to /api/v1/rsvps/me
-    setTimeout(() => {
-      setSubmitting(false);
+
+    const auth_token = localStorage.getItem("auth_token");
+    const guest_user_id = localStorage.getItem("guest_user_id");
+
+    try {
+      const response = await fetch("/api/v1/rsvps/me", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ user_id: guest_user_id, status }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to submit RSVP");
+      }
+
       alert("RSVP submitted ✅");
-    }, 800);
+    } catch (error) {
+      alert("Error submitting RSVP. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -59,33 +75,6 @@ export default function RSVP() {
             >
               No 🌵
             </button>
-          </div>
-
-          {/* Dietary notes */}
-          <div className="text-left">
-            <label className="block mb-2 font-semibold text-cactus-green">
-              Dietary Notes
-            </label>
-            <textarea
-              value={dietary}
-              onChange={(e) => setDietary(e.target.value)}
-              className="w-full rounded-lg border-2 border-cactus-green p-3 focus:outline-none focus:ring-2 focus:ring-cactus-green/50"
-              placeholder="Tell us about allergies, preferences, etc."
-            />
-          </div>
-
-          {/* Song request */}
-          <div className="text-left">
-            <label className="block mb-2 font-semibold text-sunset">
-              Song Request
-            </label>
-            <input
-              type="text"
-              value={song}
-              onChange={(e) => setSong(e.target.value)}
-              className="w-full rounded-lg border-2 border-sunset p-3 focus:outline-none focus:ring-2 focus:ring-sunset/50"
-              placeholder="What tune will get you on the dance floor?"
-            />
           </div>
 
           {/* Submit */}
