@@ -23,6 +23,19 @@ const PUBLIC_URL = process.env.PUBLIC_URL || "https://www.cactusmakesperfect.org
 
 app.use(express.json());
 
+// ---- Basic auth for everything (keep while private) ----
+const auth = (req, res, next) => {
+  const creds = basicAuth(req);
+  const user = process.env.BASIC_AUTH_USER || "guest";
+  const pass = process.env.BASIC_AUTH_PASS || "secretpass";
+  if (!creds || creds.name !== user || creds.pass !== pass) {
+    res.set("WWW-Authenticate", 'Basic realm="Protected"');
+    return res.status(401).send("Authentication required.");
+  }
+  next();
+};
+app.use(auth);
+
 // ---- Supabase ----
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -292,19 +305,6 @@ app.post("/api/v1/rsvps/me", async (req, res) => {
     res.status(500).json({ error: "Internal error" });
   }
 });
-
-// ---- Basic auth for everything (keep while private) ----
-const auth = (req, res, next) => {
-  const creds = basicAuth(req);
-  const user = process.env.BASIC_AUTH_USER || "guest";
-  const pass = process.env.BASIC_AUTH_PASS || "secretpass";
-  if (!creds || creds.name !== user || creds.pass !== pass) {
-    res.set("WWW-Authenticate", 'Basic realm="Protected"');
-    return res.status(401).send("Authentication required.");
-  }
-  next();
-};
-app.use(auth);
 
 // ---- Serve built frontend from /app/dist (we'll place it there in Docker) ----
 const distDir = path.join(__dirname, "public");
