@@ -16,8 +16,8 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-/** PORT: Railway/Heroku/Render will set process.env.PORT */
-const port = Number(process.env.PORT) || 3000;
+/** PORT: set by hosting platform (Railway, Render, etc.) */
+const port = process.env.PORT ? Number(process.env.PORT) : 3000;
 
 /** PUBLIC_URL: used when composing invite links */
 const PUBLIC_URL = process.env.PUBLIC_URL || "https://www.cactusmakesperfect.org";
@@ -165,6 +165,6 @@ app.use(express.static(distDir));
 app.get("/health", (req, res) => res.json({ ok: true, at: new Date().toISOString() }));
 app.use((_, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
 
-app.listen(port, "0.0.0.0", () => {
-  console.log(`Server listening on 0.0.0.0:${port} (PUBLIC_URL=${PUBLIC_URL})`);
+app.listen(port, () => {
+  console.log(`Server listening on port ${port} (PUBLIC_URL=${PUBLIC_URL})`);
 });
