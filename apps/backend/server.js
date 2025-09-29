@@ -39,35 +39,102 @@ const JWT_TTL_SECONDS = parseInt(process.env.JWT_TTL_SECONDS || "7200", 10);
 // ---- Email providers ----
 const EMAIL_PROVIDER = (process.env.EMAIL_PROVIDER || "mailtrap").toLowerCase();
 const DEV_SKIP_EMAIL = process.env.DEV_SKIP_EMAIL === "true";
+const EMAIL_SEND_TIMEOUT_MS = Number(process.env.EMAIL_SEND_TIMEOUT_MS || 7000);
 if (EMAIL_PROVIDER === "sendgrid" && process.env.SENDGRID_API_KEY) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 }
 const mailtrapTransport = nodemailer.createTransport({
   host: process.env.MAILTRAP_HOST || "sandbox.smtp.mailtrap.io",
   port: Number(process.env.MAILTRAP_PORT || 2525),
-  auth: { user: process.env.MAILTRAP_USER, pass: process.env.MAILTRAP_PASS }
+  auth: { user: process.env.MAILTRAP_USER, pass: process.env.MAILTRAP_PASS },
+  connectionTimeout: Number(process.env.SMTP_CONNECTION_TIMEOUT_MS || 5000),
+  greetingTimeout: Number(process.env.SMTP_GREETING_TIMEOUT_MS || 5000),
+  socketTimeout: Number(process.env.SMTP_SOCKET_TIMEOUT_MS || 7000),
+  tls: { rejectUnauthorized: false }
 });
 
 async function sendEmail({ to, subject, html, text }) {
   const from = process.env.FROM_EMAIL || "noreply@cactusmakesperfect.org";
+  const provider = EMAIL_PROVIDER;
+
+  // DEV short-circuit
   if (DEV_SKIP_EMAIL) {
-    console.log(`DEV_SKIP_EMAIL is true, skipping sending email to ${to}`);
+    console.log(`[Email] DEV_SKIP_EMAIL=true, skipping send → to=${to}, subject="${subject}"`);
     return;
   }
-  if (EMAIL_PROVIDER === "sendgrid") {
-    await sgMail.send({ to, from, subject, html, text });
-  } else {
-    await mailtrapTransport.sendMail({ to, from, subject, html, text });
+
+  // Helper: hard timeout wrapper
+  const withHardTimeout = (promise, label) =>
+    Promise.race([
+      promise,
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error(`HARD_TIMEOUT_${label}_${EMAIL_SEND_TIMEOUT_MS}ms`)), EMAIL_SEND_TIMEOUT_MS)
+      ),
+    ]);
+
+  // Common preflight debug
+  console.log("[Email] send start", {
+    provider,
+    from,
+    to,
+    subjLen: subject ? subject.length : 0,
+    textLen: text ? text.length : 0,
+    htmlLen: html ? html.length : 0,
+  });
+
+  const t0 = Date.now();
+  try {
+    if (provider === "sendgrid") {
+      const keyLen = process.env.SENDGRID_API_KEY ? process.env.SENDGRID_API_KEY.length : 0;
+      if (!keyLen) console.warn("[Email] WARN: SENDGRID_API_KEY is missing");
+      else console.log(`[Email] SendGrid API key present (len=${keyLen})`);
+
+      const res = await withHardTimeout(
+        sgMail.send({ to, from, subject, html, text }),
+        "sendgrid"
+      );
+
+      // sgMail returns an array of [response, body] per message
+      const statuses = Array.isArray(res)
+        ? res.map((r) => (r && r[0] && r[0].statusCode) || r?.statusCode || null)
+        : [res?.statusCode || null];
+      console.log("[Email] SendGrid response statusCodes:", statuses);
+    } else {
+      // Nodemailer (SMTP / Mailtrap by default)
+      console.log("[Email] SMTP transport config", {
+        host: mailtrapTransport.options?.host,
+        port: mailtrapTransport.options?.port,
+        user: (process.env.MAILTRAP_USER || "").slice(0, 4) + "…",
+        connectionTimeout: mailtrapTransport.options?.connectionTimeout,
+        greetingTimeout: mailtrapTransport.options?.greetingTimeout,
+        socketTimeout: mailtrapTransport.options?.socketTimeout,
+      });
+
+      const info = await withHardTimeout(
+        mailtrapTransport.sendMail({ from, to, subject, html, text }),
+        "smtp"
+      );
+
+      console.log("[Email] SMTP send result", {
+        messageId: info?.messageId,
+        accepted: info?.accepted,
+        rejected: info?.rejected,
+        response: info?.response,
+      });
+    }
+
+    console.log(`[Email] sent ok in ${Date.now() - t0}ms`);
+  } catch (err) {
+    console.error("[Email] SEND FAILED", {
+      name: err?.name,
+      code: err?.code,
+      message: err?.message,
+      // SendGrid puts helpful details under response.body; Nodemailer under response too sometimes
+      response: err?.response?.body || err?.response || null,
+    });
+    throw err;
   }
 }
-
-const genCode = (len = 6) => [...Array(len)].map(() => Math.floor(Math.random() * 10)).join("");
-const issueJWT = async (payload) =>
-  await new SignJWT(payload)
-    .setProtectedHeader({ alg: "HS256" })
-    .setIssuedAt()
-    .setExpirationTime(`${JWT_TTL_SECONDS}s`)
-    .sign(Buffer.from(JWT_SECRET, "utf-8"));
 
 // ---- API: send invite ----
 app.post("/api/v1/invites/send", async (req, res) => {
