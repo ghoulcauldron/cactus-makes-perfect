@@ -4,6 +4,8 @@ import basicAuth from "basic-auth";
 import path from "path";
 import { fileURLToPath } from "url";
 
+import fetch from "node-fetch";
+
 import { createClient } from "@supabase/supabase-js";
 import { SignJWT } from "jose";
 import { v4 as uuidv4 } from "uuid";
@@ -99,6 +101,33 @@ async function sendEmail({ to, subject, html, text }) {
         ? res.map((r) => (r && r[0] && r[0].statusCode) || r?.statusCode || null)
         : [res?.statusCode || null];
       console.log("[Email] SendGrid response statusCodes:", statuses);
+    } else if (provider === "mailtrap_api") {
+      const token = process.env.MAILTRAP_API_TOKEN;
+      if (!token) {
+        console.error("[Email] No MAILTRAP_API_TOKEN set");
+        return;
+      }
+      const inboxId = process.env.MAILTRAP_INBOX_ID; // e.g. 4063326
+      const url = `https://sandbox.api.mailtrap.io/api/send/${inboxId}`;
+      console.log("[Email] Sending via Mailtrap API", { url, to });
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: { email: from, name: "CMP Test" },
+          to: [{ email: to }],
+          subject,
+          text,
+          html,
+          category: "CMP Integration Test",
+        }),
+      });
+      const data = await resp.json().catch(() => ({}));
+      console.log("[Email] Mailtrap API response", { status: resp.status, data });
+      if (!resp.ok) throw new Error(`Mailtrap API send failed: ${resp.status}`);
     } else {
       // Nodemailer (SMTP / Mailtrap by default)
       console.log("[Email] SMTP transport config", {
