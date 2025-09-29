@@ -3,9 +3,6 @@ import express from "express";
 import basicAuth from "basic-auth";
 import path from "path";
 import { fileURLToPath } from "url";
-
-import fetch from "node-fetch";
-
 import { createClient } from "@supabase/supabase-js";
 import { SignJWT } from "jose";
 import { v4 as uuidv4 } from "uuid";
