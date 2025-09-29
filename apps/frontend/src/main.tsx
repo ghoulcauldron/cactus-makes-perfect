@@ -34,6 +34,14 @@ const router = createBrowserRouter([
       </>
     ) 
   },
+  {
+    path: '/invite',
+    element: (
+      <>
+        <PhotoCalculatorAuth />
+      </>
+    )
+  },
   { 
     path: '/guest/welcome',
     element: (
