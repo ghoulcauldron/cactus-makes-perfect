@@ -311,25 +311,41 @@ export default function PhotoCalculatorAuth({
   }, [acc, cleared, display, hasOpUsed, op, submitting, waitingForNext, onEquals]);
 
 
-  // Paste handler: window-level, not tied to any input
+  // Ref for the hidden paste input
+  const pasteInputRef = useRef<HTMLInputElement>(null);
+
+  // Focus the hidden input on mount
   useEffect(() => {
-    const pasteListener = (e: ClipboardEvent) => {
-      const pasted = e.clipboardData?.getData("text") ?? "";
-      const digits = pasted.replace(/\D/g, "");
-      if (digits.length >= 4) {
-        setDisplay(digits.slice(0, LCD_DIGITS));
-        setCleared(false);
-        setWaitingForNext(false);
-        setSpecialMsg(null);
-        stopTicker();
-      }
-      e.preventDefault();
-    };
-    window.addEventListener("paste", pasteListener);
-    return () => {
-      window.removeEventListener("paste", pasteListener);
-    };
+    if (pasteInputRef.current) {
+      pasteInputRef.current.focus();
+    }
   }, []);
+
+  // When submitting, blur the input; when not, focus it
+  useEffect(() => {
+    if (pasteInputRef.current) {
+      if (submitting) pasteInputRef.current.blur();
+      else pasteInputRef.current.focus();
+    }
+  }, [submitting]);
+
+  // Paste handler for the hidden input
+  const onHiddenPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const pasted = e.clipboardData?.getData("text") ?? "";
+    const digits = pasted.replace(/\D/g, "");
+    if (digits.length >= 4) {
+      setDisplay(digits.slice(0, LCD_DIGITS));
+      setCleared(false);
+      setWaitingForNext(false);
+      setSpecialMsg(null);
+      stopTicker();
+    }
+    // Always clear the input after paste
+    if (pasteInputRef.current) {
+      pasteInputRef.current.value = "";
+    }
+    e.preventDefault();
+  };
 
   useEffect(() => {
     const keydownHandler = (e: KeyboardEvent) => {
@@ -380,6 +396,25 @@ export default function PhotoCalculatorAuth({
 
   return (
     <div className="w-screen h-screen bg-cactus-sand relative overflow-hidden">
+      {/* Hidden input for paste handling */}
+      <input
+        ref={pasteInputRef}
+        type="text"
+        tabIndex={-1}
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          opacity: 0,
+          pointerEvents: "none",
+          width: 1,
+          height: 1,
+          left: 0,
+          top: 0,
+          zIndex: -1,
+        }}
+        onPaste={onHiddenPaste}
+        autoFocus
+      />
       <svg
         className="absolute inset-0 w-full h-full"
         viewBox="0 0 2236 1440"
