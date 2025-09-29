@@ -6,11 +6,14 @@ COPY apps/frontend/package*.json ./
 RUN npm install
 
 # Copy frontend source into current WORKDIR (no extra nesting)
-COPY apps/frontend/ ./
+COPY apps/frontend/ /fe/apps/frontend/
 RUN ls -l /fe/apps/frontend
 
 ARG VITE_SHOW_RESET_BUTTON
 ENV VITE_SHOW_RESET_BUTTON=$VITE_SHOW_RESET_BUTTON
+
+
+RUN pwd && ls -la . && ls -la /fe/apps/frontend
 RUN npm run build
 
 # ---- Backend runtime stage ----
