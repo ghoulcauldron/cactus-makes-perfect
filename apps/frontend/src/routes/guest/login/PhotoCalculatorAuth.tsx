@@ -184,7 +184,7 @@ export default function PhotoCalculatorAuth({
     setShowInvalid(false);
 
     setSubmitting(true);
-    startTicker("hmmm");
+    startTicker("WAIT...");
     try {
       // use the possibly fallback token/email
       const res = await fetch("/api/v1/auth/verify", {
