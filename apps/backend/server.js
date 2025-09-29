@@ -16,7 +16,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const app = express();
-const port = process.env.PORT || 8080;
+const port = process.env.PORT || 3000;
 
 app.use(express.json()); // parse JSON body
 
@@ -117,7 +117,7 @@ app.post("/api/v1/invites/send", async (req, res) => {
     ]);
 
     // 4. Compose invite email
-    const inviteUrl = `${process.env.PUBLIC_URL || "http://localhost:8080"}/invite?token=${token}&email=${encodeURIComponent(email)}&code=${code}`;
+    const inviteUrl = `${process.env.PUBLIC_URL || "http://www.cactusmakesperfect.org"}/invite?token=${token}&email=${encodeURIComponent(email)}&code=${code}`;
     const subject = "You're Invited! 🌵";
     const html = `<p>Hello ${guest.name || ""},<br />You're invited! Use code <b>${code}</b> or <a href="${inviteUrl}">click here to RSVP</a>.<br>This link expires in 2 hours.</p>`;
     const text = `Hello ${guest.name || ""},\nYou're invited! Use code ${code} or visit: ${inviteUrl}\nThis link expires in 2 hours.`;
