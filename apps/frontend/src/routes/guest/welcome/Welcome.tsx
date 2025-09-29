@@ -36,13 +36,13 @@ export default function Welcome() {
       <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/asfalt-dark.png')] opacity-10 z-10"></div>
 
       {/* content */}
-      <div className="relative z-20 w-full max-w-5xl mx-auto text-center px-8 lg:px-16 py-24">
-        <h1 className="text-6xl md:text-7xl font-display text-cactus-green drop-shadow-sm mb-8">
+      <div className="relative z-20 w-full max-w-7xl mx-auto text-center px-12 lg:px-24 py-32">
+        <h1 className="text-4xl sm:text-6xl lg:text-[5vw] font-display text-cactus-green drop-shadow-sm mb-12">
           Welcome to <br />
           <span className="text-sunset">Cactus Makes Perfect</span>
         </h1>
 
-        <p className="text-xl md:text-2xl text-gray-800 mb-12 leading-relaxed">
+        <p className="text-lg sm:text-xl lg:text-2xl xl:text-[1.5vw] text-gray-800 mb-16 leading-relaxed">
           We’re so glad you’re here. 🌵✨  
           This portal is your guide to our 20th Anniversary Celebration in Santa Fe.  
           Find RSVP details, schedules, and updates as we get closer to the big day.
