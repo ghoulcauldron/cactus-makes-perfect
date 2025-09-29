@@ -310,23 +310,25 @@ export default function PhotoCalculatorAuth({
     }
   }, [acc, cleared, display, hasOpUsed, op, submitting, waitingForNext, onEquals]);
 
-  // Ref for the hidden input to capture paste events
-  const pasteInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Paste handler: intercepts paste, extracts digits, and fills display if valid
-  const handlePaste = useCallback((e: React.ClipboardEvent<HTMLInputElement>) => {
-    const pasted = e.clipboardData.getData("text");
-    const digits = pasted.replace(/\D/g, "");
-    if (digits.length >= 4) {
-      setDisplay(digits.slice(0, LCD_DIGITS));
-      setCleared(false);
-      setWaitingForNext(false);
-      setSpecialMsg(null);
-      stopTicker();
-      // Optionally: trigger submit if you want to auto-submit here
-    }
-    // Always prevent default so the input stays empty/invisible
-    e.preventDefault();
+  // Paste handler: window-level, not tied to any input
+  useEffect(() => {
+    const pasteListener = (e: ClipboardEvent) => {
+      const pasted = e.clipboardData?.getData("text") ?? "";
+      const digits = pasted.replace(/\D/g, "");
+      if (digits.length >= 4) {
+        setDisplay(digits.slice(0, LCD_DIGITS));
+        setCleared(false);
+        setWaitingForNext(false);
+        setSpecialMsg(null);
+        stopTicker();
+      }
+      e.preventDefault();
+    };
+    window.addEventListener("paste", pasteListener);
+    return () => {
+      window.removeEventListener("paste", pasteListener);
+    };
   }, []);
 
   useEffect(() => {
@@ -362,12 +364,6 @@ export default function PhotoCalculatorAuth({
     return () => window.removeEventListener("keydown", keydownHandler);
   }, [press, submitting]);
 
-  // Focus the hidden input when component mounts, so paste works
-  useEffect(() => {
-    if (pasteInputRef.current) {
-      pasteInputRef.current.value = "";
-    }
-  }, []);
 
   // Early conditional render: if not in DEBUG and missing token, show message
   if (!token) {
@@ -384,25 +380,6 @@ export default function PhotoCalculatorAuth({
 
   return (
     <div className="w-screen h-screen bg-cactus-sand relative overflow-hidden">
-      {/* Hidden input to capture paste events (invisible, offscreen, not tab-focusable) */}
-      <input
-        ref={pasteInputRef}
-        type="text"
-        inputMode="numeric"
-        autoComplete="one-time-code"
-        style={{
-          position: "absolute",
-          opacity: 0,
-          pointerEvents: "none",
-          width: 1,
-          height: 1,
-          left: -1000,
-          top: 0,
-        }}
-        tabIndex={-1}
-        aria-hidden="true"
-        onPaste={handlePaste}
-      />
       <svg
         className="absolute inset-0 w-full h-full"
         viewBox="0 0 2236 1440"
