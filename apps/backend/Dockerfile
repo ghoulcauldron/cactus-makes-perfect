@@ -7,6 +7,7 @@ RUN npm install
 
 # Copy frontend source into current WORKDIR (no extra nesting)
 COPY apps/frontend/ ./
+RUN ls -l /fe/apps/frontend
 
 ARG VITE_SHOW_RESET_BUTTON
 ENV VITE_SHOW_RESET_BUTTON=$VITE_SHOW_RESET_BUTTON
