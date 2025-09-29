@@ -1,31 +1,25 @@
-# ========= Build frontend (requires repo-root build context) =========
-FROM node:20-slim AS fe
-WORKDIR /fe
+# ---- Frontend build stage ----
+FROM node:20-slim AS frontend-build
+WORKDIR /fe/apps/frontend
 
-# Install FE deps
-COPY apps/frontend/package*.json ./
+COPY package*.json ./
 RUN npm install
-
-# Build FE
-COPY apps/frontend/ ./
+COPY . ./
 RUN npm run build
 
-# ========= Backend runtime =========
-FROM node:20-slim
-WORKDIR /app
+COPY . ./
 
-# Install backend deps
-COPY apps/backend/package*.json ./
-RUN npm install --omit=dev
+ARG VITE_SHOW_RESET_BUTTON
+ENV VITE_SHOW_RESET_BUTTON=$VITE_SHOW_RESET_BUTTON
 
-# Copy ONLY the backend files we actually need (avoid .dockerignore pitfalls)
-COPY apps/backend/server.js ./server.js
-# If you have other backend source files, add them explicitly:
-# COPY apps/backend/src ./src
-# COPY apps/backend/*.mjs ./
+# ---- Backend runtime stage ----
+FROM node:20-slim AS backend-runtime
+WORKDIR /be/apps/backend
 
-# Bring FE build into /app/dist so Express can serve it
-COPY --from=fe /fe/dist ./dist
+COPY server.js ./
+COPY --from=frontend-build /fe/apps/frontend/dist ./public
+
+RUN npm install express
 
 EXPOSE 3000
 CMD ["node", "server.js"]
