@@ -58,7 +58,7 @@ export default function PhotoCalculatorAuth({
 }: { imgSrc?: string; DEBUG?: boolean }) {
   // QA/dev fallback values
   const DEV_EMAIL = "test@example.com";
-  const DEV_TOKEN = "dev-token-123456";
+  const DEV_TOKEN = "devtoken123456";
   const url = new URL(window.location.href);
   // Use token/email from URL, or if DEBUG, fallback to dev values
   let email = url.searchParams.get("email");
