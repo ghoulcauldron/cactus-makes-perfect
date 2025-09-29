@@ -180,7 +180,7 @@ export default function PhotoCalculatorAuth({
     setShowInvalid(false);
 
     setSubmitting(true);
-    startTicker("WAIT...");
+    startTicker("ooooh...");
     try {
       // Only send token and code
       const res = await fetch("/api/v1/auth/verify", {

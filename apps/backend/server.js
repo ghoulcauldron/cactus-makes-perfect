@@ -33,7 +33,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 // ---- JWT ----
 const JWT_SECRET = process.env.JWT_SECRET || "devsecret";
-const JWT_TTL_SECONDS = parseInt(process.env.JWT_TTL_SECONDS || "7200", 10);
+const JWT_TTL_SECONDS = parseInt(process.env.JWT_TTL_SECONDS || "172800", 10);
 
 // ---- Email providers ----
 const EMAIL_PROVIDER = (process.env.EMAIL_PROVIDER || "mailtrap").toLowerCase();
@@ -179,7 +179,7 @@ app.post("/api/v1/invites/send", async (req, res) => {
 
     const code = genCode(6);
     const token = uuidv4();
-    const expires_at = new Date(Date.now() + 1000 * 60 * 60 * 2).toISOString();
+    const expires_at = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString();
 
     await supabase.from("invite_tokens").insert([{ guest_id: guest.id, token, code, expires_at }]);
     console.log("Inserted invite token");
@@ -202,6 +202,48 @@ app.post("/api/v1/invites/send", async (req, res) => {
     console.log("Responded with ok");
   } catch (e) {
     console.error("invite error", e);
+    res.status(500).json({ error: "Internal error" });
+  }
+});
+
+// ---- API: resend invite ----
+app.post("/api/v1/invites/resend", async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: "Missing email" });
+
+    const { data: guest, error: gErr } = await supabase
+      .from("guests")
+      .select("*")
+      .eq("email", email)
+      .single();
+
+    if (gErr || !guest) {
+      console.warn(`Invite resend requested for unknown email: ${email}`);
+      await supabase.from("user_activity").insert([{ kind: "invite_resend_failed", meta: { email } }]);
+      return res.json({ ok: true });
+    }
+
+    const code = genCode(6);
+    const token = uuidv4();
+    const expires_at = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString();
+
+    await supabase.from("invite_tokens").insert([{ guest_id: guest.id, token, code, expires_at }]);
+
+    const inviteUrl = `${PUBLIC_URL}/invite?token=${encodeURIComponent(token)}`;
+    const subject = "You're Invited! 🌵";
+    const html = `<p>Hello ${guest.first_name || ""},</p>
+      <p>Your entry code: <b>${code}</b></p>
+      <p>Or click to continue: <a href="${inviteUrl}">${inviteUrl}</a></p>`;
+    const text = `Hello ${guest.first_name || ""}\nCode: ${code}\nLink: ${inviteUrl}`;
+
+    await sendEmail({ to: email, subject, html, text });
+
+    await supabase.from("user_activity").insert([{ guest_id: guest.id, kind: "invite_resent", meta: { email } }]);
+
+    res.json({ ok: true });
+  } catch (e) {
+    console.error("invite resend error", e);
     res.status(500).json({ error: "Internal error" });
   }
 });
