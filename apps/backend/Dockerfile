@@ -1,16 +1,13 @@
 # ---- Frontend build stage ----
 FROM node:20-slim AS frontend-build
-WORKDIR /fe
-
-# Install dependencies
-COPY apps/frontend/package*.json ./apps/frontend/
 WORKDIR /fe/apps/frontend
+
+COPY apps/frontend/package*.json ./
 RUN npm install
 
-# Copy frontend source
+# Copy frontend source into current WORKDIR (no extra nesting)
 COPY apps/frontend/ ./
 
-# Build
 ARG VITE_SHOW_RESET_BUTTON
 ENV VITE_SHOW_RESET_BUTTON=$VITE_SHOW_RESET_BUTTON
 RUN npm run build
