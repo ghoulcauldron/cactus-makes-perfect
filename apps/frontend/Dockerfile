@@ -18,4 +18,4 @@ FROM nginx:alpine
 WORKDIR /usr/share/nginx/html
 COPY --from=build /app/dist ./
 COPY nginx.conf /etc/nginx/nginx.conf
-CMD ["/bin/sh", "-c", "envsubst '$PORT' < /etc/nginx/nginx.conf > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
+CMD ["/bin/sh", "-c", "envsubst < /etc/nginx/nginx.conf > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
