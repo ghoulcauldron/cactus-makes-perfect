@@ -178,7 +178,13 @@ export default function PhotoCalculatorAuth({
     const pass = (display || "").replace(/[^\d]/g, "");
     if (pass.length < 4) return;
 
+    // Clear any previous ticker state before starting
+    stopTicker();
+    setSpecialMsg(null);
+    setShowInvalid(false);
+
     setSubmitting(true);
+    startTicker("hmmm");
     try {
       // use the possibly fallback token/email
       const res = await fetch("/api/v1/auth/verify", {
@@ -186,15 +192,23 @@ export default function PhotoCalculatorAuth({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token: token || "", email: email || "", code: pass }),
       });
+      stopTicker();
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
       if (data?.token) localStorage.setItem("auth_token", data.token);
       localStorage.setItem("auth_ok", "true");
       setSpecialMsg("YES");
-      setTimeout(() => window.location.replace("/guest/welcome"), 500);
+      // Clear any scrolling/hmmm before redirect
+      stopTicker();
+      setTimeout(() => {
+        stopTicker();
+        window.location.replace("/guest/welcome");
+      }, 500);
     } catch {
+      stopTicker();
       setSpecialMsg("NOPE");
       setTimeout(() => {
+        stopTicker();
         setShowInvalid(true);
         setSubmitting(false);
         setSpecialMsg(null);
