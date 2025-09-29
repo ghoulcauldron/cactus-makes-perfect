@@ -19,7 +19,7 @@ WORKDIR /usr/share/nginx/html
 COPY --from=build /app/dist ./
 
 # Copy nginx template config
-COPY nginx.conf.template /etc/nginx/nginx.conf.template
+COPY nginx.conf.template /etc/nginx/conf.d/default.conf.template
 
-# Substitute $PORT into config at runtime and start nginx
-CMD ["/bin/sh", "-c", "envsubst < /etc/nginx/nginx.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
+# On startup, substitute $PORT into the template and launch nginx
+CMD ["/bin/sh", "-c", "envsubst < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
