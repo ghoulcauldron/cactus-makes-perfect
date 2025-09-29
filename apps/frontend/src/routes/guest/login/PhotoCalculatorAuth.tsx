@@ -56,8 +56,17 @@ export default function PhotoCalculatorAuth({
   imgSrc = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/CalculatorHandPaintingCorrected.png",
   DEBUG = true,
 }: { imgSrc?: string; DEBUG?: boolean }) {
+  // QA/dev fallback values
+  const DEV_EMAIL = "test@example.com";
+  const DEV_TOKEN = "dev-token-123456";
   const url = new URL(window.location.href);
-  const email = url.searchParams.get("email") || "your email";
+  // Use token/email from URL, or if DEBUG, fallback to dev values
+  let email = url.searchParams.get("email");
+  let token = url.searchParams.get("token");
+  if (DEBUG) {
+    if (!email) email = DEV_EMAIL;
+    if (!token) token = DEV_TOKEN;
+  }
 
   const [imgLoaded, setImgLoaded] = useState(false);
   const [fontLoaded, setFontLoaded] = useState(false);
@@ -171,11 +180,11 @@ export default function PhotoCalculatorAuth({
 
     setSubmitting(true);
     try {
-      const token = url.searchParams.get("token") || "";
+      // use the possibly fallback token/email
       const res = await fetch("/api/v1/auth/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, email, code: pass }),
+        body: JSON.stringify({ token: token || "", email: email || "", code: pass }),
       });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
@@ -191,7 +200,7 @@ export default function PhotoCalculatorAuth({
         setSpecialMsg(null);
       }, 500);
     }
-  }, [acc, curVal, display, hasOpUsed, op, url, email]);
+  }, [acc, curVal, display, hasOpUsed, op, token, email]);
 
   /** Core button handler */
   const press = useCallback((key: KeyDef) => {
@@ -323,6 +332,19 @@ export default function PhotoCalculatorAuth({
     window.addEventListener("keydown", keydownHandler);
     return () => window.removeEventListener("keydown", keydownHandler);
   }, [press, submitting]);
+
+  // Early conditional render: if not in DEBUG and missing token/email, show message
+  if (!token || !email) {
+    if (!DEBUG) {
+      return (
+        <div className="w-screen h-screen bg-cactus-sand flex items-center justify-center">
+          <div className="text-xl font-semibold text-center px-8 py-6 bg-white/80 rounded-xl shadow">
+            Please check your email and click your personalized invite link to continue.
+          </div>
+        </div>
+      );
+    }
+  }
 
   return (
     <div className="w-screen h-screen bg-cactus-sand relative overflow-hidden">
