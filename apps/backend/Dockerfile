@@ -1,19 +1,24 @@
-# apps/backend/Dockerfile
+# ---- Build frontend ----
+FROM node:20-slim AS fe
+WORKDIR /fe
+COPY ../frontend/package*.json ./
+RUN npm install
+COPY ../frontend ./
+RUN npm run build
 
+# ---- Backend runtime ----
 FROM node:20-slim
 WORKDIR /app
 
-# Copy package metadata first for better caching
-COPY package*.json ./
-
-# Install runtime deps only (Express + basic-auth + your others from package.json)
+# Backend deps
+COPY ./package*.json ./
 RUN npm install --omit=dev
 
-# Copy app source
+# Backend source
 COPY . .
 
-# Expose backend port
-EXPOSE 3000
+# Bring frontend build into /app/dist
+COPY --from=fe /fe/dist ./dist
 
-# Start the Express server
+EXPOSE 3000
 CMD ["node", "server.js"]
