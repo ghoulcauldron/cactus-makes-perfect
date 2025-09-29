@@ -276,3 +276,13 @@ app.listen(port, () => {
 // ---- Helper: generate numeric code ----
 const genCode = (len = 6) =>
   [...Array(len)].map(() => Math.floor(Math.random() * 10)).join("");
+
+// ---- Helper: issue JWT ----
+async function issueJWT(payload) {
+  const alg = "HS256";
+  const token = await new SignJWT(payload)
+    .setProtectedHeader({ alg })
+    .setExpirationTime(JWT_TTL_SECONDS)
+    .sign(new TextEncoder().encode(JWT_SECRET));
+  return token;
+}
