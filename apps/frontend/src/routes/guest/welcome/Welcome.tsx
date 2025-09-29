@@ -15,7 +15,7 @@ export default function Welcome() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden bg-cactus-sand">
+    <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden bg-cactus-sand max-w-[1920px] mx-auto">
       {/* background video */}
       {videoUrl && (
         <video
