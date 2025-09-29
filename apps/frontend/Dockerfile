@@ -21,5 +21,5 @@ COPY --from=build /app/dist ./
 # Copy nginx template config
 COPY nginx.conf.template /etc/nginx/nginx.conf.template
 
-# On startup, substitute $PORT into config and run nginx
+# Substitute $PORT into config at runtime and start nginx
 CMD ["/bin/sh", "-c", "envsubst < /etc/nginx/nginx.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
