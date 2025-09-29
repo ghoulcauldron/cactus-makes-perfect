@@ -247,3 +247,6 @@ app.use((_, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
 app.listen(port, () => {
   console.log(`Server listening on port ${port} (PUBLIC_URL=${PUBLIC_URL})`);
 });
+// ---- Helper: generate numeric code ----
+const genCode = (len = 6) =>
+  [...Array(len)].map(() => Math.floor(Math.random() * 10)).join("");
