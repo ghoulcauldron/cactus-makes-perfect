@@ -184,7 +184,7 @@ app.post("/api/v1/invites/send", async (req, res) => {
     await supabase.from("invite_tokens").insert([{ guest_id: guest.id, token, code, expires_at }]);
     console.log("Inserted invite token");
 
-    const inviteUrl = `${PUBLIC_URL}/invite?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
+    const inviteUrl = `${PUBLIC_URL}/invite?token=${encodeURIComponent(token)}`;
     const subject = "You're Invited! 🌵";
     const html = `<p>Hello ${guest.first_name || ""},</p>
       <p>Your entry code: <b>${code}</b></p>
@@ -209,8 +209,8 @@ app.post("/api/v1/invites/send", async (req, res) => {
 // ---- API: verify ----
 app.post("/api/v1/auth/verify", async (req, res) => {
   try {
-    const { token, email, code } = req.body || {};
-    if (!token || !email || !code) return res.status(400).json({ error: "Missing fields" });
+    const { token, code } = req.body || {};
+    if (!token || !code) return res.status(400).json({ error: "Missing fields" });
 
     const { data: rows, error } = await supabase
       .from("invite_tokens")
@@ -221,7 +221,7 @@ app.post("/api/v1/auth/verify", async (req, res) => {
     if (error || !rows?.length) return res.status(401).json({ error: "Invalid code or token" });
 
     const invite = rows[0];
-    if (!invite?.guest || invite.guest.email !== email) return res.status(401).json({ error: "Email mismatch" });
+    if (!invite?.guest) return res.status(401).json({ error: "Invalid invite" });
     if (new Date(invite.expires_at) < new Date()) return res.status(410).json({ error: "Code expired" });
 
     const jwt = await issueJWT({ guest_id: invite.guest.id, email: invite.guest.email });
