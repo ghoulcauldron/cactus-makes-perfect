@@ -160,10 +160,10 @@ const auth = (req, res, next) => {
 app.use(auth);
 
 // ---- Serve built frontend from /app/dist (we'll place it there in Docker) ----
-const distDir = path.join(__dirname, "dist");
+const distDir = path.join(__dirname, "public");
 app.use(express.static(distDir));
 app.get("/health", (req, res) => res.json({ ok: true, at: new Date().toISOString() }));
-app.use((_, res) => res.sendFile(path.join(distDir, "index.html")));
+app.use((_, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
 
 app.listen(port, "0.0.0.0", () => {
   console.log(`Server listening on 0.0.0.0:${port} (PUBLIC_URL=${PUBLIC_URL})`);
