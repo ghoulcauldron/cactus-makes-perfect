@@ -38,6 +38,7 @@ const JWT_TTL_SECONDS = parseInt(process.env.JWT_TTL_SECONDS || "7200", 10);
 
 // ---- Email providers ----
 const EMAIL_PROVIDER = (process.env.EMAIL_PROVIDER || "mailtrap").toLowerCase();
+const DEV_SKIP_EMAIL = process.env.DEV_SKIP_EMAIL === "true";
 if (EMAIL_PROVIDER === "sendgrid" && process.env.SENDGRID_API_KEY) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 }
@@ -49,6 +50,10 @@ const mailtrapTransport = nodemailer.createTransport({
 
 async function sendEmail({ to, subject, html, text }) {
   const from = process.env.FROM_EMAIL || "noreply@cactusmakesperfect.org";
+  if (DEV_SKIP_EMAIL) {
+    console.log(`DEV_SKIP_EMAIL is true, skipping sending email to ${to}`);
+    return;
+  }
   if (EMAIL_PROVIDER === "sendgrid") {
     await sgMail.send({ to, from, subject, html, text });
   } else {
@@ -67,6 +72,7 @@ const issueJWT = async (payload) =>
 // ---- API: send invite ----
 app.post("/api/v1/invites/send", async (req, res) => {
   try {
+    console.log("Received invite send request");
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: "Missing email" });
 
@@ -76,12 +82,14 @@ app.post("/api/v1/invites/send", async (req, res) => {
       .eq("email", email)
       .single();
     if (gErr || !guest) return res.status(404).json({ error: "Guest not found" });
+    console.log("Found guest:", guest);
 
     const code = genCode(6);
     const token = uuidv4();
     const expires_at = new Date(Date.now() + 1000 * 60 * 60 * 2).toISOString();
 
     await supabase.from("invite_tokens").insert([{ guest_id: guest.id, token, code, expires_at }]);
+    console.log("Inserted invite token");
 
     const inviteUrl = `${PUBLIC_URL}/invite?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
     const subject = "You're Invited! 🌵";
@@ -90,11 +98,15 @@ app.post("/api/v1/invites/send", async (req, res) => {
       <p>Or click to continue: <a href="${inviteUrl}">${inviteUrl}</a></p>`;
     const text = `Hello ${guest.first_name || ""}\nCode: ${code}\nLink: ${inviteUrl}`;
 
+    console.log("About to send email");
     await sendEmail({ to: email, subject, html, text });
+    console.log("Email sent");
 
     await supabase.from("user_activity").insert([{ guest_id: guest.id, kind: "invite_sent", meta: { email } }]);
+    console.log("Inserted user_activity");
 
     res.json({ ok: true });
+    console.log("Responded with ok");
   } catch (e) {
     console.error("invite error", e);
     res.status(500).json({ error: "Internal error" });
