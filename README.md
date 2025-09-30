@@ -61,6 +61,7 @@ Railway
   - Custom domain setup for guest portal
   - User authentication and identity management
   - Integration with third-party identity providers
+  - Transition: Mailtrap (dev/testing) → SendGrid (production) once domains/DNS are ready.
 
 - **Phase 7: QA Matrix**
   - Dev environment: Invite 10–20 mock users; verify email rendering and links
