@@ -194,11 +194,15 @@ app.post("/api/v1/invites/send", async (req, res) => {
     const token = uuidv4();
     const expires_at = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString();
 
-    await supabase.from("invite_tokens").insert([{ guest_id: guest.id, token, code, expires_at }]);
-    console.log("Inserted invite token");
-
-    await new Promise(res => setTimeout(res, 250));
-    console.log("Post-insert delay complete");
+    await supabase.from("invite_tokens").insert([{
+      guest_id: guest.id,
+      token,
+      code,
+      expires_at,
+      provider: EMAIL_PROVIDER,
+      delivery_status: "pending"
+    }]);
+    console.log("Inserted invite token (with provider + pending status)");
 
     const inviteUrl = `${PUBLIC_URL}/invite?token=${encodeURIComponent(token)}`;
     const subject = "You're Invited! 🌵";
