@@ -388,7 +388,7 @@ export default function PhotoCalculatorAuth({
       return (
         <div className="w-screen h-screen bg-cactus-sand flex items-center justify-center">
           <div className="text-xl font-semibold text-center px-8 py-6 bg-white/80 rounded-xl shadow">
-            Mingle or I'll mangle!"
+            Mingle or I'll mangle!
           </div>
         </div>
       );
