@@ -197,6 +197,9 @@ app.post("/api/v1/invites/send", async (req, res) => {
     await supabase.from("invite_tokens").insert([{ guest_id: guest.id, token, code, expires_at }]);
     console.log("Inserted invite token");
 
+    await new Promise(res => setTimeout(res, 250));
+    console.log("Post-insert delay complete");
+
     const inviteUrl = `${PUBLIC_URL}/invite?token=${encodeURIComponent(token)}`;
     const subject = "You're Invited! 🌵";
     const html = `<p>Hello ${guest.first_name || ""},</p>
@@ -206,6 +209,13 @@ app.post("/api/v1/invites/send", async (req, res) => {
 
     console.log("About to send email");
     await sendEmail({ to: email, subject, html, text });
+    await supabase
+      .from("invite_tokens")
+      .update({
+        provider: EMAIL_PROVIDER,
+        delivery_status: "sent"
+      })
+      .eq("token", token);
     console.log("Email sent");
 
     await supabase.from("user_activity").insert([{ guest_id: guest.id, kind: "invite_sent", meta: { email } }]);
@@ -215,6 +225,17 @@ app.post("/api/v1/invites/send", async (req, res) => {
     console.log("Responded with ok");
   } catch (e) {
     console.error("invite error", e);
+    try {
+      await supabase
+        .from("invite_tokens")
+        .update({
+          provider: EMAIL_PROVIDER,
+          delivery_status: "failed"
+        })
+        .eq("token", token);
+    } catch (_) {
+      // ignore errors here to not mask original error
+    }
     res.status(500).json({ error: "Internal error" });
   }
 });
@@ -278,6 +299,11 @@ app.post("/api/v1/auth/verify", async (req, res) => {
     const invite = rows[0];
     if (!invite?.guest) return res.status(401).json({ error: "Invalid invite" });
     if (new Date(invite.expires_at) < new Date()) return res.status(410).json({ error: "Code expired" });
+
+    await supabase
+      .from("invite_tokens")
+      .update({ used_at: new Date().toISOString(), delivery_status: "responded" })
+      .eq("token", token);
 
     const jwt = await issueJWT({ guest_id: invite.guest.id, email: invite.guest.email });
 
