@@ -1,4 +1,4 @@
-# Cactus Makes Perfect 🌵✨  
+<file name=0 path=/Users/gilcalderon/cactus-makes-perfect/README.md># Cactus Makes Perfect 🌵✨  
 Santa Fe 20th Anniversary Guest Portal
 
 This repo contains a monorepo with:
@@ -23,59 +23,164 @@ npm install
 node server.js
 ```
 
-Railway
+## Deployment (Railway)
 
-- Deploy both apps/frontend and apps/backend as services via infra/railway.json.
-- Configure environment variables in the Railway dashboard.
+- Recommended single-service deploy: the backend service builds the frontend and serves it from the `/public` directory.
+- An alternative two-service deployment (separate nginx frontend + API backend) is possible but not required.
+- When attaching a custom domain, map `www.cactusmakesperfect.org` to the backend service.
+- Basic Auth protects all routes during private testing to restrict access.
+- Minimal required environment variables checklist:
+  - `SUPABASE_URL`
+  - `SUPABASE_SERVICE_ROLE_KEY`
+  - `JWT_SECRET`
+  - `EMAIL_PROVIDER`
+  - `FROM_EMAIL`
+  - `BASIC_AUTH_USER`
+  - `BASIC_AUTH_PASS`
+
+## Environment & Config
+
+Key environment variables used by the application:
+
+- `SUPABASE_URL` — URL of the Supabase project.
+- `SUPABASE_SERVICE_ROLE_KEY` — Service role key for Supabase with elevated permissions.
+- `EMAIL_PROVIDER` — Email provider to use (`mailtrap` or `sendgrid`).
+- `FROM_EMAIL` — The email address from which invites and notifications are sent.
+- `MAILTRAP_API_TOKEN` — API token for Mailtrap sandbox environment.
+- `MAILTRAP_INBOX_ID` — Mailtrap inbox ID used for sandbox testing.
+- `SENDGRID_API_KEY` — API key for SendGrid (production).
+- `JWT_SECRET` — Secret key used to sign JWT tokens.
+- `JWT_TTL_SECONDS` — JWT token time-to-live in seconds (e.g., `172800` for 48 hours).
+- `PUBLIC_URL` — Public URL of the deployed app (e.g., `https://www.cactusmakesperfect.org`).
+- `BASIC_AUTH_USER` — Username for Basic Auth protection.
+- `BASIC_AUTH_PASS` — Password for Basic Auth protection.
+- `DEV_SKIP_EMAIL` — Set to `true` to skip sending emails during development/testing.
+- Frontend build-time variables:
+  - `VITE_DEBUG` — Set to `false` in production to disable debug features.
+  - `VITE_SHOW_RESET_BUTTON` — Enables a reset button in the UI for debugging.
+
+## API Reference (current)
+
+### POST /api/v1/invites/send
+**Payload:** `{ "email": "<guest_email>" }`  
+**Response:** `200 { "ok": true }`  
+**Side effects:** Inserts a row into `invite_tokens` with `provider`, sets `delivery_status` from `pending` to `sent`, logs `user_activity` event `invite_sent`.
+
+### POST /api/v1/invites/resend
+**Payload:** `{ "email": "<guest_email>" }`  
+**Response:** `200 { "ok": true }` regardless of guest existence (Option B).  
+Logs either `invite_resent` or `invite_resend_failed` in `user_activity`.
+
+### POST /api/v1/auth/verify
+**Payload:** `{ "token": "<token>", "code": "<code>" }`  
+**Response:** `200 { "token": "<jwt>", "guest_id": "<guest_id>" }` on success.  
+Side effects: sets `invite_tokens.used_at` timestamp and updates `delivery_status` to `responded`.
+
+### POST /api/v1/rsvps/me
+**Payload:** `{ "guest_id": "<guest_id>", "status": "<rsvp_status>" }`  
+**Response:** `200 { "ok": true }` on success.  
+Logs `rsvp_submitted` event in `user_activity`.
+
+### GET /health
+Returns health status of the backend service. Can be public if desired.
+
+## Data Model Notes
+
+Key database tables and notable columns:
+
+- **guests**  
+  - `email` (unique)  
+  - `first_name`, `last_name`  
+  - `invited_at`, `responded_at`
+
+- **invite_tokens**  
+  - `guest_id` (foreign key)  
+  - `token` (unique string)  
+  - `code` (numeric or alphanumeric code)  
+  - `expires_at` (typically 30 days after creation)  
+  - `provider` (e.g., mailtrap, sendgrid)  
+  - `delivery_status` (pending, sent, responded)  
+  - `used_at` (timestamp when token was used)  
+  - `created_at`
+
+- **user_activity**  
+  - `guest_id`  
+  - `kind` (event type, e.g., invite_sent, rsvp_submitted)  
+  - `meta` (jsonb with event details)  
+  - `created_at`
+
+Example query to audit latest invites joined to guests:
+
+```sql
+SELECT g.email, g.first_name, g.last_name, i.token, i.code, i.delivery_status, i.used_at, i.created_at
+FROM invite_tokens i
+JOIN guests g ON i.guest_id = g.id
+ORDER BY i.created_at DESC
+LIMIT 20;
+```
+
+## Frontend Behavior
+
+- Routes:
+  - `/` — Landing page or redirect.
+  - `/invite?token=...` — Invite landing page with token parameter.
+  - `/guest/login` — CalculatorAuth screen for code entry.
+  - `/guest/welcome` — Welcome page after successful auth.
+  - `/guest/rsvp` — RSVP form for guests.
+
+- Production guard: If no `token` is provided in the URL and `VITE_DEBUG` is `false`, the CalculatorAuth screen shows a message: “Please use your invite link”.
+
+- After successful `/auth/verify`, the app stores `auth_token` (JWT) and `guest_user_id` in `localStorage`.
+
+- `ProtectedRoute` components require a valid `auth_token` in localStorage to grant access.
+
+- RSVP submissions post `guest_id` retrieved from localStorage.
 
 ## Project Roadmap
 
 ### Completed Phases
 
-- **Phase 1: Basic Guest Portal**
-  - Guest invite system
-  - RSVP functionality
-  - Basic UI for guests
+- Phase 1–4:
+  - Invite issuing system with tokenized URLs.
+  - CalculatorAuth verification with JWT issuance and localStorage persistence.
+  - RSVP POST endpoint and activity logging.
+  - Mailtrap integration via API for invite delivery.
+  - Tracking of provider, delivery_status, and used_at timestamps for invites.
 
-- **Phase 2: Backend API & Database**
-  - Supabase integration
-  - Secure API endpoints
-  - Data persistence
+#### Phase 4 – Success Criteria Achieved
+- Full invite and verification flow functioning end-to-end (Mailtrap sandbox).
+- Tokenized URLs verified to land on CalculatorAuth correctly.
+- Correct code entry issues JWT and persists guest_id to localStorage.
+- RSVP form submits successfully and logs user_activity.
+- Basic Auth and “use invite link” guard functioning as intended.
 
-- **Phase 3: Frontend Enhancements**
-  - Improved UI/UX with Tailwind
-  - Responsive design
-  - User input validation
-
-- **Phase 4: Deployment & Infra**
-  - Railway deployment configs
-  - Dockerfiles for containerization
-  - Environment variable management
+#### Phase 7 – QA Matrix Success Criteria Achieved
+- Successful QA testing with Mailtrap sandbox environment completed.
+- Email invites render correctly with unique tokenized URLs and codes.
+- Authentication flow accepts valid token and code, issues JWT, and redirects appropriately.
+- RSVP submissions record guest responses and log user_activity events accurately.
+- UI guards display “Please use your invite link” message when appropriate.
+- Basic Auth protection verified to restrict access during private testing.
+- All critical user flows validated end-to-end ensuring stable release readiness.
 
 ### Upcoming Phases
 
-- **Phase 5: (Deferred)**
-  - Two-way communications and SMS notifications deferred until Admin Dashboard phase
+- Phase 5: (Deferred) Two-way communications and SMS notifications pending Admin Dashboard development.
 
-- **Phase 6: Domains & Identity**
-  - Custom domain setup for guest portal
-  - User authentication and identity management
-  - Integration with third-party identity providers
-  - Transition: Mailtrap (dev/testing) → SendGrid (production) once domains/DNS are ready.
+- Phase 6: Domains & Identity  
+  Custom email identity setup including SendGrid integration, SPF/DKIM/DMARC configuration, and optional inbound parse.  
+  Transition note: Mailtrap (dev/testing) → SendGrid (production) once domains/DNS are ready.
 
-- **Phase 7: QA Matrix**
-  - Dev environment: Invite 10–20 mock users; verify email rendering and links
-  - Auth calculator: Accepts correct {token + code}, rejects wrong code and expired tokens
-  - RSVP: Writes guest responses and activity logs
-  - Staging environment: Verify Gmail, Outlook, iCloud inbox reception with no broken images or links
-  - Spam checks: Adjust content, DKIM, SPF as needed
-  - Error handling: Friendly UI for 401 errors (calculator modal on invalid), server logs user activity for failures
+- Phase 7: QA Matrix  
+  - Dev environment: Invite 10–20 mock users; verify email rendering and links.  
+  - Auth calculator: Accepts correct {token + code}, rejects wrong code and expired tokens.  
+  - RSVP: Writes guest responses and activity logs.  
+  - Staging environment: Verify Gmail, Outlook, iCloud inbox reception with no broken images or links.  
+  - Spam checks: Adjust content, DKIM, SPF as needed.  
+  - Error handling: Friendly UI for 401 errors (calculator modal on invalid).  
+  - Token reuse: Reusing token is allowed until expiry (by design).
 
-- **Phase 8: RSVP & Event UI**
-  - RSVP modal with improved UX
-  - Event Details modal with schedules and info
-  - FAQs modal for guest questions
-
+- Phase 8: RSVP modal + Event Details modal + FAQs modal (renaming planned).
 
 ## QA Checklist
 ### Dev (Mailtrap)
@@ -91,6 +196,7 @@ Railway
 - [ ] 401 cases produce friendly UI (calculator modal on invalid)  
 - [ ] Server logs user_activity for failures (optional)  
 
+**Note:** The “Please use your invite link” message is visible only when `VITE_DEBUG=false`.
 
 ## Mailtrap QA Test Plan
 
@@ -119,8 +225,8 @@ To verify the full end-to-end invite and verification system works using Mailtra
 
 5. **Edge case testing**
    - Enter wrong or expired code → confirm “NOPE” modal.
-   - Attempt reusing token → verify access denied.
-   - Missing token or malformed link → show “Please use your invite link” message.
+   - Reusing token is allowed until expiry (by design).
+   - Missing token or malformed link → show “Please use your invite link” message (visible only if `VITE_DEBUG=false`).
 
 6. **Log validation**
    - In backend logs, confirm:
@@ -143,6 +249,10 @@ To verify the full end-to-end invite and verification system works using Mailtra
 Add a UI flow for guests to request a resend of their invite link by entering their email. This UI would call the existing `/api/v1/invites/resend` endpoint, which currently logs invalid attempts but does not have a user interface yet.
 
 Invite email design
+
+- request invite token email resend (self or admin)
+- create guest relationships/households to bundle responses
+- flow to change/edit RSVP response.
 
 ## Phase 6: Domains & Identity Rollout Plan
 
@@ -187,3 +297,11 @@ This rollout plan outlines the detailed steps to configure custom domains, set u
 - [ ] Monitor email delivery metrics and user feedback closely.
 - [ ] Gradually increase the volume of emails sent via SendGrid in production.
 - [ ] Document the transition process and any issues encountered for future reference.
+
+## Troubleshooting
+
+- **401 on RSVP** → Likely missing `guest_user_id` in localStorage; ensure `/auth/verify` returns `guest_id` and the client saves it.
+- **400 on RSVP** → API expects `{ guest_id, status }` (not `user_id`).
+- **Email hangs** → Set `DEV_SKIP_EMAIL=true` to isolate; verify Mailtrap API token and inbox ID; check logs for `[Email] send start`.
+- **Basic Auth not prompting** → Ensure middleware is registered before routes in backend.
+- **Blank page on invite link** → Ensure `/invite` route exists in the frontend router and `index.html` uses the correct base URL.
