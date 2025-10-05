@@ -313,7 +313,7 @@ app.post("/api/v1/auth/verify", async (req, res) => {
 
     await supabase.from("user_activity").insert([{ guest_id: invite.guest.id, kind: "auth_success" }]);
 
-    res.json({ token: jwt });
+    res.json({ token: jwt, guest_id: invite.guest.id });
   } catch (e) {
     console.error("verify error", e);
     res.status(500).json({ error: "Internal error" });

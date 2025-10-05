@@ -192,6 +192,7 @@ export default function PhotoCalculatorAuth({
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
       if (data?.token) localStorage.setItem("auth_token", data.token);
+      if (data?.guest_id) localStorage.setItem("guest_user_id", data.guest_id);
       localStorage.setItem("auth_ok", "true");
       setSpecialMsg("YES");
       // Clear any scrolling/hmmm before redirect
