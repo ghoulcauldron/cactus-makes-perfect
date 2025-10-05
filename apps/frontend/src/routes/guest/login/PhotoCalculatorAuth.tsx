@@ -54,7 +54,7 @@ const KEYS: KeyDef[] = [
 
 export default function PhotoCalculatorAuth({
   imgSrc = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/CalculatorHandPaintingCorrected.png",
-  DEBUG = true,
+  DEBUG = false,
 }: { imgSrc?: string; DEBUG?: boolean }) {
   // Only token from URL, or fallback to dev value if DEBUG
   const DEV_TOKEN = "devtoken123";

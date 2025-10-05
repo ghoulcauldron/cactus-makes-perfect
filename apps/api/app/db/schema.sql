@@ -18,7 +18,5 @@ create table if not exists invite_tokens (
 create table if not exists rsvps (
   id uuid primary key default gen_random_uuid(),
   guest_id uuid references guests(id),
-  status text default 'pending',
-  dietary_notes text,
-  song_request text
+  status text default 'pending'
 );
