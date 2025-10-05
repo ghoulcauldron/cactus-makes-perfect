@@ -17,7 +17,7 @@ export default function RSVP() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ user_id: guest_user_id, status }),
+        body: JSON.stringify({ guest_id: guest_user_id, status }),
       });
 
       if (!response.ok) {
