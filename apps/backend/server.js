@@ -350,7 +350,7 @@ app.post("/api/v1/rsvps/me", async (req, res) => {
         {
           guest_id,
           status,
-          responded_at: new Date().toISOString(),
+          submitted_at: new Date().toISOString(), // ✅ match your schema
         },
       ])
       .select();
