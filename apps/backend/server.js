@@ -336,66 +336,38 @@ app.post("/api/v1/auth/verify", async (req, res) => {
   }
 });
 
-// ---- API: RSVP (create-or-update) ----
+// ---- API: RSVP ----
 app.post("/api/v1/rsvps/me", async (req, res) => {
   try {
     const { guest_id, status } = req.body || {};
     if (!guest_id || !status) return res.status(400).json({ error: "Missing guest_id or status" });
 
-    // Optional: normalize status
-    const normalized = String(status).toLowerCase();
-    const allowed = new Set(["yes", "no", "maybe"]);
-    if (!allowed.has(normalized)) {
-      return res.status(422).json({ error: "Invalid status" });
-    }
+    console.log("[RSVP] Received", { guest_id, status });
 
-    // Check existing RSVP for this guest
-    const { data: existing, error: selErr } = await supabase
+    const { data, error } = await supabase
       .from("rsvps")
-      .select("*")
-      .eq("guest_id", guest_id)
-      .maybeSingle();
+      .insert([
+        {
+          guest_id,
+          status,
+          responded_at: new Date().toISOString(),
+        },
+      ])
+      .select();
 
-    let rsvpRow = null;
-    if (selErr) {
-      console.error("rsvp select error", selErr);
+    if (error) {
+      console.error("[RSVP] Insert failed", error);
+      return res.status(422).json({ error: "Supabase insert failed", details: error });
     }
 
-    if (existing) {
-      const { data: updated, error: updErr } = await supabase
-        .from("rsvps")
-        .update({ status: normalized, updated_at: new Date().toISOString() })
-        .eq("id", existing.id)
-        .select()
-        .maybeSingle();
+    await supabase
+      .from("user_activity")
+      .insert([{ guest_id, kind: "rsvp_submitted", meta: { status } }]);
 
-      if (updErr) {
-        console.error("rsvp update error", updErr);
-        return res.status(500).json({ error: "Failed to update RSVP" });
-      }
-      rsvpRow = updated;
-      await supabase.from("user_activity").insert([{ guest_id, kind: "rsvp_updated", meta: { status: normalized } }]);
-    } else {
-      const { data: inserted, error: insErr } = await supabase
-        .from("rsvps")
-        .insert([{ guest_id, status: normalized }])
-        .select()
-        .maybeSingle();
-
-      if (insErr) {
-        console.error("rsvp insert error", insErr);
-        return res.status(500).json({ error: "Failed to create RSVP" });
-      }
-      rsvpRow = inserted;
-      await supabase.from("user_activity").insert([{ guest_id, kind: "rsvp_created", meta: { status: normalized } }]);
-    }
-
-    // Touch guests.responded_at
-    await supabase.from("guests").update({ responded_at: new Date().toISOString() }).eq("id", guest_id);
-
-    return res.json({ ok: true, rsvp: rsvpRow });
+    console.log("[RSVP] Insert success", data);
+    return res.json({ ok: true, rsvp: data });
   } catch (e) {
-    console.error("rsvp error", e);
+    console.error("[RSVP] Unexpected error", e);
     return res.status(500).json({ error: "Internal error" });
   }
 });
