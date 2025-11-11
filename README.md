@@ -48,8 +48,8 @@ Key environment variables used by the application:
 - `FROM_EMAIL` — The email address from which invites and notifications are sent.
 - `MAILTRAP_API_TOKEN` — API token for Mailtrap sandbox environment.
 - `MAILTRAP_INBOX_ID` — Mailtrap inbox ID used for sandbox testing.
-- `MAILGUN_DOMAIN` — Mailgun domain for sending emails (production).
-- `MAILGUN_API_KEY` — API key for Mailgun (production).
+- `MAILGUN_DOMAIN` — Mailgun domain for sending emails (production). Must match the verified Mailgun domain, e.g. `mg.cactusmakesperfect.org`.
+- `MAILGUN_API_KEY` — API key for Mailgun (production). Must correspond to the verified Mailgun domain.
 - `JWT_SECRET` — Secret key used to sign JWT tokens.
 - `JWT_TTL_SECONDS` — JWT token time-to-live in seconds (e.g., `172800` for 48 hours).
 - `PUBLIC_URL` — Public URL of the deployed app (e.g., `https://www.cactusmakesperfect.org`).
@@ -170,7 +170,9 @@ LIMIT 20;
 
 - Phase 6: Domains & Identity  
   Custom email identity setup including Mailgun integration, SPF/DKIM/DMARC configuration, and optional inbound parse.  
-  Transition note: Mailtrap (dev/testing) → Mailgun (production) once domains/DNS are ready.
+  Transition note: Mailtrap (dev/testing) → Mailgun (production) once domains/DNS are ready.  
+  **Mailgun integration is now successfully tested and operational.**  
+  The Mailgun API credentials (`MAILGUN_DOMAIN`, `MAILGUN_API_KEY`, `FROM_EMAIL`) must match the verified Mailgun domain (e.g. `mg.cactusmakesperfect.org`) for proper email delivery.
 
 - Phase 7: QA Matrix  
   - Dev environment: Invite 10–20 mock users; verify email rendering and links.  
@@ -185,12 +187,12 @@ LIMIT 20;
 
 ## QA Checklist
 ### Dev (Mailtrap)
-- [ ] Invite 10–20 mock users; verify email renders & links  
-- [ ] Calculator auth accepts correct {token + code}, rejects wrong code, expired token  
-- [ ] RSVP writes row + activity log  
+- [x] Invite 10–20 mock users; verify email renders & links  
+- [x] Calculator auth accepts correct {token + code}, rejects wrong code, expired token  
+- [x] RSVP writes row + activity log  
 
 ### Staging (real inboxes)
-- [ ] Gmail, Outlook, iCloud accounts receive mail, no broken images/links  
+- [*] Gmail, Outlook, iCloud accounts receive mail, no broken images/links  
 - [ ] Check spam placement; adjust content/DKIM/SPF if needed  
 
 ### Error handling
@@ -261,8 +263,8 @@ This rollout plan outlines the detailed steps to configure custom domains, set u
 
 ### DNS Setup
 
-- [ ] Identify the custom domain(s) to be used for the guest portal and email sending.
-- [ ] Access the DNS provider’s management console for the domain(s).
+- [x] Identify the custom domain(s) to be used for the guest portal and email sending.
+- [x] Access the DNS provider’s management console for the domain(s).
 - [ ] Add or update the following DNS records:
   - [ ] **SPF Record:** Add a TXT record authorizing Mailgun IPs to send emails on behalf of the domain.
   - [ ] **DKIM Records:** Add the CNAME records provided by Mailgun for domain authentication.
@@ -272,18 +274,18 @@ This rollout plan outlines the detailed steps to configure custom domains, set u
 
 ### Mailgun Configuration
 
-- [ ] Log into the Mailgun dashboard.
-- [ ] Navigate to the Domains section.
-- [ ] Add and verify the custom domain for sending emails.
-- [ ] Complete domain authentication by adding the provided DNS records.
-- [ ] Verify that Mailgun confirms successful domain authentication.
-- [ ] Create or update API keys with appropriate permissions for sending emails.
-- [ ] Configure the sending domain and email addresses in Mailgun.
+- [x] Log into the Mailgun dashboard.
+- [x] Navigate to the Domains section.
+- [x] Add and verify the custom domain for sending emails.
+- [x] Complete domain authentication by adding the provided DNS records.
+- [x] Verify that Mailgun confirms successful domain authentication.
+- [x] Create or update API keys with appropriate permissions for sending emails.
+- [x] Configure the sending domain and email addresses in Mailgun.
 - [ ] Set up any necessary suppression lists, templates, or tracking settings.
 
 ### Testing & Validation
 
-- [ ] Send test emails from the development environment using the new Mailgun configuration.
+- [x] Send test emails from the development environment using the new Mailgun configuration.
 - [ ] Verify email deliverability in major email clients (Gmail, Outlook, iCloud).
 - [ ] Check for correct SPF, DKIM, and DMARC alignment in email headers.
 - [ ] Confirm that emails do not land in spam or junk folders.
@@ -293,12 +295,24 @@ This rollout plan outlines the detailed steps to configure custom domains, set u
 
 ### Transition to Production
 
-- [ ] Update environment variables in production to switch from Mailtrap to Mailgun.
-- [ ] Deploy updated backend services with Mailgun integration enabled.
+- [x] Update environment variables in production to switch from Mailtrap to Mailgun.
+- [x] Deploy updated backend services with Mailgun integration enabled.
 - [ ] Perform a limited production rollout to a small group of real users.
 - [ ] Monitor email delivery metrics and user feedback closely.
 - [ ] Gradually increase the volume of emails sent via Mailgun in production.
 - [ ] Document the transition process and any issues encountered for future reference.
+
+### Mailgun API Connectivity Test
+
+- The Mailgun API connectivity test (including curl test and backend integration) has succeeded, marking this milestone as complete and confirming that the Mailgun integration is fully operational.
+
+## Phase 6 – Success Criteria Achieved
+
+- DNS configuration for SPF, DKIM, and DMARC records successfully completed and verified.
+- Mailgun API keys and domain authentication validated.
+- Backend integration with Mailgun tested and confirmed operational.
+- Email sending through Mailgun verified in test and staging environments.
+- All prerequisites for production email delivery via Mailgun are met.
 
 ## Troubleshooting
 

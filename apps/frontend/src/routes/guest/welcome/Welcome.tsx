@@ -1,4 +1,6 @@
 import { useNavigate } from "react-router-dom";
+import RSVPModal from "../rsvp/RSVPModal";
+import { useState } from "react";
 
 export default function Welcome() {
   console.log("Rendering Welcome.tsx component"); // Debug
@@ -6,6 +8,7 @@ export default function Welcome() {
   const navigate = useNavigate();
   const videoUrl = import.meta.env.VITE_WELCOME_VIDEO_URL || "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/CMPComixLoop.mp4";
   console.log("Background media URL:", videoUrl); // ✅ Debug log
+  const [isRSVPModalOpen, setRSVPModalOpen] = useState(false);
 
   const handleLogout = () => {
     try {
@@ -52,7 +55,7 @@ export default function Welcome() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <button
             className="px-6 py-4 rounded-xl bg-cactus-green text-white text-lg font-bold shadow-md hover:bg-cactus-green/80 transition"
-            onClick={() => navigate("/guest/rsvp")}
+            onClick={() => setRSVPModalOpen(true)}
           >
             RSVP Now
           </button>
@@ -81,10 +84,17 @@ export default function Welcome() {
         )}
       </div>
 
+        {isRSVPModalOpen && (
+          <RSVPModal
+            onClose={() => setRSVPModalOpen(false)}
+          />
+        )}
+
       {/* playful desert footer */}
       <footer className="absolute bottom-4 text-sm text-gray-600 font-mono opacity-80 z-20">
         🌞 Santa Fe, NM • August 2026
       </footer>
     </div>
+      
   );
 }

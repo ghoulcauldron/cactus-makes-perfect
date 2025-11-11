@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { createBrowserRouter, RouterProvider, redirect } from 'react-router-dom'
 import CalculatorAuth from './routes/guest/login/CalculatorAuth'
 import Welcome from './routes/guest/welcome/Welcome'
-import RSVP from './routes/guest/rsvp/RSVP'
+import RSVPModal from './routes/guest/rsvp/RSVPModal'
 import ProtectedRoute from './routes/ProtectedRoute'
 import './index.css'
 import PhotoCalculatorAuth from './routes/guest/login/PhotoCalculatorAuth'
@@ -47,14 +47,6 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <Welcome />
-      </ProtectedRoute>
-    ),
-  },
-  { 
-    path: '/guest/rsvp',
-    element: (
-      <ProtectedRoute>
-        <RSVP />
       </ProtectedRoute>
     ),
   },
