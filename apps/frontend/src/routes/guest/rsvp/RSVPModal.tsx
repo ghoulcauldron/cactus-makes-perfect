@@ -12,12 +12,17 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose }) => {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchSavedRSVP = async () => {
       if (!isOpen) return;
+      setLoading(true);
       const guestId = localStorage.getItem("guest_user_id");
-      if (!guestId) return;
+      if (!guestId) {
+        setLoading(false);
+        return;
+      }
       try {
         const res = await fetch(`/api/v1/rsvps/me/${guestId}`);
         if (res.ok) {
@@ -30,6 +35,8 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose }) => {
         }
       } catch (err) {
         console.error("Failed to fetch saved RSVP", err);
+      } finally {
+        setLoading(false);
       }
     };
     fetchSavedRSVP();
@@ -57,6 +64,14 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose }) => {
       setSubmitting(false);
     }
   };
+
+  if (loading) {
+    return (
+      <Modal isOpen={isOpen} onClose={onClose} title="RSVP">
+        <p className="text-center text-gray-500 py-10">Loading your RSVP...</p>
+      </Modal>
+    );
+  }
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="RSVP">
