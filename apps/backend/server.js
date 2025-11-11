@@ -7,7 +7,6 @@ import { createClient } from "@supabase/supabase-js";
 import { SignJWT } from "jose";
 import { v4 as uuidv4 } from "uuid";
 import nodemailer from "nodemailer";
-import sgMail from "@sendgrid/mail";
 import twilio from "twilio";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -49,12 +48,12 @@ const JWT_SECRET = process.env.JWT_SECRET || "devsecret";
 const JWT_TTL_SECONDS = parseInt(process.env.JWT_TTL_SECONDS || "172800", 10);
 
 // ---- Email providers ----
-const EMAIL_PROVIDER = (process.env.EMAIL_PROVIDER || "mailtrap").toLowerCase();
+const EMAIL_PROVIDER = (process.env.EMAIL_PROVIDER || "mailgun").toLowerCase();
 const DEV_SKIP_EMAIL = process.env.DEV_SKIP_EMAIL === "true";
 const EMAIL_SEND_TIMEOUT_MS = Number(process.env.EMAIL_SEND_TIMEOUT_MS || 7000);
-if (EMAIL_PROVIDER === "sendgrid" && process.env.SENDGRID_API_KEY) {
-  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-}
+const MAILGUN_API_KEY = process.env.MAILGUN_API_KEY;
+const MAILGUN_DOMAIN = process.env.MAILGUN_DOMAIN;
+
 const mailtrapTransport = nodemailer.createTransport({
   host: process.env.MAILTRAP_HOST || "sandbox.smtp.mailtrap.io",
   port: Number(process.env.MAILTRAP_PORT || 2525),
@@ -96,21 +95,31 @@ async function sendEmail({ to, subject, html, text }) {
 
   const t0 = Date.now();
   try {
-    if (provider === "sendgrid") {
-      const keyLen = process.env.SENDGRID_API_KEY ? process.env.SENDGRID_API_KEY.length : 0;
-      if (!keyLen) console.warn("[Email] WARN: SENDGRID_API_KEY is missing");
-      else console.log(`[Email] SendGrid API key present (len=${keyLen})`);
-
-      const res = await withHardTimeout(
-        sgMail.send({ to, from, subject, html, text }),
-        "sendgrid"
-      );
-
-      // sgMail returns an array of [response, body] per message
-      const statuses = Array.isArray(res)
-        ? res.map((r) => (r && r[0] && r[0].statusCode) || r?.statusCode || null)
-        : [res?.statusCode || null];
-      console.log("[Email] SendGrid response statusCodes:", statuses);
+    if (provider === "mailgun") {
+      if (!MAILGUN_API_KEY || !MAILGUN_DOMAIN) {
+        console.error("[Email] No MAILGUN_API_KEY or MAILGUN_DOMAIN set");
+        return;
+      }
+      const url = `https://api.mailgun.net/v3/${MAILGUN_DOMAIN}/messages`;
+      console.log("[Email] Sending via Mailgun API", { url, to });
+      const formData = new URLSearchParams();
+      formData.append("from", from);
+      formData.append("to", to);
+      formData.append("subject", subject);
+      if (text) formData.append("text", text);
+      if (html) formData.append("html", html);
+      const authHeader = "Basic " + Buffer.from(`api:${MAILGUN_API_KEY}`).toString("base64");
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Authorization": authHeader,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: formData.toString(),
+      });
+      const data = await resp.json().catch(() => ({}));
+      console.log("[Email] Mailgun API response", { status: resp.status, id: data.id, message: data.message });
+      if (!resp.ok) throw new Error(`Mailgun API send failed: ${resp.status}`);
     } else if (provider === "mailtrap_api") {
       const token = process.env.MAILTRAP_API_TOKEN;
       if (!token) {
@@ -138,33 +147,6 @@ async function sendEmail({ to, subject, html, text }) {
       const data = await resp.json().catch(() => ({}));
       console.log("[Email] Mailtrap API response", { status: resp.status, data });
       if (!resp.ok) throw new Error(`Mailtrap API send failed: ${resp.status}`);
-    } else if (provider === "mailgun") {
-      const MAILGUN_API_KEY = process.env.MAILGUN_API_KEY;
-      const MAILGUN_DOMAIN = process.env.MAILGUN_DOMAIN;
-      if (!MAILGUN_API_KEY || !MAILGUN_DOMAIN) {
-        console.error("[Email] No MAILGUN_API_KEY or MAILGUN_DOMAIN set");
-        return;
-      }
-      const url = `https://api.mailgun.net/v3/${MAILGUN_DOMAIN}/messages`;
-      console.log("[Email] Sending via Mailgun API", { url, to });
-      const formData = new URLSearchParams();
-      formData.append("from", from);
-      formData.append("to", to);
-      formData.append("subject", subject);
-      if (text) formData.append("text", text);
-      if (html) formData.append("html", html);
-      const authHeader = "Basic " + Buffer.from(`api:${MAILGUN_API_KEY}`).toString("base64");
-      const resp = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Authorization": authHeader,
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: formData.toString(),
-      });
-      const data = await resp.json().catch(() => ({}));
-      console.log("[Email] Mailgun API response", { status: resp.status, data });
-      if (!resp.ok) throw new Error(`Mailgun API send failed: ${resp.status}`);
     } else {
       // Nodemailer (SMTP / Mailtrap by default)
       console.log("[Email] SMTP transport config", {

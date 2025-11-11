@@ -1,4 +1,4 @@
-<file name=0 path=/Users/gilcalderon/cactus-makes-perfect/README.md># Cactus Makes Perfect 🌵✨  
+# Cactus Makes Perfect 🌵✨  
 Santa Fe 20th Anniversary Guest Portal
 
 This repo contains a monorepo with:
@@ -44,11 +44,12 @@ Key environment variables used by the application:
 
 - `SUPABASE_URL` — URL of the Supabase project.
 - `SUPABASE_SERVICE_ROLE_KEY` — Service role key for Supabase with elevated permissions.
-- `EMAIL_PROVIDER` — Email provider to use (`mailtrap` or `sendgrid`).
+- `EMAIL_PROVIDER` — Email provider to use (`mailtrap` or `mailgun`).
 - `FROM_EMAIL` — The email address from which invites and notifications are sent.
 - `MAILTRAP_API_TOKEN` — API token for Mailtrap sandbox environment.
 - `MAILTRAP_INBOX_ID` — Mailtrap inbox ID used for sandbox testing.
-- `SENDGRID_API_KEY` — API key for SendGrid (production).
+- `MAILGUN_DOMAIN` — Mailgun domain for sending emails (production).
+- `MAILGUN_API_KEY` — API key for Mailgun (production).
 - `JWT_SECRET` — Secret key used to sign JWT tokens.
 - `JWT_TTL_SECONDS` — JWT token time-to-live in seconds (e.g., `172800` for 48 hours).
 - `PUBLIC_URL` — Public URL of the deployed app (e.g., `https://www.cactusmakesperfect.org`).
@@ -98,7 +99,7 @@ Key database tables and notable columns:
   - `token` (unique string)  
   - `code` (numeric or alphanumeric code)  
   - `expires_at` (typically 30 days after creation)  
-  - `provider` (e.g., mailtrap, sendgrid)  
+  - `provider` (e.g., mailtrap, mailgun)  
   - `delivery_status` (pending, sent, responded)  
   - `used_at` (timestamp when token was used)  
   - `created_at`
@@ -168,8 +169,8 @@ LIMIT 20;
 - Phase 5: (Deferred) Two-way communications and SMS notifications pending Admin Dashboard development.
 
 - Phase 6: Domains & Identity  
-  Custom email identity setup including SendGrid integration, SPF/DKIM/DMARC configuration, and optional inbound parse.  
-  Transition note: Mailtrap (dev/testing) → SendGrid (production) once domains/DNS are ready.
+  Custom email identity setup including Mailgun integration, SPF/DKIM/DMARC configuration, and optional inbound parse.  
+  Transition note: Mailtrap (dev/testing) → Mailgun (production) once domains/DNS are ready.
 
 - Phase 7: QA Matrix  
   - Dev environment: Invite 10–20 mock users; verify email rendering and links.  
@@ -203,7 +204,7 @@ LIMIT 20;
 ### Mailtrap QA Test Plan
 
 #### Purpose
-To verify the full end-to-end invite and verification system works using Mailtrap’s sandbox environment before switching to SendGrid in production.
+To verify the full end-to-end invite and verification system works using Mailtrap’s sandbox environment before switching to Mailgun in production.
 
 #### Steps
 1. **Seed test users**
@@ -256,46 +257,47 @@ Invite email design
 
 ## Phase 6: Domains & Identity Rollout Plan
 
-This rollout plan outlines the detailed steps to configure custom domains, set up SendGrid for email delivery, and validate the setup before transitioning to production.
+This rollout plan outlines the detailed steps to configure custom domains, set up Mailgun for email delivery, and validate the setup before transitioning to production.
 
 ### DNS Setup
 
 - [ ] Identify the custom domain(s) to be used for the guest portal and email sending.
 - [ ] Access the DNS provider’s management console for the domain(s).
 - [ ] Add or update the following DNS records:
-  - [ ] **SPF Record:** Add a TXT record authorizing SendGrid IPs to send emails on behalf of the domain.
-  - [ ] **DKIM Records:** Add the CNAME records provided by SendGrid for domain authentication.
+  - [ ] **SPF Record:** Add a TXT record authorizing Mailgun IPs to send emails on behalf of the domain.
+  - [ ] **DKIM Records:** Add the CNAME records provided by Mailgun for domain authentication.
   - [ ] **DMARC Record (optional but recommended):** Add a TXT record to specify the DMARC policy.
 - [ ] Verify that all DNS records have propagated correctly using tools like `dig`, `nslookup`, or online DNS checkers.
 - [ ] Document the DNS changes and expected propagation times.
 
-### SendGrid Configuration
+### Mailgun Configuration
 
-- [ ] Log into the SendGrid dashboard.
-- [ ] Navigate to the Sender Authentication section.
-- [ ] Complete domain authentication by linking the custom domain.
-- [ ] Verify that SendGrid confirms successful domain authentication.
+- [ ] Log into the Mailgun dashboard.
+- [ ] Navigate to the Domains section.
+- [ ] Add and verify the custom domain for sending emails.
+- [ ] Complete domain authentication by adding the provided DNS records.
+- [ ] Verify that Mailgun confirms successful domain authentication.
 - [ ] Create or update API keys with appropriate permissions for sending emails.
-- [ ] Configure the sending domain and email addresses in SendGrid.
+- [ ] Configure the sending domain and email addresses in Mailgun.
 - [ ] Set up any necessary suppression lists, templates, or tracking settings.
 
 ### Testing & Validation
 
-- [ ] Send test emails from the development environment using the new SendGrid configuration.
+- [ ] Send test emails from the development environment using the new Mailgun configuration.
 - [ ] Verify email deliverability in major email clients (Gmail, Outlook, iCloud).
 - [ ] Check for correct SPF, DKIM, and DMARC alignment in email headers.
 - [ ] Confirm that emails do not land in spam or junk folders.
 - [ ] Test unsubscribe and bounce handling as configured.
 - [ ] Validate that email templates render correctly across devices.
-- [ ] Monitor SendGrid dashboard for any sending errors or warnings.
+- [ ] Monitor Mailgun dashboard for any sending errors or warnings.
 
 ### Transition to Production
 
-- [ ] Update environment variables in production to switch from Mailtrap to SendGrid.
-- [ ] Deploy updated backend services with SendGrid integration enabled.
+- [ ] Update environment variables in production to switch from Mailtrap to Mailgun.
+- [ ] Deploy updated backend services with Mailgun integration enabled.
 - [ ] Perform a limited production rollout to a small group of real users.
 - [ ] Monitor email delivery metrics and user feedback closely.
-- [ ] Gradually increase the volume of emails sent via SendGrid in production.
+- [ ] Gradually increase the volume of emails sent via Mailgun in production.
 - [ ] Document the transition process and any issues encountered for future reference.
 
 ## Troubleshooting
