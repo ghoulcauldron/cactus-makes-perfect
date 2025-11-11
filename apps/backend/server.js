@@ -231,6 +231,9 @@ app.post("/api/v1/invites/send", async (req, res) => {
       .eq("token", token);
     console.log("Email sent");
 
+    await supabase.from("guests").update({ invited_at: new Date().toISOString() }).eq("id", guest.id);
+    console.log("Updated guests.invited_at");
+
     await supabase.from("user_activity").insert([{ guest_id: guest.id, kind: "invite_sent", meta: { email } }]);
     console.log("Inserted user_activity");
 
@@ -337,6 +340,8 @@ app.post("/api/v1/rsvps/me", async (req, res) => {
 
     await supabase.from("rsvps").insert([{ guest_id, status }]);
     await supabase.from("user_activity").insert([{ guest_id, kind: "rsvp_submitted", meta: { status } }]);
+    await supabase.from("guests").update({ responded_at: new Date().toISOString() }).eq("id", guest_id);
+    console.log("Updated guests.responded_at");
 
     res.json({ ok: true });
   } catch (e) {

@@ -1,4 +1,4 @@
-# Cactus Makes Perfect 🌵✨  
+<file name=0 path=/Users/gilcalderon/cactus-makes-perfect/README.md># Cactus Makes Perfect 🌵✨  
 Santa Fe 20th Anniversary Guest Portal
 
 This repo contains a monorepo with:
@@ -127,7 +127,7 @@ LIMIT 20;
   - `/invite?token=...` — Invite landing page with token parameter.
   - `/guest/login` — CalculatorAuth screen for code entry.
   - `/guest/welcome` — Welcome page after successful auth.
-  - `/guest/rsvp` — RSVP form for guests.
+  - `/guest/rsvp` — Deprecated route; replaced by the RSVP modal interface within the app.
 
 - Production guard: If no `token` is provided in the URL and `VITE_DEBUG` is `false`, the CalculatorAuth screen shows a message: “Please use your invite link”.
 
@@ -163,6 +163,11 @@ LIMIT 20;
 - UI guards display “Please use your invite link” message when appropriate.
 - Basic Auth protection verified to restrict access during private testing.
 - All critical user flows validated end-to-end ensuring stable release readiness.
+
+#### Phase 8 – RSVP Modal Success Criteria Achieved
+- The RSVP modal interface is now fully functional and replaces the deprecated `/guest/rsvp` route.
+- RSVP response flow through the modal completes successfully with backend integration.
+- User activity logging and API communication for RSVP submissions are confirmed operational.
 
 ### Upcoming Phases
 
@@ -256,6 +261,8 @@ Invite email design
 - request invite token email resend (self or admin)
 - create guest relationships/households to bundle responses
 - flow to change/edit RSVP response.
+- Replace the browser alert confirmation with a UI acknowledgement for successful RSVP submissions (to be designed and scaffolded soon).
+- Allow guests to see their saved RSVP response, with modal persistence and the ability to edit or change their answer in a later flow.
 
 ## Phase 6: Domains & Identity Rollout Plan
 
@@ -320,4 +327,4 @@ This rollout plan outlines the detailed steps to configure custom domains, set u
 - **400 on RSVP** → API expects `{ guest_id, status }` (not `user_id`).
 - **Email hangs** → Set `DEV_SKIP_EMAIL=true` to isolate; verify Mailtrap API token and inbox ID; check logs for `[Email] send start`.
 - **Basic Auth not prompting** → Ensure middleware is registered before routes in backend.
-- **Blank page on invite link** → Ensure `/invite` route exists in the frontend router and `index.html` uses the correct base URL.
+- **Blank page on invite link** → Ensure `/invite` route exists in the frontend router and `index.html` uses the correct base URL.</file>
