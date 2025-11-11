@@ -11,6 +11,7 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose }) => {
   const [savedStatus, setSavedStatus] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   useEffect(() => {
     const fetchSavedRSVP = async () => {
@@ -24,6 +25,7 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose }) => {
           if (data?.rsvp?.status) {
             setSavedStatus(data.rsvp.status);
             setStatus(data.rsvp.status);
+            setEditing(false);
           }
         }
       } catch (err) {
@@ -47,6 +49,7 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose }) => {
       if (!res.ok) throw new Error("Failed to submit RSVP");
       setSubmitted(true);
       setSavedStatus(status);
+      setEditing(false);
       setTimeout(() => setSubmitted(false), 4000);
     } catch (err) {
       alert("Error submitting RSVP. Please try again.");
@@ -57,39 +60,47 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose }) => {
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="RSVP">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {savedStatus && !submitted && (
-          <p className="text-sm text-gray-600 italic">
-            Your current response: <span className="font-medium">{savedStatus}</span>
+      {!editing && savedStatus ? (
+        <>
+          <p className="text-lg text-center text-cactus-green font-semibold">
+            Your RSVP: {savedStatus.toUpperCase()}
           </p>
-        )}
-        <label className="block text-gray-700 font-medium">
-          Will you attend?
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            className="mt-2 w-full border border-gray-300 rounded-md p-2"
+          <button
+            onClick={() => setEditing(true)}
+            className="mt-4 w-full bg-cactus-green text-white py-3 rounded-md hover:bg-cactus-green-dark transition"
           >
-            <option value="yes">Yes, I’ll be there!</option>
-            <option value="no">No, I can’t make it</option>
-            <option value="pending">Maybe / Not sure yet</option>
-          </select>
-        </label>
+            Change my answer
+          </button>
+        </>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {submitted && (
+            <p className="text-center text-green-600 font-semibold mt-3">
+              ✅ RSVP saved. You can update your response anytime.
+            </p>
+          )}
+          <label className="block text-gray-700 font-medium">
+            Will you attend?
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              className="mt-2 w-full border border-gray-300 rounded-md p-2"
+            >
+              <option value="yes">Yes, I’ll be there!</option>
+              <option value="no">No, I can’t make it</option>
+              <option value="pending">Maybe / Not sure yet</option>
+            </select>
+          </label>
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-full bg-cactus-green text-white py-3 rounded-md hover:bg-cactus-green-dark transition"
-        >
-          {submitting ? "Submitting..." : "Submit RSVP"}
-        </button>
-
-        {submitted && (
-          <p className="text-center text-green-600 font-semibold mt-3">
-            ✅ RSVP saved. You can update your response anytime.
-          </p>
-        )}
-      </form>
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full bg-cactus-green text-white py-3 rounded-md hover:bg-cactus-green-dark transition"
+          >
+            {submitting ? "Submitting..." : "Submit RSVP"}
+          </button>
+        </form>
+      )}
     </Modal>
   );
 };
