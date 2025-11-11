@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import RSVPModal from "../rsvp/RSVPModal";
+import RSVPModal from "../modals/RSVPModal";
 import { useState } from "react";
 
 export default function Welcome() {
@@ -9,6 +9,8 @@ export default function Welcome() {
   const videoUrl = import.meta.env.VITE_WELCOME_VIDEO_URL || "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/CMPComixLoop.mp4";
   console.log("Background media URL:", videoUrl); // ✅ Debug log
   const [isRSVPModalOpen, setRSVPModalOpen] = useState(false);
+  const [isEventInfoModalOpen, setEventInfoModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"schedule" | "faqs">("schedule");
 
   const handleLogout = () => {
     try {
@@ -61,15 +63,12 @@ export default function Welcome() {
           </button>
           <button
             className="px-6 py-4 rounded-xl bg-sunset text-white text-lg font-bold shadow-md hover:bg-sunset/80 transition"
-            onClick={() => navigate("/guest/schedule")}
+            onClick={() => {
+              setActiveTab("schedule");
+              setEventInfoModalOpen(true);
+            }}
           >
-            View Schedule
-          </button>
-          <button
-            className="px-6 py-4 rounded-xl bg-sky text-white text-lg font-bold shadow-md hover:bg-sky/80 transition"
-            onClick={() => navigate("/guest/faqs")}
-          >
-            FAQs
+            Event Info
           </button>
         </div>
 
@@ -84,12 +83,64 @@ export default function Welcome() {
         )}
       </div>
 
-        {isRSVPModalOpen && (
-          <RSVPModal
-            isOpen={isRSVPModalOpen}
-            onClose={() => setRSVPModalOpen(false)}
-          />
-        )}
+      {isRSVPModalOpen && (
+        <RSVPModal
+          isOpen={isRSVPModalOpen}
+          onClose={() => setRSVPModalOpen(false)}
+        />
+      )}
+
+      {isEventInfoModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-30">
+          <div className="bg-white rounded-lg max-w-3xl w-full mx-4 p-6 relative shadow-lg">
+            <button
+              onClick={() => setEventInfoModalOpen(false)}
+              className="absolute top-4 right-4 text-gray-600 hover:text-gray-900 text-2xl font-bold"
+              aria-label="Close modal"
+            >
+              &times;
+            </button>
+            <div className="mb-4 border-b border-gray-300 flex space-x-4">
+              <button
+                onClick={() => setActiveTab("schedule")}
+                className={`py-2 px-4 font-semibold border-b-2 ${
+                  activeTab === "schedule"
+                    ? "border-sunset text-sunset"
+                    : "border-transparent text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                Schedule
+              </button>
+              <button
+                onClick={() => setActiveTab("faqs")}
+                className={`py-2 px-4 font-semibold border-b-2 ${
+                  activeTab === "faqs"
+                    ? "border-sunset text-sunset"
+                    : "border-transparent text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                FAQs
+              </button>
+            </div>
+            <div className="overflow-y-auto max-h-[60vh]">
+              {activeTab === "schedule" && (
+                <div>
+                  <h2 className="text-2xl font-bold mb-4">Event Schedule</h2>
+                  <p className="mb-2">Details about the event schedule will go here.</p>
+                  {/* Replace with actual schedule content */}
+                </div>
+              )}
+              {activeTab === "faqs" && (
+                <div>
+                  <h2 className="text-2xl font-bold mb-4">Frequently Asked Questions</h2>
+                  <p className="mb-2">Answers to common questions will go here.</p>
+                  {/* Replace with actual FAQs content */}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* playful desert footer */}
       <footer className="absolute bottom-4 text-sm text-gray-600 font-mono opacity-80 z-20">
