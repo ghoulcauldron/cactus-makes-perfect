@@ -17,6 +17,7 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, savedStatus }) =
     e.preventDefault();
     setSubmitting(true);
     const guestId = localStorage.getItem("guest_user_id");
+    console.log("Submitting RSVP for", guestId, status);
     try {
       const res = await fetch("/api/v1/rsvps/me", {
         method: "POST",
