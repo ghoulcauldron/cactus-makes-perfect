@@ -86,6 +86,7 @@ export default function Welcome() {
 
         {isRSVPModalOpen && (
           <RSVPModal
+            isOpen={isRSVPModalOpen}
             onClose={() => setRSVPModalOpen(false)}
           />
         )}
