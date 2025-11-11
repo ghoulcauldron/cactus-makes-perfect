@@ -1,17 +1,37 @@
-// File: apps/frontend/src/routes/guest/rsvp/RSVPModal.tsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Modal from "../../../components/Modal";
 
 interface RSVPModalProps {
   isOpen: boolean;
   onClose: () => void;
-  savedStatus?: string | null;
 }
 
-const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, savedStatus }) => {
-  const [status, setStatus] = useState(savedStatus || "pending");
+const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose }) => {
+  const [status, setStatus] = useState("pending");
+  const [savedStatus, setSavedStatus] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+
+  useEffect(() => {
+    const fetchSavedRSVP = async () => {
+      if (!isOpen) return;
+      const guestId = localStorage.getItem("guest_user_id");
+      if (!guestId) return;
+      try {
+        const res = await fetch(`/api/v1/rsvps/me/${guestId}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.rsvp?.status) {
+            setSavedStatus(data.rsvp.status);
+            setStatus(data.rsvp.status);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch saved RSVP", err);
+      }
+    };
+    fetchSavedRSVP();
+  }, [isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,6 +46,7 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, savedStatus }) =
       });
       if (!res.ok) throw new Error("Failed to submit RSVP");
       setSubmitted(true);
+      setSavedStatus(status);
       setTimeout(() => setSubmitted(false), 4000);
     } catch (err) {
       alert("Error submitting RSVP. Please try again.");

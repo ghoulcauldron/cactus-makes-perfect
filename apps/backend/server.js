@@ -336,38 +336,69 @@ app.post("/api/v1/auth/verify", async (req, res) => {
   }
 });
 
-// ---- API: RSVP ----
+// ---- API: RSVP (create or update) ----
 app.post("/api/v1/rsvps/me", async (req, res) => {
   try {
     const { guest_id, status } = req.body || {};
     if (!guest_id || !status) return res.status(400).json({ error: "Missing guest_id or status" });
 
-    console.log("[RSVP] Received", { guest_id, status });
+    console.log("[RSVP] Upsert received", { guest_id, status });
 
+    // Upsert on guest_id so a second submission updates the existing row.
     const { data, error } = await supabase
       .from("rsvps")
-      .insert([
-        {
-          guest_id,
-          status,
-          submitted_at: new Date().toISOString(), // ✅ match your schema
-        },
-      ])
-      .select();
+      .upsert(
+        [
+          {
+            guest_id,
+            status,
+            submitted_at: new Date().toISOString(), // your schema column
+          },
+        ],
+        { onConflict: "guest_id" }
+      )
+      .select()
+      .single();
 
     if (error) {
-      console.error("[RSVP] Insert failed", error);
-      return res.status(422).json({ error: "Supabase insert failed", details: error });
+      console.error("[RSVP] Upsert failed", error);
+      return res.status(422).json({ error: "Supabase upsert failed", details: error });
     }
 
     await supabase
       .from("user_activity")
       .insert([{ guest_id, kind: "rsvp_submitted", meta: { status } }]);
 
-    console.log("[RSVP] Insert success", data);
+    console.log("[RSVP] Upsert success", data);
     return res.json({ ok: true, rsvp: data });
   } catch (e) {
     console.error("[RSVP] Unexpected error", e);
+    return res.status(500).json({ error: "Internal error" });
+  }
+});
+
+// ---- API: Get my RSVP ----
+app.get("/api/v1/rsvps/me/:guest_id", async (req, res) => {
+  try {
+    const { guest_id } = req.params;
+    if (!guest_id) return res.status(400).json({ error: "Missing guest_id" });
+
+    const { data, error } = await supabase
+      .from("rsvps")
+      .select("guest_id,status,submitted_at")
+      .eq("guest_id", guest_id)
+      .order("submitted_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.error("[RSVP] Fetch failed", error);
+      return res.status(422).json({ error: "Supabase fetch failed", details: error });
+    }
+
+    return res.json({ rsvp: data || null });
+  } catch (e) {
+    console.error("[RSVP] Unexpected fetch error", e);
     return res.status(500).json({ error: "Internal error" });
   }
 });
