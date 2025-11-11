@@ -138,6 +138,33 @@ async function sendEmail({ to, subject, html, text }) {
       const data = await resp.json().catch(() => ({}));
       console.log("[Email] Mailtrap API response", { status: resp.status, data });
       if (!resp.ok) throw new Error(`Mailtrap API send failed: ${resp.status}`);
+    } else if (provider === "mailgun") {
+      const MAILGUN_API_KEY = process.env.MAILGUN_API_KEY;
+      const MAILGUN_DOMAIN = process.env.MAILGUN_DOMAIN;
+      if (!MAILGUN_API_KEY || !MAILGUN_DOMAIN) {
+        console.error("[Email] No MAILGUN_API_KEY or MAILGUN_DOMAIN set");
+        return;
+      }
+      const url = `https://api.mailgun.net/v3/${MAILGUN_DOMAIN}/messages`;
+      console.log("[Email] Sending via Mailgun API", { url, to });
+      const formData = new URLSearchParams();
+      formData.append("from", from);
+      formData.append("to", to);
+      formData.append("subject", subject);
+      if (text) formData.append("text", text);
+      if (html) formData.append("html", html);
+      const authHeader = "Basic " + Buffer.from(`api:${MAILGUN_API_KEY}`).toString("base64");
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Authorization": authHeader,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: formData.toString(),
+      });
+      const data = await resp.json().catch(() => ({}));
+      console.log("[Email] Mailgun API response", { status: resp.status, data });
+      if (!resp.ok) throw new Error(`Mailgun API send failed: ${resp.status}`);
     } else {
       // Nodemailer (SMTP / Mailtrap by default)
       console.log("[Email] SMTP transport config", {
