@@ -1,4 +1,3 @@
-
 // File: apps/frontend/src/routes/guest/rsvp/RSVPModal.tsx
 import React, { useState } from "react";
 import Modal from "../../../components/Modal";
@@ -6,11 +5,13 @@ import Modal from "../../../components/Modal";
 interface RSVPModalProps {
   isOpen: boolean;
   onClose: () => void;
+  savedStatus?: string | null;
 }
 
-const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose }) => {
-  const [status, setStatus] = useState("pending");
+const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, savedStatus }) => {
+  const [status, setStatus] = useState(savedStatus || "pending");
   const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,8 +24,8 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose }) => {
         body: JSON.stringify({ guest_id: guestId, status }),
       });
       if (!res.ok) throw new Error("Failed to submit RSVP");
-      alert("RSVP submitted ✅");
-      onClose();
+      setSubmitted(true);
+      setTimeout(() => setSubmitted(false), 4000);
     } catch (err) {
       alert("Error submitting RSVP. Please try again.");
     } finally {
@@ -35,6 +36,11 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose }) => {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="RSVP">
       <form onSubmit={handleSubmit} className="space-y-4">
+        {savedStatus && !submitted && (
+          <p className="text-sm text-gray-600 italic">
+            Your current response: <span className="font-medium">{savedStatus}</span>
+          </p>
+        )}
         <label className="block text-gray-700 font-medium">
           Will you attend?
           <select
@@ -55,6 +61,12 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose }) => {
         >
           {submitting ? "Submitting..." : "Submit RSVP"}
         </button>
+
+        {submitted && (
+          <p className="text-center text-green-600 font-semibold mt-3">
+            ✅ RSVP saved. You can update your response anytime.
+          </p>
+        )}
       </form>
     </Modal>
   );

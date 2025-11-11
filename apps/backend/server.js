@@ -185,6 +185,7 @@ async function sendEmail({ to, subject, html, text }) {
 }
 
 // ---- API: send invite ----
+let lastToken = null;
 app.post("/api/v1/invites/send", async (req, res) => {
   try {
     console.log("Received invite send request");
@@ -201,6 +202,7 @@ app.post("/api/v1/invites/send", async (req, res) => {
 
     const code = genCode(6);
     const token = uuidv4();
+    lastToken = token;
     const expires_at = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString();
 
     await supabase.from("invite_tokens").insert([{
@@ -242,13 +244,15 @@ app.post("/api/v1/invites/send", async (req, res) => {
   } catch (e) {
     console.error("invite error", e);
     try {
-      await supabase
-        .from("invite_tokens")
-        .update({
-          provider: EMAIL_PROVIDER,
-          delivery_status: "failed"
-        })
-        .eq("token", token);
+      if (lastToken) {
+        await supabase
+          .from("invite_tokens")
+          .update({
+            provider: EMAIL_PROVIDER,
+            delivery_status: "failed"
+          })
+          .eq("token", lastToken);
+      }
     } catch (_) {
       // ignore errors here to not mask original error
     }
@@ -332,21 +336,67 @@ app.post("/api/v1/auth/verify", async (req, res) => {
   }
 });
 
-// ---- API: RSVP ----
+// ---- API: RSVP (create-or-update) ----
 app.post("/api/v1/rsvps/me", async (req, res) => {
   try {
     const { guest_id, status } = req.body || {};
     if (!guest_id || !status) return res.status(400).json({ error: "Missing guest_id or status" });
 
-    await supabase.from("rsvps").insert([{ guest_id, status }]);
-    await supabase.from("user_activity").insert([{ guest_id, kind: "rsvp_submitted", meta: { status } }]);
-    await supabase.from("guests").update({ responded_at: new Date().toISOString() }).eq("id", guest_id);
-    console.log("Updated guests.responded_at");
+    // Optional: normalize status
+    const normalized = String(status).toLowerCase();
+    const allowed = new Set(["yes", "no", "maybe"]);
+    if (!allowed.has(normalized)) {
+      return res.status(422).json({ error: "Invalid status" });
+    }
 
-    res.json({ ok: true });
+    // Check existing RSVP for this guest
+    const { data: existing, error: selErr } = await supabase
+      .from("rsvps")
+      .select("*")
+      .eq("guest_id", guest_id)
+      .maybeSingle();
+
+    let rsvpRow = null;
+    if (selErr) {
+      console.error("rsvp select error", selErr);
+    }
+
+    if (existing) {
+      const { data: updated, error: updErr } = await supabase
+        .from("rsvps")
+        .update({ status: normalized, updated_at: new Date().toISOString() })
+        .eq("id", existing.id)
+        .select()
+        .maybeSingle();
+
+      if (updErr) {
+        console.error("rsvp update error", updErr);
+        return res.status(500).json({ error: "Failed to update RSVP" });
+      }
+      rsvpRow = updated;
+      await supabase.from("user_activity").insert([{ guest_id, kind: "rsvp_updated", meta: { status: normalized } }]);
+    } else {
+      const { data: inserted, error: insErr } = await supabase
+        .from("rsvps")
+        .insert([{ guest_id, status: normalized }])
+        .select()
+        .maybeSingle();
+
+      if (insErr) {
+        console.error("rsvp insert error", insErr);
+        return res.status(500).json({ error: "Failed to create RSVP" });
+      }
+      rsvpRow = inserted;
+      await supabase.from("user_activity").insert([{ guest_id, kind: "rsvp_created", meta: { status: normalized } }]);
+    }
+
+    // Touch guests.responded_at
+    await supabase.from("guests").update({ responded_at: new Date().toISOString() }).eq("id", guest_id);
+
+    return res.json({ ok: true, rsvp: rsvpRow });
   } catch (e) {
     console.error("rsvp error", e);
-    res.status(500).json({ error: "Internal error" });
+    return res.status(500).json({ error: "Internal error" });
   }
 });
 
@@ -366,9 +416,12 @@ const genCode = (len = 6) =>
 // ---- Helper: issue JWT ----
 async function issueJWT(payload) {
   const alg = "HS256";
+  // Ensure TTL is treated as a relative duration string (e.g., "172800s")
+  const ttl = typeof JWT_TTL_SECONDS === "number" ? `${JWT_TTL_SECONDS}s` : String(JWT_TTL_SECONDS);
   const token = await new SignJWT(payload)
     .setProtectedHeader({ alg })
-    .setExpirationTime(JWT_TTL_SECONDS)
+    .setIssuedAt()
+    .setExpirationTime(ttl)
     .sign(new TextEncoder().encode(JWT_SECRET));
   return token;
 }
