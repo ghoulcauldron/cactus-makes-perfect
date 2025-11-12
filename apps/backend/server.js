@@ -420,31 +420,6 @@ app.get("/api/v1/rsvps/me/:guest_id", async (req, res) => {
   }
 });
 
-// ---- Serve built frontend from /app/dist (we'll place it there in Docker) ----
-const distDir = path.join(__dirname, "public");
-app.use(express.static(distDir));
-app.get("/health", (req, res) => res.json({ ok: true, at: new Date().toISOString() }));
-app.use((_, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
-
-app.listen(port, () => {
-  console.log(`Server listening on port ${port} (PUBLIC_URL=${PUBLIC_URL})`);
-});
-// ---- Helper: generate numeric code ----
-const genCode = (len = 6) =>
-  [...Array(len)].map(() => Math.floor(Math.random() * 10)).join("");
-
-// ---- Helper: issue JWT ----
-async function issueJWT(payload) {
-  const alg = "HS256";
-  // Ensure TTL is treated as a relative duration string (e.g., "172800s")
-  const ttl = typeof JWT_TTL_SECONDS === "number" ? `${JWT_TTL_SECONDS}s` : String(JWT_TTL_SECONDS);
-  const token = await new SignJWT(payload)
-    .setProtectedHeader({ alg })
-    .setIssuedAt()
-    .setExpirationTime(ttl)
-    .sign(new TextEncoder().encode(JWT_SECRET));
-  return token;
-}
 // ---- API: Nudge emails ----
 app.post("/api/v1/emails/nudge", async (req, res) => {
   try {
@@ -474,3 +449,29 @@ app.post("/api/v1/emails/nudge", async (req, res) => {
     res.status(500).json({ error: "Internal error" });
   }
 });
+
+// ---- Serve built frontend from /app/dist (we'll place it there in Docker) ----
+const distDir = path.join(__dirname, "public");
+app.use(express.static(distDir));
+app.get("/health", (req, res) => res.json({ ok: true, at: new Date().toISOString() }));
+app.use((_, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
+
+app.listen(port, () => {
+  console.log(`Server listening on port ${port} (PUBLIC_URL=${PUBLIC_URL})`);
+});
+// ---- Helper: generate numeric code ----
+const genCode = (len = 6) =>
+  [...Array(len)].map(() => Math.floor(Math.random() * 10)).join("");
+
+// ---- Helper: issue JWT ----
+async function issueJWT(payload) {
+  const alg = "HS256";
+  // Ensure TTL is treated as a relative duration string (e.g., "172800s")
+  const ttl = typeof JWT_TTL_SECONDS === "number" ? `${JWT_TTL_SECONDS}s` : String(JWT_TTL_SECONDS);
+  const token = await new SignJWT(payload)
+    .setProtectedHeader({ alg })
+    .setIssuedAt()
+    .setExpirationTime(ttl)
+    .sign(new TextEncoder().encode(JWT_SECRET));
+  return token;
+}
