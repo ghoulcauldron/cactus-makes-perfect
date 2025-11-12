@@ -129,6 +129,8 @@ LIMIT 20;
   - `/guest/welcome` — Welcome page after successful auth.
   - `/guest/rsvp` — Deprecated route; replaced by the RSVP modal interface within the app.
 
+- The "View Schedule" and "FAQs" modals have been merged into a single unified "Event Info" modal, accessible from the Welcome screen. This modal uses tabs to display both the event schedule and frequently asked questions.
+
 - Production guard: If no `token` is provided in the URL and `VITE_DEBUG` is `false`, the CalculatorAuth screen shows a message: “Please use your invite link”.
 
 - After successful `/auth/verify`, the app stores `auth_token` (JWT) and `guest_user_id` in `localStorage`.
@@ -168,6 +170,7 @@ LIMIT 20;
 - The RSVP modal interface is now fully functional and replaces the deprecated `/guest/rsvp` route.
 - RSVP response flow through the modal completes successfully with backend integration.
 - User activity logging and API communication for RSVP submissions are confirmed operational.
+- The unified Event Info modal (with tabs for Schedule and FAQs) has been introduced and is fully functional, replacing the previous separate Schedule and FAQs modals.
 
 ### Upcoming Phases
 
@@ -188,7 +191,7 @@ LIMIT 20;
   - Error handling: Friendly UI for 401 errors (calculator modal on invalid).  
   - Token reuse: Reusing token is allowed until expiry (by design).
 
-- Phase 8: RSVP modal + Event Details modal + FAQs modal (renaming planned).
+- Phase 8: RSVP modal + unified Event Info modal (Schedule and FAQs combined).
 
 ## QA Checklist
 ### Dev (Mailtrap)

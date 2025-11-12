@@ -120,6 +120,23 @@ async function sendEmail({ to, subject, html, text }) {
       const data = await resp.json().catch(() => ({}));
       console.log("[Email] Mailgun API response", { status: resp.status, id: data.id, message: data.message });
       if (!resp.ok) throw new Error(`Mailgun API send failed: ${resp.status}`);
+      // --- Supabase logging for Mailgun success ---
+      // Attempt to fetch guest by email for logging
+      let guest = null;
+      try {
+        const { data: g } = await supabase.from("guests").select("*").eq("email", to).single();
+        guest = g;
+      } catch {}
+      await supabase.from("emails_log").insert([{
+        guest_id: guest?.id || null,
+        type: "invite",
+        subject,
+        provider,
+        status: "sent",
+        sent_at: new Date().toISOString(),
+        meta: { to }
+      }]);
+      console.log("[Email] Logged email to emails_log");
     } else if (provider === "mailtrap_api") {
       const token = process.env.MAILTRAP_API_TOKEN;
       if (!token) {
@@ -428,3 +445,30 @@ async function issueJWT(payload) {
     .sign(new TextEncoder().encode(JWT_SECRET));
   return token;
 }
+// ---- API: Nudge emails ----
+app.post("/api/v1/emails/nudge", async (req, res) => {
+  try {
+    const { guest_ids, subject, html, text } = req.body;
+    if (!Array.isArray(guest_ids) || guest_ids.length === 0)
+      return res.status(400).json({ error: "guest_ids must be a non-empty array" });
+    for (const id of guest_ids) {
+      const { data: guest } = await supabase.from("guests").select("*").eq("id", id).single();
+      if (!guest) continue;
+      await sendEmail({ to: guest.email, subject, html, text });
+      await supabase.from("emails_log").insert([{
+        guest_id: guest.id,
+        type: "nudge",
+        subject,
+        provider: EMAIL_PROVIDER,
+        status: "sent",
+        sent_at: new Date().toISOString(),
+        meta: { to: guest.email }
+      }]);
+      console.log(`[Nudge] Sent to ${guest.email} via provider=${EMAIL_PROVIDER}`);
+    }
+    res.json({ ok: true });
+  } catch (e) {
+    console.error("emails/nudge error", e);
+    res.status(500).json({ error: "Internal error" });
+  }
+});
