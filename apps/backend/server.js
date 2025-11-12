@@ -449,11 +449,13 @@ async function issueJWT(payload) {
 app.post("/api/v1/emails/nudge", async (req, res) => {
   try {
     const { guest_ids, subject, html, text } = req.body;
+    console.log("[Nudge] Received payload", { count: guest_ids?.length, subject });
     if (!Array.isArray(guest_ids) || guest_ids.length === 0)
       return res.status(400).json({ error: "guest_ids must be a non-empty array" });
     for (const id of guest_ids) {
       const { data: guest } = await supabase.from("guests").select("*").eq("id", id).single();
       if (!guest) continue;
+      console.log(`[Nudge] Sending email to ${guest.email} (${guest.id})`);
       await sendEmail({ to: guest.email, subject, html, text });
       await supabase.from("emails_log").insert([{
         guest_id: guest.id,
