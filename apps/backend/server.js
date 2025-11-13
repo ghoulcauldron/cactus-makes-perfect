@@ -517,35 +517,34 @@ app.post("/api/v1/admin/login", async (req, res) => {
 // ---- Protect all subsequent admin routes ----
 
 // ---- Admin: GET full guest list with filters ----
-app.get("/api/v1/admin/guests", async (req, res) => {
+app.get("/api/v1/admin/guests", requireAdminAuth, async (req, res) => {
   try {
-    // Filters via query params
     const { rsvp, invited, responded, search } = req.query;
 
-    let query = supabase.from("guests").select("*, rsvps(status,submitted_at)");
+    let query = supabase.from("admin_guests_view").select("*");
 
-    // Filter: invited=yes/no
+    // invited=yes/no
     if (invited === "yes") query = query.not("invited_at", "is", null);
     if (invited === "no") query = query.is("invited_at", null);
 
-    // Filter: responded=yes/no
+    // responded=yes/no
     if (responded === "yes") query = query.not("responded_at", "is", null);
     if (responded === "no") query = query.is("responded_at", null);
 
-    // Filter: RSVP status
-    if (rsvp) query = query.eq("rsvps.status", rsvp);
+    // rsvp status
+    if (rsvp) query = query.eq("rsvps->>status", rsvp);
 
-    // Search by name or email
+    // search by name or email
     if (search) {
       query = query.or(
         `email.ilike.%${search}%,first_name.ilike.%${search}%,last_name.ilike.%${search}%`
       );
     }
 
-    const { data, error } = await query.order("last_name", { ascending: true });
+    const { data, error } = await query.order("last_activity_at", { ascending: false });
     if (error) {
-      console.error("[AdminGuests] Query failed", error);
-      return res.status(422).json({ error: "Supabase query failed", details: error });
+      console.error("[AdminGuests] View query failed", error);
+      return res.status(422).json({ error: "Supabase view query failed", details: error });
     }
 
     return res.json({ guests: data || [] });
