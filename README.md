@@ -255,6 +255,7 @@ To verify the full end-to-end invite and verification system works using Mailtra
 - Activity logs are complete for every test user.
 - Emails render and link correctly in Mailtrap.
 
+
 ## Future Improvements
 
 Add a UI flow for guests to request a resend of their invite link by entering their email. This UI would call the existing `/api/v1/invites/resend` endpoint, which currently logs invalid attempts but does not have a user interface yet.
@@ -266,6 +267,233 @@ Invite email design
 - flow to change/edit RSVP response.
 - Replace the browser alert confirmation with a UI acknowledgement for successful RSVP submissions (to be designed and scaffolded soon).
 - Allow guests to see their saved RSVP response, with modal persistence and the ability to edit or change their answer in a later flow.
+
+
+## Phase 9 — Admin & Communications Dashboard  
+### Progress Tracker (Live Status Board)
+
+> **Goal:** Deliver a fully functional admin portal at **area51.cactusmakesperfect.org** with secure authentication, guest management, bulk actions, unified activity, and manual communications (nudges / resend invites).
+
+---
+
+### Section A — Foundations & Authentication
+
+| Item | Status | Notes |
+|------|--------|--------|
+| Create `ADMIN_SECRET` env var | ☑️ | Railway service-level var |
+| Implement `POST /api/v1/admin/login` | ☑️ | Returns admin JWT on correct secret |
+| Implement `requireAdminAuth` middleware | ☑️ | Required for all `/api/v1/admin/*` APIs |
+| Protect all `/api/v1/admin/*` routes | ⬜ | Ensure JWT required + validated |
+| Add `ADMIN_JWT_TTL_HOURS` env var | ☑️ | Default 8h or 12h |
+
+---
+
+### Section B — Backend Admin APIs
+
+| Endpoint | Status | Notes |
+|----------|--------|-------|
+| `GET /api/v1/admin/guests` | ☑️ | Joined with latest RSVP + latest invite data |
+| `GET /api/v1/admin/guest/:id/activity` | ☑️ | Unified activity feed view |
+| `POST /api/v1/admin/nudge` | ☑️ | Sends email via Mailgun + logs `nudge_sent` |
+| `POST /api/v1/admin/resend` | ☑️ | Resends invite + inserts new invite token + logs |
+| Create optional `admin_guests_view` | ⬜ | For performance + simpler frontend |
+
+---
+
+### Section C — Admin Dashboard Frontend
+
+| Component | Status | Notes |
+|-----------|--------|--------|
+| Create `apps/admin/` Vite SPA | ⬜ | Separate build pipeline |
+| Implement `Login.tsx` | ⬜ | Stores admin JWT in localStorage |
+| Implement `AdminDashboard.tsx` | ⬜ | Main table + filters + search |
+| Implement `GuestSidebar.tsx` | ⬜ | Unified per-guest activity feed + quick actions |
+| Implement `BulkActions.tsx` | ⬜ | Resend invite + send nudge |
+| Add `VITE_API_BASE_URL` | ⬜ | Points to backend API |
+| Build & deploy admin SPA | ⬜ | Output static bundle |
+
+---
+
+### Section D — Deployment & DNS
+
+| Item | Status | Notes |
+|------|--------|--------|
+| Create subdomain: `area51.cactusmakesperfect.org` | ⬜ | CNAME → Railway static service |
+| Deploy admin SPA to subdomain | ⬜ | Confirm no console errors |
+| Optional Basic Auth on admin domain | ⬜ | Early QA protection |
+| HTTPS cert via Railway | ⬜ | Should auto-provision |
+
+---
+
+### Section E — Data & Observability
+
+| Item | Status | Notes |
+|-------|--------|--------|
+| Verify guests join correctly | ⬜ | Cross-reference with SQL |
+| Validate unified activity feed | ⬜ | Compare logs manually |
+| Confirm Mailgun sending in admin use | ⬜ | Queue appears + status = delivered |
+| Confirm emails_log is populated | ⬜ | Must log subject, provider, status |
+| Confirm user_activity tracks admin actions | ⬜ | `nudge_sent`, `invite_resent`, etc. |
+
+---
+
+### Section F — UI/UX Polishing
+
+| Item | Status | Notes |
+|-------|--------|--------|
+| Global loading states | ⬜ | Disable buttons during actions |
+| Errors surfaced to admin | ⬜ | Modals or toast notifications |
+| Display invite status chip | ⬜ | pending / sent / responded |
+| Display RSVP status chip | ⬜ | yes / no / maybe / missing |
+| Add segment filters | ⬜ | (RSVP filter, invite filter, recent activity) |
+
+---
+
+### Section G — Go-Live Checklist
+
+| Item | Status | Notes |
+|------|--------|--------|
+| Admin auth tested via curl | ⬜ | `/admin/login` returns JWT |
+| All `/api/v1/admin/*` endpoints reject missing/invalid token | ⬜ | |
+| End-to-end nudge flow tested live | ⬜ | UI → Mailgun → email_logs |
+| End-to-end resend invite tested live | ⬜ | UI → invite_tokens + Mailgun |
+| Dashboard loads with real production data | ⬜ | |
+| Pilot with 2–3 real guests | ⬜ | |
+| Final OK from organizers | ⬜ | |
+
+
+> Goal: Stand up a secure, token‑based admin area at **https://area51.cactusmakesperfect.org** to manage guests, resend invites, send nudges, and review a unified activity history.
+
+### 1) Scope & Outcomes
+- [ ] **Admin login** — shared secret exchange issues a short‑lived admin JWT for secure access
+- [ ] **Guests table** — provides searchable, filterable, and bulk-selectable list of guests
+- [ ] **Unified guest activity** — displays invite sends/opens, token usage, RSVP submissions/edits, and email logs in a single feed
+- [ ] **Bulk actions** — enables resending invites and sending nudges to multiple guests at once
+- [ ] **Per‑guest sidebar** — shows detailed activity log and quick actions for each guest
+- [ ] **Production‑grade auth** on all admin routes — ensures all admin endpoints require valid admin JWT authentication
+
+### 2) Implementation Targets (explicit)
+
+#### Backend
+- [x] `POST /api/v1/admin/login` — returns an **admin JWT** when the provided shared secret matches `ADMIN_SECRET`
+- [x] Middleware `requireAdminAuth` implemented — checks for a valid admin JWT on all `/api/v1/admin/*` routes and rejects requests with missing or invalid tokens
+- [x] `GET /api/v1/admin/guests` — returns a paginated list of guests with their latest invite and RSVP data joined in (or via a view such as `admin_guests_view`)
+- [x] `GET /api/v1/admin/guest/:id/activity` — returns a unified activity feed for the specified guest, combining `user_activity`, `emails_log`, `rsvps`, and `invite_tokens`
+- [x] `POST /api/v1/admin/nudge` — sends a manual nudge email via Mailgun and records the send in both `emails_log` and `user_activity` (with kind `nudge_sent`)
+- [x] `POST /api/v1/admin/resend` — reuses the invite flow to create a new `invite_tokens` row and logs the resend as `invite_resent` in `user_activity`
+
+#### Admin Frontend
+- [ ] Create `apps/admin/` folder — sets up a separate Vite SPA dedicated to the admin dashboard interface
+- [ ] Implement `Login.tsx` — provides a simple form that posts the `ADMIN_SECRET` to `/api/v1/admin/login` and stores the returned admin JWT in localStorage
+- [ ] Implement `AdminDashboard.tsx` — main dashboard layout with a guests table, filters, search, and controls for bulk actions
+- [ ] Implement `GuestSidebar.tsx` — slide-out sidebar for each guest showing their unified activity (invites, nudges, RSVPs, emails) and quick action buttons
+- [ ] Implement `BulkActions.tsx` — UI component allowing selection of multiple guests and triggering bulk actions like “Resend invite” or “Send nudge”
+- [ ] Add Vite config for SPA build — outputs a static bundle suitable for deployment at `area51.cactusmakesperfect.org`
+- [ ] Add `VITE_API_BASE_URL` to env — configures the admin SPA to point at the correct backend API host
+
+#### DNS / Deployment
+- [ ] Create subdomain `area51.cactusmakesperfect.org` — set up a CNAME or A record pointing to the admin SPA hosting (e.g., on Railway)
+- [ ] Deploy admin SPA to that subdomain — ensure the built `apps/admin` bundle serves correctly and loads without console errors
+- [ ] Keep optional Basic Auth during early QA — maintain extra HTTP Basic Auth protection on the admin origin while testing with real guest data
+
+#### Env Vars
+- [ ] Add `ADMIN_SECRET` — shared secret used by `/api/v1/admin/login` to mint admin JWTs
+- [ ] Add `ADMIN_JWT_TTL_HOURS` — specifies the lifetime of admin JWTs (e.g., `8` for an 8-hour admin session)
+
+### 3) Data Shapes & Views
+
+**Admin guests listing shape (example)**
+```json
+{
+  "id": "uuid",
+  "email": "ava+1@example.com",
+  "first_name": "Ava",
+  "last_name": "Test",
+  "invited_at": "2025-10-05T03:26:52.801Z",
+  "responded_at": "2025-10-05T03:27:15.558Z",
+  "latest_invite": {
+    "token": "uuid",
+    "delivery_status": "sent|pending|responded",
+    "used_at": "2025-10-05T05:06:14.443Z"
+  },
+  "rsvp": {
+    "status": "yes|no|maybe|null",
+    "submitted_at": "2025-10-05T05:03:39.576Z"
+  },
+  "last_activity_at": "2025-10-05T05:07:00.095Z"
+}
+```
+
+**Admin activity feed shape (example)**
+```json
+[
+  {"kind":"invite_sent","at":"2025-10-05T03:26:52.801Z","meta":{"provider":"mailgun"}},
+  {"kind":"auth_success","at":"2025-10-05T03:27:15.558Z"},
+  {"kind":"email_sent","at":"2025-10-05T03:30:10.001Z","meta":{"subject":"Reminder #1"}},
+  {"kind":"rsvp_submitted","at":"2025-10-05T05:03:39.576Z","meta":{"status":"yes"}}
+]
+```
+
+> **Note:** For performance and simpler frontend code, you may create a Supabase **view** (e.g., `admin_guests_view`) that joins `guests`, latest `rsvps` per guest, and latest `invite_tokens` per guest.
+
+### 4) Security Model
+
+- **Admin JWT** is distinct from guest tokens.
+- All `/api/v1/admin/*` endpoints require `requireAdminAuth`.
+- During early QA, you may keep **Basic Auth** at the service level (belt & suspenders).
+- Store admin JWT in `localStorage` on the admin subdomain only; **never** reuse guest JWT.
+
+### 5) Filters & Segments (Dashboard)
+
+- [ ] Filter by RSVP
+- [ ] Filter by invite status
+- [ ] Filter by recent activity
+- [ ] Create segments (saved queries)
+
+### 6) Bulk Actions
+
+- **Resend Invite** — reuses `/api/v1/invites/send` logic; writes `invite_resent` to `user_activity`.
+- **Send Nudge** — reuses Mailgun adapter; writes to `emails_log` and `user_activity` (`nudge_sent`).
+
+### 7) QA Checklist (Phase 9)
+
+- [ ] `/api/v1/admin/login` returns admin JWT; invalid secret returns 401.
+- [ ] All `/api/v1/admin/*` endpoints reject missing/invalid token.
+- [ ] Guests table loads with correct joins (last RSVP + invite state).
+- [ ] Guest sidebar shows unified activity chronologically.
+- [ ] Bulk **Nudge** sends and logs (emails_log + user_activity).
+- [ ] Bulk **Resend Invite** creates new invite_tokens rows and logs.
+- [ ] Subdomain `area51.cactusmakesperfect.org` serves admin SPA.
+- [ ] Basic Auth (optional) prompts in early QA.
+
+### 8) Rollout Plan
+
+1. **Backend**
+   - Patch `server.js` with `/admin/login`, `requireAdminAuth`, and admin endpoints.
+   - Deploy; verify endpoints with curl (send `Authorization: Bearer <token>`).
+
+2. **Admin Frontend**
+   - Scaffold `apps/admin`; implement Login → Dashboard → Sidebar → BulkActions.
+   - Build & deploy; point `area51.cactusmakesperfect.org` to Railway.
+
+3. **Data Verification**
+   - Compare `/admin/guests` against direct SQL (spot‑check 10 rows).
+   - Confirm unified activity feed matches `emails_log`, `user_activity`, `rsvps`, `invite_tokens`.
+
+4. **Pilot**
+   - Test with a handful of real guests.
+   - Validate deliverability for nudges; review Mailgun logs.
+
+5. **Handoff**
+   - Document runbooks: admin login, sending nudges, resending invites, interpreting statuses.
+   - Add read‑only “Audit” view for historical sends and RSVP edits (later).
+
+---
+
+**Notes**
+- This phase **does not** change the guest‑facing flow (invite → token + code → Welcome → RSVP modal).
+- All email sending continues to use the existing provider abstraction (now Mailgun).
+- The admin subdomain is intentionally separate from the guest portal for cleaner auth boundaries.
 
 ## Phase 6: Domains & Identity Rollout Plan
 

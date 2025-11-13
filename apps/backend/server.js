@@ -450,6 +450,304 @@ app.post("/api/v1/emails/nudge", async (req, res) => {
   }
 });
 
+// ---- Middleware: requireAdminAuth ----
+async function requireAdminAuth(req, res, next) {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Missing admin token" });
+    }
+
+    const token = authHeader.replace("Bearer ", "").trim();
+    const { payload } = await import("jose").then(j =>
+      j.jwtVerify(token, new TextEncoder().encode(JWT_SECRET))
+    );
+
+    if (!payload || payload.admin !== true) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    req.admin = payload; // attach decoded payload
+    next();
+  } catch (e) {
+    console.error("[requireAdminAuth] Failed verification", e);
+    return res.status(401).json({ error: "Invalid or expired admin token" });
+  }
+}
+
+// NOTE: Ensure Supabase view `admin_guests_view` is created separately.
+// This backend expects a consolidated view for admin dashboard queries.
+
+// ---- API: Admin Login ----
+app.post("/api/v1/admin/login", async (req, res) => {
+  try {
+    const { password } = req.body || {};
+    const ADMIN_SECRET = process.env.ADMIN_SECRET;
+
+    if (!ADMIN_SECRET) {
+      console.error("[AdminLogin] Missing ADMIN_SECRET env var");
+      return res.status(500).json({ error: "Server misconfigured" });
+    }
+
+    if (!password) {
+      return res.status(400).json({ error: "Missing password" });
+    }
+
+    if (password !== ADMIN_SECRET) {
+      console.warn("[AdminLogin] Incorrect admin password attempt");
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    // Issue admin JWT
+    const adminJwt = await issueJWT({ admin: true });
+
+    console.log("[AdminLogin] Success — admin JWT issued");
+    return res.json({ token: adminJwt });
+  } catch (e) {
+    console.error("[AdminLogin] Unexpected error", e);
+    return res.status(500).json({ error: "Internal error" });
+  }
+});
+
+// ---- Protect all subsequent admin routes ----
+
+// ---- Admin: GET full guest list with filters ----
+app.get("/api/v1/admin/guests", async (req, res) => {
+  try {
+    // Filters via query params
+    const { rsvp, invited, responded, search } = req.query;
+
+    let query = supabase.from("guests").select("*, rsvps(status,submitted_at)");
+
+    // Filter: invited=yes/no
+    if (invited === "yes") query = query.not("invited_at", "is", null);
+    if (invited === "no") query = query.is("invited_at", null);
+
+    // Filter: responded=yes/no
+    if (responded === "yes") query = query.not("responded_at", "is", null);
+    if (responded === "no") query = query.is("responded_at", null);
+
+    // Filter: RSVP status
+    if (rsvp) query = query.eq("rsvps.status", rsvp);
+
+    // Search by name or email
+    if (search) {
+      query = query.or(
+        `email.ilike.%${search}%,first_name.ilike.%${search}%,last_name.ilike.%${search}%`
+      );
+    }
+
+    const { data, error } = await query.order("last_name", { ascending: true });
+    if (error) {
+      console.error("[AdminGuests] Query failed", error);
+      return res.status(422).json({ error: "Supabase query failed", details: error });
+    }
+
+    return res.json({ guests: data || [] });
+  } catch (e) {
+    console.error("[AdminGuests] Unexpected error", e);
+    return res.status(500).json({ error: "Internal error" });
+  }
+});
+
+// ---- Admin: GET guest detail ----
+app.get("/api/v1/admin/guest/:id", requireAdminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) return res.status(400).json({ error: "Missing guest id" });
+
+    // Fetch guest record
+    const { data: guest, error: guestErr } = await supabase
+      .from("guests")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (guestErr || !guest) {
+      console.error("[AdminGuestDetail] Guest lookup failed", guestErr);
+      return res.status(404).json({ error: "Guest not found" });
+    }
+
+    // Latest RSVP
+    const { data: rsvp } = await supabase
+      .from("rsvps")
+      .select("*")
+      .eq("guest_id", id)
+      .order("submitted_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    // Invite tokens history
+    const { data: tokens } = await supabase
+      .from("invite_tokens")
+      .select("*")
+      .eq("guest_id", id)
+      .order("created_at", { ascending: false });
+
+    // Emails sent to this guest
+    const { data: emails } = await supabase
+      .from("emails_log")
+      .select("*")
+      .eq("guest_id", id)
+      .order("sent_at", { ascending: false });
+
+    // Activity log
+    const { data: activity } = await supabase
+      .from("user_activity")
+      .select("*")
+      .eq("guest_id", id)
+      .order("created_at", { ascending: false });
+
+    return res.json({
+      guest,
+      rsvp: rsvp || null,
+      tokens: tokens || [],
+      emails: emails || [],
+      activity: activity || []
+    });
+
+  } catch (e) {
+    console.error("[AdminGuestDetail] Unexpected error", e);
+    return res.status(500).json({ error: "Internal error" });
+  }
+});
+
+// ---- Admin: GET guest activity ----
+app.get("/api/v1/admin/guest/:id/activity", requireAdminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) return res.status(400).json({ error: "Missing guest id" });
+
+    const { data: activity, error } = await supabase
+      .from("user_activity")
+      .select("*")
+      .eq("guest_id", id)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("[AdminGuestActivity] Query failed", error);
+      return res.status(422).json({ error: "Supabase query failed", details: error });
+    }
+
+    return res.json({ activity: activity || [] });
+  } catch (e) {
+    console.error("[AdminGuestActivity] Unexpected error", e);
+    return res.status(500).json({ error: "Internal error" });
+  }
+});
+
+// ---- Admin: Resend Invite ----
+app.post("/api/v1/admin/resend", requireAdminAuth, async (req, res) => {
+  try {
+    const { guest_id } = req.body || {};
+    if (!guest_id) return res.status(400).json({ error: "Missing guest_id" });
+
+    const { data: guest, error: gErr } = await supabase
+      .from("guests")
+      .select("*")
+      .eq("id", guest_id)
+      .single();
+
+    if (gErr || !guest) {
+      console.warn(`[AdminResend] Guest not found for id=${guest_id}`);
+      return res.status(404).json({ error: "Guest not found" });
+    }
+
+    const code = genCode(6);
+    const token = uuidv4();
+    const expires_at = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString();
+
+    await supabase.from("invite_tokens").insert([
+      { guest_id, token, code, expires_at, provider: EMAIL_PROVIDER, delivery_status: "pending" }
+    ]);
+
+    const inviteUrl = `${PUBLIC_URL}/invite?token=${encodeURIComponent(token)}`;
+    const subject = "You're Invited! 🌵 (Resent)";
+    const html = `<p>Hello ${guest.first_name || ""},</p>
+      <p>Your entry code: <b>${code}</b></p>
+      <p>Or click to continue: <a href="${inviteUrl}">${inviteUrl}</a></p>`;
+    const text = `Hello ${guest.first_name || ""}\nCode: ${code}\nLink: ${inviteUrl}`;
+
+    await sendEmail({ to: guest.email, subject, html, text });
+
+    await supabase.from("invite_tokens")
+      .update({ delivery_status: "sent", provider: EMAIL_PROVIDER })
+      .eq("token", token);
+
+    await supabase.from("user_activity").insert([
+      { guest_id, kind: "admin_invite_resent", meta: { email: guest.email } }
+    ]);
+
+    return res.json({ ok: true });
+  } catch (e) {
+    console.error("[AdminResend] Unexpected error", e);
+    return res.status(500).json({ error: "Internal error" });
+  }
+});
+
+// ---- Admin: Nudge guests (bulk) ----
+app.post("/api/v1/admin/guests/nudge", requireAdminAuth, async (req, res) => {
+  try {
+    const { guest_ids, subject, html, text } = req.body || {};
+    console.log("[AdminNudge] Payload received", { count: guest_ids?.length });
+
+    if (!Array.isArray(guest_ids) || guest_ids.length === 0) {
+      return res.status(400).json({ error: "guest_ids must be a non-empty array" });
+    }
+    if (!subject || !html) {
+      return res.status(400).json({ error: "Missing subject or html" });
+    }
+
+    const results = [];
+
+    for (const id of guest_ids) {
+      const { data: guest, error: gErr } = await supabase
+        .from("guests")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (gErr || !guest) {
+        console.warn(`[AdminNudge] Guest not found for id=${id}`);
+        results.push({ id, status: "guest_not_found" });
+        continue;
+      }
+
+      console.log(`[AdminNudge] Sending nudge to ${guest.email} (${guest.id})`);
+      try {
+        await sendEmail({ to: guest.email, subject, html, text });
+        await supabase.from("emails_log").insert([{
+          guest_id: guest.id,
+          type: "admin_nudge",
+          subject,
+          provider: EMAIL_PROVIDER,
+          status: "sent",
+          sent_at: new Date().toISOString(),
+          meta: { to: guest.email, admin: req.admin }
+        }]);
+
+        await supabase.from("user_activity").insert([{
+          guest_id: guest.id,
+          kind: "admin_nudge_sent",
+          meta: { subject }
+        }]);
+
+        results.push({ id, status: "sent" });
+      } catch (e) {
+        console.error(`[AdminNudge] Failed sending to ${guest.email}`, e);
+        results.push({ id, status: "failed" });
+      }
+    }
+
+    return res.json({ ok: true, results });
+  } catch (e) {
+    console.error("[AdminNudge] Unexpected error", e);
+    return res.status(500).json({ error: "Internal error" });
+  }
+});
+
+app.use("/api/v1/admin", requireAdminAuth);
+
 // ---- Serve built frontend from /app/dist (we'll place it there in Docker) ----
 const distDir = path.join(__dirname, "public");
 app.use(express.static(distDir));
