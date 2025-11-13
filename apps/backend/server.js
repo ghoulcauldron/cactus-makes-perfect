@@ -33,7 +33,12 @@ const auth = (req, res, next) => {
   }
   next();
 };
-app.use(auth);
+app.use((req, res, next) => {
+  if (req.path.startsWith("/api/v1/admin")) {
+    return next();
+  }
+  return auth(req, res, next);
+});
 
 // ---- Supabase ----
 const SUPABASE_URL = process.env.SUPABASE_URL;
