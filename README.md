@@ -85,6 +85,28 @@ Logs `rsvp_submitted` event in `user_activity`.
 ### GET /health
 Returns health status of the backend service. Can be public if desired.
 
+## Activity Normalization
+
+The admin activity timeline is **normalized server-side** from multiple sources.
+
+### Source Tables
+
+- `user_activity`
+- `emails_log`
+- `invite_tokens`
+- `rsvps`
+
+### Normalization Rules
+
+- `invite_resent`, `admin_invite_resent` → `invite_sent`
+- `auth_success` → `invite_used`
+- First RSVP submission → `rsvp_created`
+- Subsequent RSVP submissions → `rsvp_updated`
+
+The backend returns a unified, time-ordered activity feed for admin views.
+
+
+
 ## Data Model Notes
 
 Key database tables and notable columns:
@@ -106,7 +128,7 @@ Key database tables and notable columns:
 
 - **user_activity**  
   - `guest_id`  
-  - `kind` (event type, e.g., invite_sent, rsvp_submitted)  
+  - `kind` (event type, e.g., invite_sent, rsvp_submitted, group_update)
   - `meta` (jsonb with event details)  
   - `created_at`
 
@@ -119,6 +141,41 @@ JOIN guests g ON i.guest_id = g.id
 ORDER BY i.created_at DESC
 LIMIT 20;
 ```
+
+### Groups / Households
+
+Guests can optionally be assigned to a **group (household)** using a shared label.
+
+- Groups are stored directly on the `guests` table
+- There is no separate `groups` table
+- Labels are canonicalized on write (trimmed, lowercased)
+
+**Column**
+- `guests.group_label` — nullable text
+
+**Example**
+
+smith-family
+friends-from-nyc
+
+### Admin Group Operations
+
+The admin interface supports:
+
+- Assigning a guest to a group
+- Moving a guest between groups
+- Clearing a guest’s group
+- Bulk-assigning multiple guests to a group
+- Querying existing groups with member counts
+
+### Activity Logging
+
+Group changes emit `user_activity` events:
+
+- `group_update` — single guest assigned / moved / cleared
+- `group_update_bulk` — bulk group assignment
+
+These appear in the guest’s activity timeline.
 
 ## Frontend Behavior
 
@@ -138,6 +195,28 @@ LIMIT 20;
 - `ProtectedRoute` components require a valid `auth_token` in localStorage to grant access.
 
 - RSVP submissions post `guest_id` retrieved from localStorage.
+
+### Admin Guest Selection Model
+
+Guest selection (checkboxes) is managed at the **AdminDashboard** level.
+
+#### Header Checkbox Semantics
+
+- **No guests selected**
+  - Header checkbox appears checked
+  - Clicking selects all visible guests
+
+- **Some guests selected**
+  - Header checkbox remains checked
+  - Clicking selects all visible guests
+
+- **All guests selected**
+  - Header checkbox shows an indeterminate (−) state
+  - Clicking clears all selections
+
+The GuestSidebar does not own selection state.
+
+
 
 ## Project Roadmap
 
@@ -263,7 +342,7 @@ Add a UI flow for guests to request a resend of their invite link by entering th
 Invite email design
 
 - request invite token email resend (self or admin)
-- create guest relationships/households to bundle responses
+- expand guest group / household logic (currently label-based) to support bundled RSVPs
 - flow to change/edit RSVP response.
 - Replace the browser alert confirmation with a UI acknowledgement for successful RSVP submissions (to be designed and scaffolded soon).
 - Allow guests to see their saved RSVP response, with modal persistence and the ability to edit or change their answer in a later flow.
@@ -283,7 +362,7 @@ Invite email design
 | Create `ADMIN_SECRET` env var | ☑️ | Railway service-level var |
 | Implement `POST /api/v1/admin/login` | ☑️ | Returns admin JWT on correct secret |
 | Implement `requireAdminAuth` middleware | ☑️ | Required for all `/api/v1/admin/*` APIs |
-| Protect all `/api/v1/admin/*` routes | ⬜ | Ensure JWT required + validated |
+| Protect all `/api/v1/admin/*` routes | ☑️ | Ensure JWT required + validated |
 | Add `ADMIN_JWT_TTL_HOURS` env var | ☑️ | Default 8h or 12h |
 
 ---
@@ -296,7 +375,7 @@ Invite email design
 | `GET /api/v1/admin/guest/:id/activity` | ☑️ | Unified activity feed view |
 | `POST /api/v1/admin/nudge` | ☑️ | Sends email via Mailgun + logs `nudge_sent` |
 | `POST /api/v1/admin/resend` | ☑️ | Resends invite + inserts new invite token + logs |
-| Create optional `admin_guests_view` | ⬜ | For performance + simpler frontend |
+| Create optional `admin_guests_view` | ☑️ | For performance + simpler frontend |
 
 ---
 
@@ -304,13 +383,13 @@ Invite email design
 
 | Component | Status | Notes |
 |-----------|--------|--------|
-| Create `apps/admin/` Vite SPA | ⬜ | Separate build pipeline |
+| Create `apps/admin/` Vite SPA | ☑️ | Separate build pipeline |
 | Implement `Login.tsx` | ⬜ | Stores admin JWT in localStorage |
-| Implement `AdminDashboard.tsx` | ⬜ | Main table + filters + search |
-| Implement `GuestSidebar.tsx` | ⬜ | Unified per-guest activity feed + quick actions |
+| Implement `AdminDashboard.tsx` | ☑️ | Guest table, selection, sidebar wiring |
+| Implement `GuestSidebar.tsx` | ☑️ | Activity feed + group editing |
 | Implement `BulkActions.tsx` | ⬜ | Resend invite + send nudge |
 | Add `VITE_API_BASE_URL` | ⬜ | Points to backend API |
-| Build & deploy admin SPA | ⬜ | Output static bundle |
+| Build admin SPA (local dev working) & prepare for deploy | ⬜ | Output static bundle |
 
 ---
 
@@ -353,10 +432,10 @@ Invite email design
 
 | Item | Status | Notes |
 |------|--------|--------|
-| Admin auth tested via curl | ⬜ | `/admin/login` returns JWT |
-| All `/api/v1/admin/*` endpoints reject missing/invalid token | ⬜ | |
-| End-to-end nudge flow tested live | ⬜ | UI → Mailgun → email_logs |
-| End-to-end resend invite tested live | ⬜ | UI → invite_tokens + Mailgun |
+| Admin auth tested via curl | ☑️ | `/admin/login` returns JWT |
+| All `/api/v1/admin/*` endpoints reject missing/invalid token | ☑️ | |
+| End-to-end nudge flow tested live | ☑️ | UI → Mailgun → email_logs |
+| End-to-end resend invite tested live | ☑️ | UI → invite_tokens + Mailgun |
 | Dashboard loads with real production data | ⬜ | |
 | Pilot with 2–3 real guests | ⬜ | |
 | Final OK from organizers | ⬜ | |
@@ -365,7 +444,7 @@ Invite email design
 > Goal: Stand up a secure, token‑based admin area at **https://area51.cactusmakesperfect.org** to manage guests, resend invites, send nudges, and review a unified activity history.
 
 ### 1) Scope & Outcomes
-- [ ] **Admin login** — shared secret exchange issues a short‑lived admin JWT for secure access
+- [x] **Admin login** — shared secret exchange issues a short‑lived admin JWT for secure access
 - [ ] **Guests table** — provides searchable, filterable, and bulk-selectable list of guests
 - [ ] **Unified guest activity** — displays invite sends/opens, token usage, RSVP submissions/edits, and email logs in a single feed
 - [ ] **Bulk actions** — enables resending invites and sending nudges to multiple guests at once
@@ -383,7 +462,7 @@ Invite email design
 - [x] `POST /api/v1/admin/resend` — reuses the invite flow to create a new `invite_tokens` row and logs the resend as `invite_resent` in `user_activity`
 
 #### Admin Frontend
-- [ ] Create `apps/admin/` folder — sets up a separate Vite SPA dedicated to the admin dashboard interface
+- [x] Create `apps/admin/` folder — sets up a separate Vite SPA dedicated to the admin dashboard interface
 - [ ] Implement `Login.tsx` — provides a simple form that posts the `ADMIN_SECRET` to `/api/v1/admin/login` and stores the returned admin JWT in localStorage
 - [ ] Implement `AdminDashboard.tsx` — main dashboard layout with a guests table, filters, search, and controls for bulk actions
 - [ ] Implement `GuestSidebar.tsx` — slide-out sidebar for each guest showing their unified activity (invites, nudges, RSVPs, emails) and quick action buttons

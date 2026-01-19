@@ -7,12 +7,38 @@ import { createClient } from "@supabase/supabase-js";
 import { SignJWT } from "jose";
 import { v4 as uuidv4 } from "uuid";
 import nodemailer from "nodemailer";
-import twilio from "twilio";
+import cors from "cors";
+// Load backend-local .env file
+import dotenv from "dotenv";
+dotenv.config();
+
+// ---- Helper: canonicalize group labels ----
+function canonicalizeGroupLabel(label) {
+  if (!label) return null;
+  return label.trim().toLowerCase();
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5174",        // local admin SPA
+      "http://localhost:3000",        // local backend (for same-origin cases)
+      "https://area51.cactusmakesperfect.org", // production admin domain
+      "https://www.cactusmakesperfect.org"     // main domain
+    ],
+    credentials: false,
+    methods: ["GET", "POST", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"]
+  })
+);
+
+// Handle OPTIONS preflight explicitly
+app.options("*", cors());
 
 /** PORT: set by hosting platform (Railway, Render, etc.) */
 const port = process.env.PORT ? Number(process.env.PORT) : 3000;
@@ -514,7 +540,13 @@ app.post("/api/v1/admin/login", async (req, res) => {
   }
 });
 
+// ---- API: Admin Verify ----
+app.get("/api/v1/admin/verify", requireAdminAuth, (req, res) => {
+  return res.json({ ok: true });
+});
+
 // ---- Protect all subsequent admin routes ----
+app.use("/api/v1/admin", requireAdminAuth);
 
 // ---- Admin: GET full guest list with filters ----
 app.get("/api/v1/admin/guests", requireAdminAuth, async (req, res) => {
@@ -616,26 +648,113 @@ app.get("/api/v1/admin/guest/:id", requireAdminAuth, async (req, res) => {
   }
 });
 
-// ---- Admin: GET guest activity ----
+// ---- Admin: GET guest activity (normalized) ----
 app.get("/api/v1/admin/guest/:id/activity", requireAdminAuth, async (req, res) => {
   try {
     const { id } = req.params;
     if (!id) return res.status(400).json({ error: "Missing guest id" });
 
-    const { data: activity, error } = await supabase
+    const normalized = [];
+
+    // 1. User activity
+    const { data: ua } = await supabase
       .from("user_activity")
       .select("*")
-      .eq("guest_id", id)
-      .order("created_at", { ascending: false });
+      .eq("guest_id", id);
 
-    if (error) {
-      console.error("[AdminGuestActivity] Query failed", error);
-      return res.status(422).json({ error: "Supabase query failed", details: error });
+    for (const row of ua || []) {
+      let kind = row.kind;
+
+      // normalize RSVP semantics
+      if (kind === "rsvp_submitted") {
+        kind = "rsvp_created";
+      }
+
+      // normalize invite resend noise
+      if (kind === "invite_resent" || kind === "admin_invite_resent") {
+        kind = "invite_sent";
+      }
+
+      // normalize auth success as invite used
+      if (kind === "auth_success") {
+        kind = "invite_used";
+      }
+
+      normalized.push({
+        kind,
+        occurred_at: row.created_at,
+        meta: row.meta || null
+      });
     }
 
-    return res.json({ activity: activity || [] });
+    // 2. Emails log
+    const { data: emails } = await supabase
+      .from("emails_log")
+      .select("*")
+      .eq("guest_id", id);
+
+    for (const row of emails || []) {
+      normalized.push({
+        kind: "email_sent",
+        occurred_at: row.sent_at || row.created_at,
+        meta: {
+          subject: row.subject,
+          type: row.type,
+          provider: row.provider
+        }
+      });
+    }
+
+    // 3. RSVPs (detect create vs update)
+    const { data: rsvps } = await supabase
+      .from("rsvps")
+      .select("*")
+      .eq("guest_id", id)
+      .order("submitted_at", { ascending: true });
+
+    if (rsvps && rsvps.length > 0) {
+      rsvps.forEach((row, idx) => {
+        normalized.push({
+          kind: idx === 0 ? "rsvp_created" : "rsvp_updated",
+          occurred_at: row.submitted_at,
+          meta: { status: row.status }
+        });
+      });
+    }
+
+    // 4. Invite tokens
+    const { data: tokens } = await supabase
+      .from("invite_tokens")
+      .select("*")
+      .eq("guest_id", id);
+
+    for (const row of tokens || []) {
+      normalized.push({
+        kind: "invite_sent",
+        occurred_at: row.created_at,
+        meta: {
+          provider: row.provider,
+          delivery_status: row.delivery_status
+        }
+      });
+
+      if (row.used_at) {
+        normalized.push({
+          kind: "invite_used",
+          occurred_at: row.used_at,
+          meta: null
+        });
+      }
+    }
+
+    // Sort newest → oldest
+    normalized.sort(
+      (a, b) => new Date(b.occurred_at) - new Date(a.occurred_at)
+    );
+
+    return res.json({ activity: normalized });
   } catch (e) {
-    console.error("[AdminGuestActivity] Unexpected error", e);
+    console.error("[AdminNormalizedActivity] Unexpected error", e);
     return res.status(500).json({ error: "Internal error" });
   }
 });
@@ -689,7 +808,119 @@ app.post("/api/v1/admin/resend", requireAdminAuth, async (req, res) => {
   }
 });
 
-// ---- Admin: Nudge guests (bulk) ----
+// ---- Admin: PATCH guest/:id/group ----
+app.patch("/api/v1/admin/guest/:id/group", requireAdminAuth, async (req, res) => {
+  const guestId = req.params.id;
+  const { group_label } = req.body || {};
+  try {
+    const canonLabel = canonicalizeGroupLabel(group_label);
+    const { error } = await supabase
+      .from("guests")
+      .update({ group_label: canonLabel })
+      .eq("id", guestId);
+    if (error) throw error;
+    await supabase.from("user_activity").insert([
+      { guest_id: guestId, kind: "group_update", meta: { group_label: canonLabel } }
+    ]);
+    return res.json({ ok: true });
+  } catch (e) {
+    console.error("[AdminGroupUpdate] Failed", e);
+    return res.status(500).json({ error: "Failed to update group" });
+  }
+});
+
+// ---- Admin: PATCH group/bulk ----
+app.patch("/api/v1/admin/group/bulk", requireAdminAuth, async (req, res) => {
+  const { guest_ids, group_label } = req.body || {};
+  if (!Array.isArray(guest_ids) || guest_ids.length === 0) {
+    return res.status(400).json({ error: "guest_ids must be non-empty array" });
+  }
+  try {
+    const canonLabel = canonicalizeGroupLabel(group_label);
+    const { error } = await supabase
+      .from("guests")
+      .update({ group_label: canonLabel })
+      .in("id", guest_ids);
+    if (error) throw error;
+    for (const gid of guest_ids) {
+      await supabase.from("user_activity").insert([
+        { guest_id: gid, kind: "group_update_bulk", meta: { group_label: canonLabel } }
+      ]);
+    }
+    return res.json({ ok: true });
+  } catch (e) {
+    console.error("[AdminGroupBulkUpdate] Failed", e);
+    return res.status(500).json({ error: "Bulk group update failed" });
+  }
+});
+
+// ---- Admin: GET groups ----
+app.get("/api/v1/admin/groups", requireAdminAuth, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("guests")
+      .select("group_label")
+      .not("group_label", "is", null);
+
+    if (error) throw error;
+
+    const counts = {};
+    for (const row of data) {
+      const label = row.group_label;
+      counts[label] = (counts[label] || 0) + 1;
+    }
+
+    const groups = Object.entries(counts).map(([group_label, member_count]) => ({
+      group_label,
+      member_count
+    }));
+
+    groups.sort((a, b) => a.group_label.localeCompare(b.group_label));
+    return res.json({ groups });
+  } catch (e) {
+    console.error("[AdminGroups] Failed", e);
+    return res.status(500).json({ error: "Failed to load groups" });
+  }
+});
+
+// ---- Admin: POST groups/:group_label/nudge ----
+app.post("/api/v1/admin/groups/:group_label/nudge", requireAdminAuth, async (req, res) => {
+  const group_label = canonicalizeGroupLabel(req.params.group_label);
+  const { subject, html, text } = req.body || {};
+  if (!subject || !html || !text) {
+    return res.status(400).json({ error: "subject, html, text required" });
+  }
+  try {
+    const { data: guests, error } = await supabase
+      .from("guests")
+      .select("id,email")
+      .eq("group_label", group_label);
+    if (error) throw error;
+    for (const g of guests) {
+      await sendEmail({ to: g.email, subject, html, text });
+      await supabase.from("emails_log").insert([
+        {
+          guest_id: g.id,
+          type: "group_nudge",
+          subject,
+          provider: EMAIL_PROVIDER,
+          status: "sent",
+          sent_at: new Date().toISOString(),
+          meta: { group_label, to: g.email }
+        }
+      ]);
+      await supabase.from("user_activity").insert([
+        { guest_id: g.id, kind: "group_nudge_sent", meta: { group_label } }
+      ]);
+    }
+    return res.json({ ok: true, count: guests.length });
+  } catch (e) {
+    console.error("[AdminGroupNudge] Failed", e);
+    return res.status(500).json({ error: "Failed to send group nudge" });
+  }
+});
+
+// ---- Admin: Nudge guests (bulk) — ACTUAL IMPLEMENTATION ----
 app.post("/api/v1/admin/guests/nudge", requireAdminAuth, async (req, res) => {
   try {
     const { guest_ids, subject, html, text } = req.body || {};
@@ -712,35 +943,28 @@ app.post("/api/v1/admin/guests/nudge", requireAdminAuth, async (req, res) => {
         .single();
 
       if (gErr || !guest) {
-        console.warn(`[AdminNudge] Guest not found for id=${id}`);
         results.push({ id, status: "guest_not_found" });
         continue;
       }
 
-      console.log(`[AdminNudge] Sending nudge to ${guest.email} (${guest.id})`);
-      try {
-        await sendEmail({ to: guest.email, subject, html, text });
-        await supabase.from("emails_log").insert([{
-          guest_id: guest.id,
-          type: "admin_nudge",
-          subject,
-          provider: EMAIL_PROVIDER,
-          status: "sent",
-          sent_at: new Date().toISOString(),
-          meta: { to: guest.email, admin: req.admin }
-        }]);
+      await sendEmail({ to: guest.email, subject, html, text });
+      await supabase.from("emails_log").insert([{
+        guest_id: guest.id,
+        type: "admin_nudge",
+        subject,
+        provider: EMAIL_PROVIDER,
+        status: "sent",
+        sent_at: new Date().toISOString(),
+        meta: { to: guest.email, admin: req.admin }
+      }]);
 
-        await supabase.from("user_activity").insert([{
-          guest_id: guest.id,
-          kind: "admin_nudge_sent",
-          meta: { subject }
-        }]);
+      await supabase.from("user_activity").insert([{
+        guest_id: guest.id,
+        kind: "admin_nudge_sent",
+        meta: { subject }
+      }]);
 
-        results.push({ id, status: "sent" });
-      } catch (e) {
-        console.error(`[AdminNudge] Failed sending to ${guest.email}`, e);
-        results.push({ id, status: "failed" });
-      }
+      results.push({ id, status: "sent" });
     }
 
     return res.json({ ok: true, results });
@@ -749,8 +973,6 @@ app.post("/api/v1/admin/guests/nudge", requireAdminAuth, async (req, res) => {
     return res.status(500).json({ error: "Internal error" });
   }
 });
-
-app.use("/api/v1/admin", requireAdminAuth);
 
 // ---- Serve built frontend from /app/dist (we'll place it there in Docker) ----
 const distDir = path.join(__dirname, "public");
