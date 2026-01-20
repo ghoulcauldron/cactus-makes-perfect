@@ -49,7 +49,7 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
 // ADMIN AUTH
 // ------------------------------
 export async function adminLogin(password: string) {
-  return apiFetch("/api/v1/admin/login", {
+  return apiFetch("/admin/login", {
     method: "POST",
     body: JSON.stringify({ password }),
   });
