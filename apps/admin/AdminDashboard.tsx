@@ -132,7 +132,7 @@ export default function AdminDashboard() {
                 {/* Updated to match modal focus and border behavior */}
                 <ListboxButton className={`
                   relative w-full cursor-default border py-1 pl-3 pr-10 text-left text-sm uppercase tracking-tighter transition-all
-                  bg-black text-[#45CC2D] border-[#45CC2D] focus:ring-1 focus:ring-[#45CC2D] focus:outline-none
+                  bg-black text-[#45CC2D] border-[#45CC2D] focus:ring-1 focus:ring-[#45CC2D] focus:outline-none hover:bg-[#9ae68c]
                 `}>
                   <span className="block truncate">
                     {filter === "group" && selectedGroup ? selectedGroup : "All Groups"}
