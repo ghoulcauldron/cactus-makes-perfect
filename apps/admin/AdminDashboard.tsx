@@ -87,7 +87,18 @@ export default function AdminDashboard() {
   return (
     <div className="flex flex-col h-screen bg-surface text-primary font-mono border-4 border-primary">
       <div className="px-3 py-1 border-b border-primary bg-surface uppercase tracking-widest text-sm self-start mb-2">
-        CACTUS MAKES PERFECT - AREA 51
+                <div className="flex items-center justify-between w-full">
+          <span>CACTUS MAKES PERFECT - AREA 51</span>
+          <button
+            className="ml-4 px-2 py-0.5 border border-primary text-primary hover:bg-[#9ae68c] hover:text-surface transition-colors text-xs"
+            onClick={() => {
+              localStorage.removeItem("admin_token");
+              window.location.href = "/login";
+            }}
+          >
+            LOGOUT
+          </button>
+        </div>
       </div>
       <div className="flex flex-1 overflow-hidden">
       {/* LEFT PANEL */}
