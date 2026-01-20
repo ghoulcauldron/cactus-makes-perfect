@@ -154,7 +154,7 @@ export default function AdminDashboard() {
                       value=""
                       className={({ active }) => `
                         relative cursor-default select-none py-2 pl-10 pr-4 text-[10px] font-bold uppercase transition-colors
-                        ${active ? 'bg-[#45CC2D] text-black' : 'text-gray-300'}
+                        ${active ? 'bg-[#45CC2D] text-black' : 'text-[#45CC2D]'}
                       `}
                     >
                       All Groups
@@ -168,7 +168,7 @@ export default function AdminDashboard() {
                           value={g}
                           className={({ active }) => `
                             relative cursor-default select-none py-2 pl-10 pr-4 text-[10px] uppercase transition-colors
-                            ${active ? 'bg-[#45CC2D] text-black' : 'text-gray-300'}
+                            ${active ? 'bg-[#45CC2D] text-black' : 'text-[#45CC2D]'}
                           `}
                         >
                           {({ selected }) => (

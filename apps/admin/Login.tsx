@@ -48,7 +48,32 @@ export default function Login({ onLoginSuccess }: { onLoginSuccess: () => void }
               </label>
               <input
                 type="password"
-                className="bg-black border-2 border-[#45CC2D]/40 text-[#45CC2D] px-4 py-3 rounded-none focus:border-[#45CC2D] focus:ring-1 focus:ring-[#45CC2D] outline-none transition-all placeholder:text-[#45CC2D]/20"
+                className={`
+                  border-2 border-[#45CC2D]/40 px-4 py-3 rounded-none 
+                  outline-none transition-all placeholder:text-[#45CC2D]/20
+                  
+                  /* --- FOCUS STATE (User is typing) --- */
+                  /* Overrides other colors to Dark Green BG + Green Text */
+                  focus:bg-[#0d2809] 
+                  focus:text-[#45CC2D] 
+                  focus:caret-[#45CC2D]
+                  focus:border-[#45CC2D] 
+                  focus:ring-1 
+                  focus:ring-[#45CC2D]
+                  
+                  /* Fix for Autofill during Focus (Matches Dark Green) */
+                  autofill:focus:shadow-[0_0_0_1000px_#0d2809_inset]
+                  autofill:focus:[-webkit-text-fill-color:#45CC2D]
+
+                  /* --- BASE STATE (User clicked away) --- */
+                  ${password 
+                    ? /* HAS VALUE: Bright Green BG + Black Text */
+                      "bg-[#9ae68c] text-black caret-black autofill:shadow-[0_0_0_1000px_#9ae68c_inset] autofill:[-webkit-text-fill-color:black]" 
+                    
+                    : /* EMPTY: Black BG + Green Text */
+                      "bg-black text-[#45CC2D] caret-[#45CC2D] autofill:shadow-[0_0_0_1000px_black_inset] autofill:[-webkit-text-fill-color:#45CC2D]"
+                  }
+                `}
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -56,7 +81,6 @@ export default function Login({ onLoginSuccess }: { onLoginSuccess: () => void }
                 autoFocus
               />
             </div>
-
             {error && (
               <div className="border border-red-900 bg-red-950/20 p-2">
                 <p className="text-red-500 text-[10px] font-bold uppercase text-center animate-pulse">
