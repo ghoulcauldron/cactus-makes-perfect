@@ -58,8 +58,12 @@ export async function adminLogin(password: string) {
 export async function verifyAdminToken(token: string) {
   try {
     const res = await fetch(`${API_BASE}/admin/verify`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
     });
+
     return res.ok;
   } catch {
     return false;
