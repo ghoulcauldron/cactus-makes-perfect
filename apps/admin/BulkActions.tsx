@@ -13,6 +13,7 @@ export default function BulkActions({
   currentGroup,
 }: BulkActionsProps) {
   const [showNudge, setShowNudge] = useState(false);
+  const [isPreview, setIsPreview] = useState(false); // New state for toggle
   const [subject, setSubject] = useState("");
   const [text, setText] = useState("");
   const [html, setHtml] = useState("");
@@ -20,7 +21,6 @@ export default function BulkActions({
 
   const hasSelection = selectedIds.length > 0;
   const canNudgeGroup = Boolean(currentGroup) && !hasSelection;
-
   const canSubmit = subject.trim() !== "" && (text.trim() !== "" || html.trim() !== "");
 
   async function handleSend() {
@@ -33,15 +33,20 @@ export default function BulkActions({
       } else if (currentGroup) {
         await sendAdminNudge(["GROUP:" + currentGroup], subject, html, text);
       }
-      setShowNudge(false);
-      setSubject("");
-      setText("");
-      setHtml("");
+      resetForm();
     } catch (e) {
       alert("Failed to send nudge.");
     } finally {
       setSending(false);
     }
+  }
+
+  function resetForm() {
+    setShowNudge(false);
+    setIsPreview(false);
+    setSubject("");
+    setText("");
+    setHtml("");
   }
 
   return (
@@ -65,72 +70,89 @@ export default function BulkActions({
       )}
 
       {showNudge && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-          role="dialog"
-          aria-modal="true"
-        >
-          <div className="w-[520px] rounded-lg bg-black shadow-2xl border border-[#45CC2D]/30 text-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-[600px] rounded-lg bg-black shadow-2xl border border-[#45CC2D]/30 text-white flex flex-col max-h-[90vh]">
             
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
               <div>
-                <h2 className="text-lg font-semibold text-white uppercase tracking-tight">Send System Nudge</h2>
-                <p className="text-sm text-gray-500 text-balance">
-                  {hasSelection 
-                    ? `Dispatching to ${selectedIds.length} selected recipients.` 
-                    : `Dispatching to all members of ${currentGroup}.`}
+                <h2 className="text-lg font-semibold text-white uppercase tracking-tight">
+                  {isPreview ? "🔍 Previewing Nudge" : "📧 Compose Nudge"}
+                </h2>
+                <p className="text-[11px] text-gray-500 uppercase">
+                  Subject: <span className="text-gray-300">{subject || "(No Subject)"}</span>
                 </p>
               </div>
               <button 
-                className="text-gray-500 hover:text-white transition-colors" 
-                onClick={() => setShowNudge(false)}
+                className="text-gray-500 hover:text-white transition-colors text-xl" 
+                onClick={resetForm}
               >✕</button>
             </div>
 
             {/* Body */}
-            <div className="px-5 py-4 space-y-4">
-              <div className="space-y-1">
-                <label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Subject Line</label>
-                <input
-                  className="w-full bg-black border border-gray-800 text-white p-2 rounded text-sm focus:border-[#45CC2D] focus:ring-1 focus:ring-[#45CC2D] outline-none transition-all"
-                  placeholder="Inquiry regarding RSVP status..."
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                />
-              </div>
+            <div className="px-5 py-4 overflow-y-auto flex-1 custom-scrollbar">
+              {isPreview ? (
+                /* PREVIEW MODE */
+                <div className="space-y-4">
+                  <div className="border border-gray-800 rounded bg-white overflow-hidden h-[400px]">
+                    <iframe
+                      title="Email Preview"
+                      srcDoc={html || `<div style="font-family:sans-serif;padding:20px;color:#666;">No HTML content provided. Only plain text will be sent.</div>`}
+                      className="w-full h-full border-none"
+                    />
+                  </div>
+                  <div className="bg-neutral-900 p-3 rounded border border-gray-800">
+                    <label className="text-[10px] uppercase text-gray-500 block mb-1">Plain Text Fallback</label>
+                    <p className="text-xs text-gray-300 whitespace-pre-wrap">{text || "(Empty)"}</p>
+                  </div>
+                </div>
+              ) : (
+                /* EDIT MODE */
+                <div className="space-y-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Subject Line</label>
+                    <input
+                      className="w-full bg-black border border-gray-800 text-white p-2 rounded text-sm focus:border-[#45CC2D] focus:ring-1 focus:ring-[#45CC2D] outline-none transition-all"
+                      value={subject}
+                      onChange={(e) => setSubject(e.target.value)}
+                    />
+                  </div>
 
-              <div className="space-y-1">
-                <label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Plain Text Content</label>
-                <textarea
-                  className="w-full bg-black border border-gray-800 text-white p-2 rounded text-sm h-[80px] focus:border-[#45CC2D] focus:ring-1 focus:ring-[#45CC2D] outline-none transition-all resize-none"
-                  placeholder="Standard text version..."
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
-                />
-              </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Plain Text Version</label>
+                    <textarea
+                      className="w-full bg-black border border-gray-800 text-white p-2 rounded text-sm h-[80px] focus:border-[#45CC2D] focus:ring-1 focus:ring-[#45CC2D] outline-none transition-all resize-none"
+                      value={text}
+                      onChange={(e) => setText(e.target.value)}
+                    />
+                  </div>
 
-              <div className="space-y-1">
-                <label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">HTML Template</label>
-                <textarea
-                  className="w-full bg-black border border-gray-800 text-white p-2 rounded text-sm h-[120px] focus:border-[#45CC2D] focus:ring-1 focus:ring-[#45CC2D] outline-none transition-all font-mono resize-none"
-                  placeholder="<html>...</html>"
-                  value={html}
-                  onChange={(e) => setHtml(e.target.value)}
-                />
-              </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">HTML Template</label>
+                    <textarea
+                      className="w-full bg-black border border-gray-800 text-[#45CC2D] p-2 rounded text-sm h-[180px] focus:border-[#45CC2D] focus:ring-1 focus:ring-[#45CC2D] outline-none transition-all font-mono resize-none"
+                      value={html}
+                      onChange={(e) => setHtml(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Footer */}
             <div className="flex items-center justify-between px-5 py-4 border-t border-gray-800 bg-neutral-900/30">
-              <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
-                {sending ? "Transmission in progress" : "Ready for dispatch"}
-              </div>
+              <button
+                type="button"
+                className="text-xs font-bold uppercase text-[#45CC2D] hover:underline"
+                onClick={() => setIsPreview(!isPreview)}
+              >
+                {isPreview ? "← Back to Editor" : "👁 Preview HTML"}
+              </button>
               
               <div className="flex items-center gap-3">
                 <button 
-                  className="text-sm text-gray-400 hover:text-white transition-colors uppercase font-bold" 
-                  onClick={() => setShowNudge(false)}
+                  className="text-xs text-gray-500 hover:text-white transition-colors uppercase font-bold" 
+                  onClick={resetForm}
                   disabled={sending}
                 >
                   Abort
@@ -144,11 +166,10 @@ export default function BulkActions({
                   onClick={handleSend}
                   disabled={!canSubmit || sending}
                 >
-                  {sending ? "Sending..." : "Confirm Send"}
+                  {sending ? "Sending..." : "Confirm Dispatch"}
                 </button>
               </div>
             </div>
-
           </div>
         </div>
       )}
