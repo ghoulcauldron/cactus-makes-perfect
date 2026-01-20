@@ -3,6 +3,9 @@ import { fetchAdminGuests } from "./api/client";
 import GuestSidebar from "./GuestSidebar";
 import BulkActions from "./BulkActions";
 import { useSelection } from "./hooks/useSelection";
+// 1. Import Headless UI components
+import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/react';
+import { ChevronUpDownIcon, CheckIcon } from '@heroicons/react/20/solid';
 
 function canonicalizeGroupLabel(label: string | null | undefined): string {
   if (!label) return "—";
@@ -78,57 +81,110 @@ export default function AdminDashboard() {
   }, [filteredGuests, selection]);
 
   if (loading) {
-    return <div className="p-8 text-gray-500">Loading…</div>;
+    return <div className="p-8 text-primary font-mono">Loading…</div>;
   }
 
   return (
-    <div className="flex h-screen">
+    <div className="flex flex-col h-screen bg-surface text-primary font-mono border-4 border-primary">
+      <div className="px-3 py-1 border-b border-primary bg-surface uppercase tracking-widest text-sm self-start mb-2">
+        CACTUS MAKES PERFECT - AREA 51
+      </div>
+      <div className="flex flex-1 overflow-hidden">
       {/* LEFT PANEL */}
-      <div className="flex-1 p-6 overflow-auto">
+      <div className="flex-1 p-6 overflow-auto bg-surface">
 
         {/* Filters + Bulk */}
         <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <button
-            className={filter === "all" ? "font-bold" : ""}
-            onClick={() => setFilter("all")}
-          >
-            All
-          </button>
-          <button
-            className={filter === "responded" ? "font-bold" : ""}
-            onClick={() => setFilter("responded")}
-          >
-            Responded
-          </button>
-          <button
-            className={filter === "not_responded" ? "font-bold" : ""}
-            onClick={() => setFilter("not_responded")}
-          >
-            Not Responded
-          </button>
-          <select
-            className="ml-4 border rounded p-1"
-            value={filter === "group" ? selectedGroup || "" : ""}
-            onChange={(e) => {
-              const val = e.target.value;
-              if (!val) {
-                setFilter("all");
-                setSelectedGroup(null);
-              } else {
-                setFilter("group");
-                setSelectedGroup(val);
-              }
-            }}
-          >
-            <option value="">All Groups</option>
-            {Array.from(new Set(guests.map((g) => canonicalizeGroupLabel(g.group_label))))
-              .filter((x) => x && x !== "—")
-              .map((g) => (
-                <option key={g} value={g}>{g}</option>
-              ))}
-          </select>
-        </div>
+          <div className="flex items-center gap-3">
+            <button
+              className={`px-2 py-1 border border-primary text-sm hover:bg-[#9ae68c] hover:text-surface transition-colors ${filter === "all" ? "bg-[#45CC2D] text-black" : ""}`}
+              onClick={() => setFilter("all")}
+            >
+              ALL
+            </button>
+            <button
+              className={`px-2 py-1 border border-primary text-sm hover:bg-[#9ae68c] hover:text-surface transition-colors ${filter === "responded" ? "bg-[#45CC2D] text-black" : ""}`}
+              onClick={() => setFilter("responded")}
+            >
+              RESPONDED
+            </button>
+            <button
+              className={`px-2 py-1 border border-primary text-sm hover:bg-[#9ae68c] hover:text-surface transition-colors ${filter === "not_responded" ? "bg-[#45CC2D] text-black" : ""}`}
+              onClick={() => setFilter("not_responded")}
+            >
+              NOT RESPONDED
+            </button>
+
+            {/* HEADLESS UI GROUP FILTER */}
+            <div className="relative ml-4 w-64">
+              <Listbox
+                value={selectedGroup ?? undefined} // Consistent with your modal fix
+                onChange={(val) => {
+                  if (!val) {
+                    setFilter("all");
+                    setSelectedGroup(null);
+                  } else {
+                    setFilter("group");
+                    setSelectedGroup(val);
+                  }
+                }}
+              >
+                {/* Updated to match modal focus and border behavior */}
+                <ListboxButton className={`
+                  relative w-full cursor-default border py-1 pl-3 pr-10 text-left text-sm uppercase tracking-tighter transition-all
+                  bg-black text-[#45CC2D] border-[#45CC2D] focus:ring-1 focus:ring-[#45CC2D] focus:outline-none
+                `}>
+                  <span className="block truncate">
+                    {filter === "group" && selectedGroup ? selectedGroup : "All Groups"}
+                  </span>
+                  <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                    <ChevronUpDownIcon className="h-4 w-4 text-[#45CC2D]" aria-hidden="true" />
+                  </span>
+                </ListboxButton>
+
+                {/* Updated to match modal's #0a0a0a background and rounded-md style */}
+                <ListboxOptions className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md bg-[#0a0a0a] border border-[#45CC2D] py-1 shadow-2xl focus:outline-none">
+                  {/* Default "All Groups" Option */}
+                  <ListboxOption
+                    value=""
+                    className={({ active }) => `
+                      relative cursor-default select-none py-2 pl-10 pr-4 text-[10px] font-bold uppercase transition-colors
+                      ${active ? 'bg-[#45CC2D] text-black' : 'text-gray-300'}
+                    `}
+                  >
+                    All Groups
+                  </ListboxOption>
+
+                  {/* Dynamic Groups */}
+                  {Array.from(new Set(guests.map((g) => canonicalizeGroupLabel(g.group_label))))
+                    .filter((x) => x && x !== "—")
+                    .map((g) => (
+                      <ListboxOption
+                        key={g}
+                        value={g}
+                        className={({ active }) => `
+                          relative cursor-default select-none py-2 pl-10 pr-4 text-[10px] uppercase transition-colors
+                          ${active ? 'bg-[#45CC2D] text-black' : 'text-gray-300'}
+                        `}
+                      >
+                        {({ selected }) => (
+                          <>
+                            <span className={`block truncate ${selected ? 'font-bold' : 'font-normal'}`}>
+                              {g}
+                            </span>
+                            {selected && (
+                              <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                                <CheckIcon className="h-4 w-4" aria-hidden="true" />
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </ListboxOption>
+                    ))}
+                </ListboxOptions>
+              </Listbox>
+            </div>
+          </div>
 
           <BulkActions
             selectedIds={selection.selectedIds}
@@ -139,10 +195,11 @@ export default function AdminDashboard() {
 
 
         {currentGroup && (
-          <div className="mb-3 flex items-center justify-between rounded border bg-gray-50 px-3 py-2">
+          <div className="mb-3 flex items-center justify-between border border-primary bg-surface px-3 py-2">
             <div className="flex items-center gap-3">
               <input
                 type="checkbox"
+                className="h-5 w-5 rounded bg-black border-[#45CC2D] text-[#45CC2D] focus:ring-[#45CC2D] focus:ring-offset-black"
                 ref={(el) => {
                   if (!el) return;
                   const groupIds = filteredGuests.map((g) => g.id);
@@ -173,7 +230,7 @@ export default function AdminDashboard() {
             </div>
 
             <button
-              className="text-sm text-gray-600 hover:text-gray-900"
+              className="text-sm border border-primary px-2 py-0.5 hover:bg-primary hover:text-surface"
               onClick={() => {
                 selection.clear();
                 setFilter("all");
@@ -186,13 +243,14 @@ export default function AdminDashboard() {
         )}
 
         {/* GUEST TABLE */}
-        <table className="w-full border-collapse">
+        <table className="w-full border-collapse border border-primary">
           <thead>
-            <tr className="text-left border-b">
+            <tr className="text-left border-b border-primary uppercase text-sm">
               <th className="p-2">
                 {filteredGuests.length > 0 && (
                   <input
                     type="checkbox"
+                    className="h-5 w-5 rounded bg-black border-[#45CC2D] text-[#45CC2D] focus:ring-[#45CC2D] focus:ring-offset-black"
                     ref={(el) => {
                       if (!el) return;
                       const ids = filteredGuests.map((g) => g.id);
@@ -231,7 +289,7 @@ export default function AdminDashboard() {
             {filteredGuests.map((g) => (
               <tr
                 key={g.id}
-                className="border-b hover:bg-gray-50 cursor-pointer"
+                className={`border-b border-primary cursor-pointer hover:bg-neutral-800 ${selection.isSelected(g.id) ? "bg-primary text-surface" : ""}`}
                 onClick={() => setSelectedGuest(g)}
               >
                 <td
@@ -242,6 +300,7 @@ export default function AdminDashboard() {
                 >
                   <input
                     type="checkbox"
+                    className="h-5 w-5 rounded bg-black border-[#45CC2D] text-[#45CC2D] focus:ring-[#45CC2D] focus:ring-offset-black"
                     checked={selection.isSelected(g.id)}
                     onChange={() => selection.toggle(g.id)}
                     onKeyDown={(e) => selection.onCheckboxKeyDown(e, g.id)}
@@ -266,6 +325,7 @@ export default function AdminDashboard() {
           onClose={() => setSelectedGuest(null)}
         />
       )}
+      </div>
     </div>
   );
 }

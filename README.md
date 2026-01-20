@@ -395,12 +395,110 @@ Invite email design
 
 ### Section D — Deployment & DNS
 
-| Item | Status | Notes |
-|------|--------|--------|
-| Create subdomain: `area51.cactusmakesperfect.org` | ⬜ | CNAME → Railway static service |
-| Deploy admin SPA to subdomain | ⬜ | Confirm no console errors |
-| Optional Basic Auth on admin domain | ⬜ | Early QA protection |
-| HTTPS cert via Railway | ⬜ | Should auto-provision |
+This project uses **Railway** for hosting and **Squarespace DNS** for domain management.
+
+At present:
+- The **guest-facing frontend** is already live and deployed.
+- The remaining deployment work is for the **Admin Dashboard**, which will live on a separate subdomain.
+
+---
+
+#### D1 — Domain Architecture
+
+| Surface | Domain | Status |
+|------|------|------|
+| Guest Portal | `www.cactusmakesperfect.org` | ✅ Live |
+| Admin Dashboard | `area51.cactusmakesperfect.org` | ⬜ Pending |
+
+The admin interface is intentionally isolated on its own subdomain to:
+- Maintain a clean auth boundary (admin JWT vs guest tokens)
+- Allow stricter access controls during QA
+- Enable independent deploys without affecting guests
+
+#### D2 — Railway Services
+
+**Existing**
+- Backend service (Node/Express)
+  - Serves API routes
+  - Serves guest frontend static assets from `/public`
+
+**To be created**
+- **Admin SPA service**
+  - Vite-built static frontend (`apps/admin`)
+  - No backend routes
+  - Communicates with backend API via `VITE_API_BASE_URL`
+
+**Notes**
+- The admin service can be deployed as:
+  - A standalone static service on Railway, or
+  - A lightweight Node service that serves the built admin assets
+- The admin service must not share cookies or localStorage with the guest domain.
+
+---
+
+
+#### D3 — Railway Setup (Admin Dashboard)
+
+Steps:
+
+1. **Create new Railway service**
+   - Source: same GitHub repo
+   - Root directory: `apps/admin`
+   - Build command:
+     ```bash
+     npm install && npm run build
+     ```
+   - Output directory:
+     ```text
+     dist/
+     ```
+
+2. **Set environment variables**
+   - `VITE_API_BASE_URL=https://www.cactusmakesperfect.org`
+   - (Optional during QA) `VITE_DEBUG=true`
+
+3. **Deploy and confirm**
+   - Admin SPA loads
+   - Login screen renders
+   - Network requests hit backend API correctly
+   - No console errors
+
+---
+
+#### D4 — Squarespace DNS Configuration
+
+Squarespace manages DNS for `cactusmakesperfect.org`.
+
+To add the admin subdomain:
+
+1. Navigate to **Squarespace → Domains → cactusmakesperfect.org → DNS Settings**
+2. Add a **CNAME record**:
+
+| Field | Value |
+|------|------|
+| Host | `area51` |
+| Type | `CNAME` |
+| Data | `<railway-generated-domain>` |
+| TTL | Default |
+
+> The Railway-generated domain will look like:
+> `admin-dashboard-production.up.railway.app`
+
+3. Save DNS changes
+
+**Propagation**
+- DNS typically propagates within minutes
+- Allow up to 1 hour before troubleshooting
+
+---
+
+#### D5 — Custom Domain in Railway
+
+1. Open the **Admin SPA service** in Railway
+2. Navigate to **Settings → Domains**
+3. Add custom domain:
+   ```text
+   area51.cactusmakesperfect.org
 
 ---
 

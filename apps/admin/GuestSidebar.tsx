@@ -196,7 +196,7 @@ export default function GuestSidebar({ guest, onClose }: GuestSidebarProps) {
   }
 
   return (
-    <div className="w-[380px] border-l bg-white h-full shadow-xl overflow-auto">
+    <div className="w-[380px] border-l bg-black h-full shadow-xl overflow-auto">
       <div className="p-4 flex justify-between items-center border-b">
         <h2 className="font-semibold text-lg">
           {guest.first_name} {guest.last_name}
@@ -240,7 +240,7 @@ export default function GuestSidebar({ guest, onClose }: GuestSidebarProps) {
         <div className="flex items-center mb-2 space-x-2">
           <input
             type="checkbox"
-            className="h-4 w-4"
+            className="h-5 w-5 rounded bg-black border-[#45CC2D] text-[#45CC2D] focus:ring-[#45CC2D] focus:ring-offset-black"
             checked={!noneSelected}
             ref={headerCheckboxRef}
             onChange={toggleHeaderCheckbox}
@@ -288,7 +288,7 @@ export default function GuestSidebar({ guest, onClose }: GuestSidebarProps) {
                   {!denseMode && (summary.email_opened > 0 || summary.email_clicked > 0) && (
                     <>
                       {summary.email_opened > 0 && (
-                        <div className="flex items-start gap-3 border p-3 rounded bg-gray-50 text-gray-500 text-sm italic">
+                        <div className="flex items-start gap-3 border p-3 rounded bg-black text-gray-500 text-sm italic">
                           <div className="text-xl pt-1">📬</div>
                           <div>
                             {summary.email_opened} email opened
@@ -297,7 +297,7 @@ export default function GuestSidebar({ guest, onClose }: GuestSidebarProps) {
                         </div>
                       )}
                       {summary.email_clicked > 0 && (
-                        <div className="flex items-start gap-3 border p-3 rounded bg-gray-50 text-gray-500 text-sm italic">
+                        <div className="flex items-start gap-3 border p-3 rounded bg-black text-gray-500 text-sm italic">
                           <div className="text-xl pt-1">🔗</div>
                           <div>
                             {summary.email_clicked} link clicked
@@ -310,12 +310,12 @@ export default function GuestSidebar({ guest, onClose }: GuestSidebarProps) {
                   {items.map((item) => (
                     <div
                       key={item.__rowId}
-                      className="flex items-start gap-3 border p-3 rounded bg-gray-50"
+                      className="flex items-start gap-3 border p-3 rounded bg-black"
                     >
                       {item.id && (
                         <input
                           type="checkbox"
-                          className="mt-1"
+                          className="h-5 w-5 rounded bg-black border-[#45CC2D] text-[#45CC2D] focus:ring-[#45CC2D] focus:ring-offset-black"
                           checked={selectedIds.has(item.__rowId)}
                           onChange={() => toggleItem(item.__rowId)}
                           aria-label="Select activity row"

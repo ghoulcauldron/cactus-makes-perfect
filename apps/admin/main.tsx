@@ -5,6 +5,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Login from "./Login";
 import AdminDashboard from "./AdminDashboard";
 import App from "./App"; // ProtectedRoute wrapper
+import "./src/index.css";
 
 const router = createBrowserRouter([
   {
