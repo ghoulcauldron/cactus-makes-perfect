@@ -50,7 +50,7 @@ export default function Welcome() {
       </div>
 
       {/* --- LAYER 2.5: BANNER (z-15) --- */}
-      <div className="absolute top-[2.75rem] md:top-32 z-[15] w-full flex justify-center pt-12 md:pt-16 pointer-events-none">
+      <div className="absolute top-[11rem] md:top-32 z-[15] w-full flex justify-center pt-12 md:pt-16 pointer-events-none">
         <img 
           src={imgBanner} 
           alt="Banner" 
