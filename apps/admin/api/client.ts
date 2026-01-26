@@ -11,6 +11,7 @@
 // CONFIG
 // ------------------------------
 const API_BASE =
+// @ts-ignore
   import.meta.env.VITE_API_BASE_URL ||
   "https://www.cactusmakesperfect.org/api/v1";
 
