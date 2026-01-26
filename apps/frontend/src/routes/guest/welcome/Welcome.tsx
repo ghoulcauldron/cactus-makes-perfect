@@ -23,16 +23,15 @@ export default function Welcome() {
   const bgMobile = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/bg_rays_492x1080.png";
   const imgWindow = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/picture_window.png";
   const imgCactusTitle = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/cactus_2.png";
+  const imgBanner = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/banner.png";
 
   return (
     <div className="min-h-screen w-full relative overflow-hidden bg-cactus-sand flex flex-col items-center justify-center">
       
-      {/* --- LAYER 1: RESPONSIVE BACKGROUND --- */}
+      {/* --- LAYER 1: RESPONSIVE BACKGROUND (z-0) --- */}
       <div className="absolute inset-0 z-0">
         <picture>
-          {/* Use mobile image for screens smaller than 768px */}
           <source media="(max-width: 767px)" srcSet={bgMobile} />
-          {/* Default to desktop image */}
           <img 
             src={bgDesktop} 
             alt="Background Rays" 
@@ -41,7 +40,7 @@ export default function Welcome() {
         </picture>
       </div>
 
-      {/* --- LAYER 2: PICTURE WINDOW (Centered) --- */}
+      {/* --- LAYER 2: PICTURE WINDOW (z-10) --- */}
       <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
         <img 
           src={imgWindow} 
@@ -50,8 +49,19 @@ export default function Welcome() {
         />
       </div>
 
-      {/* --- LAYER 3: CACTUS TITLE (Top Center) --- */}
-      {/* Adjust 'top-10' or 'mt-10' to play with vertical positioning */}
+      {/* --- LAYER 2.5: BANNER (z-15) --- */}
+      {/* Sandwiched between Window (10) and Cactus (20) */}
+      {/* Aligning strictly with Cactus Title using top-48 md:top-36 */}
+      <div className="absolute top-48 md:top-36 z-[15] w-full flex justify-center pt-12 md:pt-16 pointer-events-none">
+        <img 
+          src={imgBanner} 
+          alt="Banner" 
+          // Making this slightly wider (w-64 md:w-96) than the cactus so it frames it
+          className="w-64 md:w-96 object-contain drop-shadow-sm opacity-90"
+        />
+      </div>
+
+      {/* --- LAYER 3: CACTUS TITLE (z-20) --- */}
       <div className="absolute top-48 md:top-36 z-20 w-full flex justify-center pt-12 md:pt-16 pointer-events-none">
         <img 
           src={imgCactusTitle} 
