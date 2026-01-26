@@ -18,6 +18,44 @@ function canonicalizeGroupLabel(label) {
   return label.trim().toLowerCase();
 }
 
+// ---- Helper: get or create valid invite token (Phase 1.5) ----
+async function getOrCreateInviteToken(guest) {
+  // Look for most recent valid, unused token
+  const { data: existing } = await supabase
+    .from("invite_tokens")
+    .select("*")
+    .eq("guest_id", guest.id)
+    .is("used_at", null)
+    .gt("expires_at", new Date().toISOString())
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (existing) {
+    return { tokenRow: existing, reused: true };
+  }
+
+  // Otherwise create a new token
+  const code = genCode(6);
+  const token = uuidv4();
+  const expires_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+  const { data: inserted } = await supabase
+    .from("invite_tokens")
+    .insert([{
+      guest_id: guest.id,
+      token,
+      code,
+      expires_at,
+      provider: EMAIL_PROVIDER,
+      delivery_status: "pending"
+    }])
+    .select()
+    .single();
+
+  return { tokenRow: inserted, reused: false };
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -232,21 +270,35 @@ async function sendEmail({ to, subject, html, text }) {
   }
 }
 
-// ---- API: send invite ----
+// =====================================================
+// INVITES (ADMIN CANONICAL ROUTE)
+// =====================================================
+//
+// This route replaces BOTH the old /invites/send and /invites/resend.
+// Phase 1.5+ will add server-side “reuse valid token” logic here.
+// For now: always generates a new token, sends it, logs activity.
+//
+// Expect body:
+//   { guest_id: "<uuid>", template?: "default" | "friendly" }
+//
+// NOTE: This route is protected by requireAdminAuth automatically because
+// it's mounted under /api/v1/admin and you already have:
+//   app.use("/api/v1/admin", requireAdminAuth);
+
 let lastToken = null;
-app.post("/api/v1/admin/invites/send", requireAdminAuth, async (req, res) => {
+
+app.post("/api/v1/admin/invites/send", async (req, res) => {
   try {
-    console.log("Received invite send request");
-    const { email } = req.body;
-    if (!email) return res.status(400).json({ error: "Missing email" });
+    const { guest_id, template } = req.body || {};
+    if (!guest_id) return res.status(400).json({ error: "Missing guest_id" });
 
     const { data: guest, error: gErr } = await supabase
       .from("guests")
       .select("*")
-      .eq("email", email)
+      .eq("id", guest_id)
       .single();
+
     if (gErr || !guest) return res.status(404).json({ error: "Guest not found" });
-    console.log("Found guest:", guest);
 
     const code = genCode(6);
     const token = uuidv4();
@@ -261,50 +313,60 @@ app.post("/api/v1/admin/invites/send", requireAdminAuth, async (req, res) => {
       provider: EMAIL_PROVIDER,
       delivery_status: "pending"
     }]);
-    console.log("Inserted invite token (with provider + pending status)");
 
     const inviteUrl = `${PUBLIC_URL}/invite?token=${encodeURIComponent(token)}`;
-    const subject = "You're Invited! 🌵";
-    const html = `<p>Hello ${guest.first_name || ""},</p>
+
+    // Basic template branching (minimal; can evolve later)
+    let subject = "You're Invited! 🌵";
+    let html = `<p>Hello ${guest.first_name || ""},</p>
       <p>Your entry code: <b>${code}</b></p>
       <p>Or click to continue: <a href="${inviteUrl}">${inviteUrl}</a></p>`;
-    const text = `Hello ${guest.first_name || ""}\nCode: ${code}\nLink: ${inviteUrl}`;
+    let text = `Hello ${guest.first_name || ""}\nCode: ${code}\nLink: ${inviteUrl}`;
 
-    console.log("About to send email");
-    await sendEmail({ to: email, subject, html, text });
+    if (template === "friendly") {
+      subject = "Invite 🌵 — Santa Fe 20th Anniversary";
+      html = `<p>Hi ${guest.first_name || ""}!</p>
+        <p>Here’s your entry code: <b>${code}</b></p>
+        <p>You can also use this link: <a href="${inviteUrl}">${inviteUrl}</a></p>
+        <p>See you soon ❤️</p>`;
+      text = `Hi ${guest.first_name || ""}!\nCode: ${code}\nLink: ${inviteUrl}\nSee you soon.`;
+    }
+
+    await sendEmail({ to: guest.email, subject, html, text });
+
     await supabase
       .from("invite_tokens")
-      .update({
-        provider: EMAIL_PROVIDER,
-        delivery_status: "sent"
-      })
+      .update({ provider: EMAIL_PROVIDER, delivery_status: "sent" })
       .eq("token", token);
-    console.log("Email sent");
 
-    await supabase.from("guests").update({ invited_at: new Date().toISOString() }).eq("id", guest.id);
-    console.log("Updated guests.invited_at");
+    // invited_at is a useful first-touch marker; set it if empty OR always update — choose one.
+    // Minimal: set if null.
+    if (!guest.invited_at) {
+      await supabase.from("guests")
+        .update({ invited_at: new Date().toISOString() })
+        .eq("id", guest.id);
+    }
 
-    await supabase.from("user_activity").insert([{ guest_id: guest.id, kind: "invite_sent", meta: { email } }]);
-    console.log("Inserted user_activity");
+    await supabase.from("user_activity").insert([{
+      guest_id: guest.id,
+      kind: "invite_sent",
+      meta: { email: guest.email, template: template || "default", admin: req.admin || null }
+    }]);
 
-    res.json({ ok: true });
-    console.log("Responded with ok");
+    return res.json({ ok: true });
   } catch (e) {
-    console.error("invite error", e);
+    console.error("[AdminInviteSend] error", e);
     try {
       if (lastToken) {
         await supabase
           .from("invite_tokens")
-          .update({
-            provider: EMAIL_PROVIDER,
-            delivery_status: "failed"
-          })
+          .update({ provider: EMAIL_PROVIDER, delivery_status: "failed" })
           .eq("token", lastToken);
       }
     } catch (_) {
-      // ignore errors here to not mask original error
+      // ignore
     }
-    res.status(500).json({ error: "Internal error" });
+    return res.status(500).json({ error: "Internal error" });
   }
 });
 
