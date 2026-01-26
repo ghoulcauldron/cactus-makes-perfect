@@ -50,14 +50,15 @@ export default function Welcome() {
       </div>
 
       {/* --- LAYER 2.5: BANNER (z-15) --- */}
-      {/* Sandwiched between Window (10) and Cactus (20) */}
-      {/* Aligning strictly with Cactus Title using top-48 md:top-36 */}
+      {/* - Increased Mobile Width: w-64 -> w-80 (or w-full max-w-xs)
+         - Increased Desktop Width: md:w-96 -> md:w-[32rem] (approx 500px)
+         - Added 'opacity-90' to blend slightly with background
+      */}
       <div className="absolute top-48 md:top-36 z-[15] w-full flex justify-center pt-12 md:pt-16 pointer-events-none">
         <img 
           src={imgBanner} 
           alt="Banner" 
-          // Making this slightly wider (w-64 md:w-96) than the cactus so it frames it
-          className="w-64 md:w-96 object-contain drop-shadow-sm opacity-90"
+          className="w-80 md:w-[32rem] object-contain drop-shadow-sm opacity-100"
         />
       </div>
 
