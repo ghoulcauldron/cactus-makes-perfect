@@ -50,15 +50,12 @@ export default function Welcome() {
       </div>
 
       {/* --- LAYER 2.5: BANNER (z-15) --- */}
-      {/* - Increased Mobile Width: w-64 -> w-80 (or w-full max-w-xs)
-         - Increased Desktop Width: md:w-96 -> md:w-[32rem] (approx 500px)
-         - Added 'opacity-90' to blend slightly with background
-      */}
       <div className="absolute top-48 md:top-36 z-[15] w-full flex justify-center pt-12 md:pt-16 pointer-events-none">
         <img 
           src={imgBanner} 
           alt="Banner" 
-          className="w-80 md:w-[32rem] object-contain drop-shadow-sm opacity-100"
+          // Precision sizing using arbitrary values
+          className="w-[21rem] md:w-[33.5rem] object-contain drop-shadow-sm opacity-100"
         />
       </div>
 
