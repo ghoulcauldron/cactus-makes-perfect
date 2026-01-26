@@ -60,54 +60,6 @@ export default function Welcome() {
         />
       </div>
 
-      {/* Risograph grain overlay (Optional: keep or remove based on preference) */}
-      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/asfalt-dark.png')] opacity-10 z-10 pointer-events-none"></div>
-
-      {/* --- LAYER 4: CONTENT --- */}
-      <div className="relative z-30 w-full max-w-2xl mx-auto text-center px-6 py-16 mt-32 md:mt-40">
-        {/* Kept existing text but styled to sit nicely over the new graphics */}
-        <h1 className="text-5xl font-display text-cactus-green drop-shadow-sm mb-6 sr-only">
-          Welcome to Cactus Makes Perfect
-        </h1>
-
-        <div className="bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-xl border border-white/50">
-          <p className="text-lg text-gray-800 mb-8 leading-relaxed font-medium">
-            We’re so glad you’re here. 🌵✨ <br/> 
-            This portal is your guide to our 20th Anniversary Celebration in Santa Fe.  
-            Find RSVP details, schedules, and updates as we get closer to the big day.
-          </p>
-
-          {/* CTA buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button
-              className="px-6 py-4 rounded-xl bg-cactus-green text-white text-lg font-bold shadow-md hover:bg-cactus-green/80 transition transform hover:scale-105"
-              onClick={() => setRSVPModalOpen(true)}
-            >
-              RSVP Now
-            </button>
-            <button
-              className="px-6 py-4 rounded-xl bg-sunset text-white text-lg font-bold shadow-md hover:bg-sunset/80 transition transform hover:scale-105"
-              onClick={() => {
-                setActiveTab("schedule");
-                setEventInfoModalOpen(true);
-              }}
-            >
-              Event Info
-            </button>
-          </div>
-        </div>
-
-        {/* 🔑 Dev-only reset button */}
-        {showReset && (
-          <button
-            onClick={handleLogout}
-            className="mt-6 px-6 py-2 rounded-lg bg-red-500 text-white font-bold shadow-md hover:bg-red-600 transition"
-          >
-            🔑 Log out / Reset auth
-          </button>
-        )}
-      </div>
-
       {/* MODALS (Unchanged logic) */}
       {isRSVPModalOpen && (
         <RSVPModal
