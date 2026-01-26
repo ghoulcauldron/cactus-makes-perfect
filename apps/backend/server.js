@@ -290,33 +290,29 @@ let lastToken = null;
 app.post("/api/v1/admin/invites/send", async (req, res) => {
   try {
     const { guest_id, template } = req.body || {};
-    if (!guest_id) return res.status(400).json({ error: "Missing guest_id" });
+    if (!guest_id) {
+      return res.status(400).json({ error: "Missing guest_id" });
+    }
 
+    // 1. Load guest
     const { data: guest, error: gErr } = await supabase
       .from("guests")
       .select("*")
       .eq("id", guest_id)
       .single();
 
-    if (gErr || !guest) return res.status(404).json({ error: "Guest not found" });
+    if (gErr || !guest) {
+      return res.status(404).json({ error: "Guest not found" });
+    }
 
-    const code = genCode(6);
-    const token = uuidv4();
-    lastToken = token;
-    const expires_at = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString();
+    // 2. Get or reuse invite token (Phase 1.5 core)
+    const { tokenRow, reused } = await getOrCreateInviteToken(guest);
 
-    await supabase.from("invite_tokens").insert([{
-      guest_id: guest.id,
-      token,
-      code,
-      expires_at,
-      provider: EMAIL_PROVIDER,
-      delivery_status: "pending"
-    }]);
+    const { token, code, expires_at } = tokenRow;
 
     const inviteUrl = `${PUBLIC_URL}/invite?token=${encodeURIComponent(token)}`;
 
-    // Basic template branching (minimal; can evolve later)
+    // 3. Template rendering
     let subject = "You're Invited! 🌵";
     let html = `<p>Hello ${guest.first_name || ""},</p>
       <p>Your entry code: <b>${code}</b></p>
@@ -324,52 +320,67 @@ app.post("/api/v1/admin/invites/send", async (req, res) => {
     let text = `Hello ${guest.first_name || ""}\nCode: ${code}\nLink: ${inviteUrl}`;
 
     if (template === "friendly") {
-      subject = "Invite 🌵 — Santa Fe 20th Anniversary";
+      subject = "Invite 🌵 — Santa Fe Anniversary";
       html = `<p>Hi ${guest.first_name || ""}!</p>
-        <p>Here’s your entry code: <b>${code}</b></p>
-        <p>You can also use this link: <a href="${inviteUrl}">${inviteUrl}</a></p>
+        <p>Your entry code: <b>${code}</b></p>
+        <p>Continue here: <a href="${inviteUrl}">${inviteUrl}</a></p>
         <p>See you soon ❤️</p>`;
       text = `Hi ${guest.first_name || ""}!\nCode: ${code}\nLink: ${inviteUrl}\nSee you soon.`;
     }
 
-    await sendEmail({ to: guest.email, subject, html, text });
+    // 4. Send email
+    await sendEmail({
+      to: guest.email,
+      subject,
+      html,
+      text,
+    });
 
+    // 5. Mark token as sent (idempotent-safe)
     await supabase
       .from("invite_tokens")
-      .update({ provider: EMAIL_PROVIDER, delivery_status: "sent" })
-      .eq("token", token);
+      .update({
+        provider: EMAIL_PROVIDER,
+        delivery_status: "sent",
+      })
+      .eq("id", tokenRow.id);
 
-    // invited_at is a useful first-touch marker; set it if empty OR always update — choose one.
-    // Minimal: set if null.
+    // 6. Set invited_at if first invite
     if (!guest.invited_at) {
-      await supabase.from("guests")
+      await supabase
+        .from("guests")
         .update({ invited_at: new Date().toISOString() })
         .eq("id", guest.id);
     }
 
-    await supabase.from("user_activity").insert([{
-      guest_id: guest.id,
-      kind: "invite_sent",
-      meta: { email: guest.email, template: template || "default", admin: req.admin || null }
-    }]);
+    // 7. Log normalized activity
+    await supabase.from("user_activity").insert([
+      {
+        guest_id: guest.id,
+        kind: reused ? "invite_resent" : "invite_sent",
+        meta: {
+          email: guest.email,
+          template: template || "default",
+          reused_token: reused,
+          expires_at,
+        },
+      },
+    ]);
 
-    return res.json({ ok: true });
+    return res.json({
+      ok: true,
+      reused,
+      expires_at,
+    });
+
   } catch (e) {
     console.error("[AdminInviteSend] error", e);
-    try {
-      if (lastToken) {
-        await supabase
-          .from("invite_tokens")
-          .update({ provider: EMAIL_PROVIDER, delivery_status: "failed" })
-          .eq("token", lastToken);
-      }
-    } catch (_) {
-      // ignore
-    }
     return res.status(500).json({ error: "Internal error" });
   }
 });
 
+// DEPRECATED: Invite resend is now handled by POST /api/v1/admin/invites/send (Phase 1.5)
+/*
 // ---- API: resend invite ----
 app.post("/api/v1/admin/invites/resend", requireAdminAuth, async (req, res) => {
   try {
@@ -411,6 +422,7 @@ app.post("/api/v1/admin/invites/resend", requireAdminAuth, async (req, res) => {
     res.status(500).json({ error: "Internal error" });
   }
 });
+*/
 
 // ---- API: verify ----
 app.post("/api/v1/auth/verify", async (req, res) => {
