@@ -50,12 +50,12 @@ export default function Welcome() {
       </div>
 
       {/* --- LAYER 2.5: BANNER (z-15) --- */}
-      <div className="absolute top-48 md:top-36 z-[15] w-full flex justify-center pt-12 md:pt-16 pointer-events-none">
+      <div className="absolute top-44 md:top-32 z-[15] w-full flex justify-center pt-12 md:pt-16 pointer-events-none">
         <img 
           src={imgBanner} 
           alt="Banner" 
           // Precision sizing using arbitrary values
-          className="w-[28rem] md:w-[34rem] object-contain drop-shadow-sm opacity-100"
+          className="w-[27.7rem] md:w-[33.8rem] object-contain drop-shadow-sm opacity-100"
         />
       </div>
 
