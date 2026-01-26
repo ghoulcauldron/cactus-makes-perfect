@@ -83,15 +83,25 @@ export async function fetchGuestActivity(guestId: string) {
   });
 }
 
-export async function sendAdminNudge(
-  guestIds: string[],
-  subject: string,
-  html: string,
-  text: string
-) {
-  return apiFetch("/admin/guests/nudge", {
+export async function sendAdminNudge({
+  guestId,
+  subject,
+  html,
+  text,
+}: {
+  guestId: string;
+  subject: string;
+  html: string;
+  text: string;
+}) {
+  return apiFetch("/api/v1/admin/nudges/send", {
     method: "POST",
-    body: JSON.stringify({ guest_ids: guestIds, subject, html, text }),
+    body: JSON.stringify({
+      guest_id: guestId,
+      subject,
+      html,
+      text,
+    }),
   });
 }
 

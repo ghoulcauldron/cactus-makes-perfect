@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
 import { fetchGuestActivity } from "./api/client";
 import GroupEditModal from "./components/GroupEditModal";
+import SendCommunicationModal from "./components/SendCommunicationModal";
 
 const kindMap: Record<
   string,
@@ -36,21 +37,21 @@ function formatDayLabel(date: Date, today: Date) {
   const diff = Math.floor(
     (today.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
   );
-  if (diff === 0) return "Today";
-  if (diff === 1) return "Yesterday";
-  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  if (diff === 0) return "TODAY";
+  if (diff === 1) return "YESTERDAY";
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" }).toUpperCase();
 }
 
 function formatRelativeTime(date: Date, now: Date) {
   const diffMs = now.getTime() - date.getTime();
   const diffSec = Math.floor(diffMs / 1000);
-  if (diffSec < 60) return `${diffSec}s ago`;
+  if (diffSec < 60) return `${diffSec}S AGO`;
   const diffMin = Math.floor(diffSec / 60);
-  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffMin < 60) return `${diffMin}M AGO`;
   const diffHrs = Math.floor(diffMin / 60);
-  if (diffHrs < 24) return `${diffHrs}h ago`;
+  if (diffHrs < 24) return `${diffHrs}H AGO`;
   const diffDays = Math.floor(diffHrs / 24);
-  return `${diffDays}d ago`;
+  return `${diffDays}D AGO`;
 }
 
 type GuestSidebarProps = {
@@ -60,6 +61,7 @@ type GuestSidebarProps = {
     last_name: string;
     email: string;
     group_label?: string | null;
+    invited_at?: string | null;
   };
   onClose: () => void;
 };
@@ -70,8 +72,7 @@ export default function GuestSidebar({ guest, onClose }: GuestSidebarProps) {
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
   const [denseMode, setDenseMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-
-  const headerCheckboxRef = useRef<HTMLInputElement | null>(null);
+  const [showSendModal, setShowSendModal] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -81,17 +82,12 @@ export default function GuestSidebar({ guest, onClose }: GuestSidebarProps) {
     })();
   }, [guest.id]);
 
-  // Replace useActivityTimeline with new logic:
-  // Group activities by day, but summarize low-signal (email_opened, email_clicked) counts per day.
-  // Return array of groups with items and summary counts.
-
   function useActivityTimeline(rawActivity: any[]) {
     return useMemo(() => {
       if (!rawActivity || rawActivity.length === 0) return [];
 
       const now = new Date();
 
-      // Normalize: unwrap payloads, drop envelope rows, only keep objects with a kind
       const normalized = rawActivity
         .map((row) => row.payload ?? row)
         .filter((entry) => !!entry.kind)
@@ -104,14 +100,12 @@ export default function GuestSidebar({ guest, onClose }: GuestSidebarProps) {
           source: entry.source || "direct",
         }));
 
-      // Sort descending by occurred_at / created_at
       const sorted = [...normalized].sort((a, b) => {
         const aDate = new Date(a.occurred_at || a.created_at);
         const bDate = new Date(b.occurred_at || b.created_at);
         return bDate.getTime() - aDate.getTime();
       });
 
-      // Group by day string YYYY-MM-DD
       const groups: Record<
         string,
         {
@@ -133,7 +127,7 @@ export default function GuestSidebar({ guest, onClose }: GuestSidebarProps) {
             summary: { email_opened: 0, email_clicked: 0 },
           };
         }
-        // Summarize low-signal kinds instead of adding as items
+        
         if (item.kind === "email_opened") {
           groups[dayKey].summary.email_opened++;
           return;
@@ -142,7 +136,7 @@ export default function GuestSidebar({ guest, onClose }: GuestSidebarProps) {
           groups[dayKey].summary.email_clicked++;
           return;
         }
-        // Map kind to icon and label
+        
         const kindInfo = kindMap[item.kind] || {
           icon: "❔",
           label: item.kind || "Unknown",
@@ -156,7 +150,6 @@ export default function GuestSidebar({ guest, onClose }: GuestSidebarProps) {
         });
       });
 
-      // Return array sorted by day descending
       return Object.entries(groups)
         .sort((a, b) => (a[0] < b[0] ? 1 : -1))
         .map(([, group]) => group);
@@ -171,195 +164,205 @@ export default function GuestSidebar({ guest, onClose }: GuestSidebarProps) {
     );
   }, [timeline]);
 
-  const noneSelected = selectedIds.size === 0;
-  const allSelected =
-    selectableItemIds.length > 0 &&
-    selectableItemIds.every(id => selectedIds.has(id));
-  const someSelected = !noneSelected && !allSelected;
-
-  function toggleHeaderCheckbox() {
-    if (allSelected) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(selectableItemIds));
-    }
-  }
-
   function toggleItem(id: string) {
     setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
-
       return next;
     });
   }
 
   return (
-    <div className="w-[380px] border-l bg-black h-full shadow-xl overflow-auto">
-      <div className="p-4 flex justify-between items-center border-b">
-        <h2 className="font-semibold text-lg">
-          {guest.first_name} {guest.last_name}
-        </h2>
-        <button className="text-gray-500" onClick={onClose}>
+    // Changed: Applied font-mono, bg-black, and text/border colors to match dashboard
+    <div className="w-full lg:w-[420px] bg-black text-[#45CC2D] font-mono h-full flex flex-col border-l border-[#45CC2D]">
+      
+      {/* Header */}
+      <div className="p-4 flex justify-between items-start border-b border-[#45CC2D]">
+        <div>
+          <h2 className="font-bold text-lg uppercase tracking-wider leading-none">
+            {guest.first_name} {guest.last_name}
+          </h2>
+          <p className="text-xs text-[#45CC2D]/70 mt-1">{guest.email}</p>
+        </div>
+        <button 
+          className="text-[#45CC2D] hover:bg-[#45CC2D] hover:text-black px-2 py-0.5 border border-transparent hover:border-[#45CC2D] transition-colors" 
+          onClick={onClose}
+        >
           ✕
         </button>
       </div>
 
-      <div className="p-4">
-        <p className="text-sm text-gray-600 mb-4">{guest.email}</p>
+      <div className="p-4 flex-1 overflow-auto">
+        
+        {/* Actions Grid */}
+        <div className="grid grid-cols-1 gap-6 mb-8">
+          <div
+            onClick={(e) => e.stopPropagation()}
+          >
+          {/* Invite Section */}
+          <div>
+            <h3 className="text-xs font-bold uppercase tracking-widest mb-2 border-b border-[#45CC2D]/30 pb-1">
+              Invite Status
+            </h3>
+            <div className="flex items-center justify-between">
+              <span className={`text-sm ${!guest.invited_at ? "text-[#45CC2D]/50" : "text-[#45CC2D]"}`}>
+                {!guest.invited_at ? "NOT SENT" : "SENT"}
+              </span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowSendModal(true);
+                }}
+                className="border border-[#45CC2D] text-[#45CC2D] px-3 py-1 text-xs hover:bg-[#45CC2D] hover:text-black transition-colors uppercase tracking-wider"
+              >
+                {!guest.invited_at ? "Send Invite" : "Resend Invite"}
+              </button>
+            </div>
+            {guest.invited_at && (
+              <p className="text-[10px] text-[#45CC2D]/60 mt-1">
+                LAST SENT: {new Date(guest.invited_at).toLocaleString()}
+              </p>
+            )}
+          </div>
+          </div>
 
-        <h3 className="font-semibold mb-1">Household</h3>
-        <p className="text-sm text-gray-700 mb-4">
-          {guest.group_label
-            ? guest.group_label
-                .split("-")
-                .map((part: string) => part.charAt(0).toUpperCase() + part.slice(1))
-                .join(" ")
-            : "—"}
-        </p>
-        <button
-          className="text-blue-600 text-sm underline mb-4"
-          onClick={() => setIsGroupModalOpen(true)}
-        >
-          Edit Group
-        </button>
+          {/* Household Section */}
+          <div>
+            <h3 className="text-xs font-bold uppercase tracking-widest mb-2 border-b border-[#45CC2D]/30 pb-1">
+              Household Group
+            </h3>
+            <div className="flex items-center justify-between">
+              <span className="text-sm">
+                {guest.group_label
+                  ? guest.group_label.toUpperCase()
+                  : "—"}
+              </span>
+              <button
+                className="text-xs underline decoration-dashed hover:text-white transition-colors uppercase"
+                onClick={() => setIsGroupModalOpen(true)}
+              >
+                Edit Group
+              </button>
+            </div>
+          </div>
+        </div>
 
         {isGroupModalOpen && (
           <GroupEditModal
             guestId={guest.id}
             currentGroup={guest.group_label ?? null}
             onClose={() => setIsGroupModalOpen(false)}
-            onUpdated={() => {
-              // Refresh group label in sidebar after update
-              // This forces a re-render by updating guest.group_label in parent state if provided.
-            }}
+            onUpdated={() => {}}
           />
         )}
-        {/*
-        <div className="flex items-center mb-2 space-x-2">
-          <input
-            type="checkbox"
-            className="h-5 w-5 rounded bg-black border-[#45CC2D] text-[#45CC2D] focus:ring-[#45CC2D] focus:ring-offset-black"
-            checked={!noneSelected}
-            ref={headerCheckboxRef}
-            onChange={toggleHeaderCheckbox}
-            aria-label="Select all activity"
-          />
-          <h3 className="font-semibold flex-1">Activity</h3>
-          <button
-            onClick={() => setDenseMode(!denseMode)}
-            className="text-xs text-blue-600 underline"
-            aria-label="Toggle density mode"
-          >
-            {denseMode ? "Compact" : "Detailed"}
-          </button>
-        </div>*/}
 
-        {loading ? (
-          <p className="text-gray-500">Loading…</p>
-        ) : timeline.length === 0 ? (
-          <p className="text-gray-500">No activity</p>
-        ) : (
-          <div className="flex flex-col gap-6">
-            {timeline.map(({ dayKey, dayLabel, items, summary }) => (
-              <div key={dayKey}>
-                <h4 className="font-semibold text-gray-700 border-b border-gray-200 pb-1 mb-3">
-                  {dayLabel}
-                </h4>
-                <div className="flex flex-col gap-3">
-                  {denseMode && (summary.email_opened > 0 || summary.email_clicked > 0) && (
-                    <div className="flex items-center gap-2 text-xs text-gray-500 italic px-3 py-1 rounded bg-gray-100 border border-gray-200">
-                      {summary.email_opened > 0 && (
-                        <span>
-                          📬 {summary.email_opened} email opened
-                          {summary.email_opened > 1 ? "s" : ""}
-                        </span>
-                      )}
-                      {summary.email_opened > 0 && summary.email_clicked > 0 && <span>·</span>}
-                      {summary.email_clicked > 0 && (
-                        <span>
-                          🔗 {summary.email_clicked} link clicked
-                          {summary.email_clicked > 1 ? "s" : ""}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                  {!denseMode && (summary.email_opened > 0 || summary.email_clicked > 0) && (
-                    <>
-                      {summary.email_opened > 0 && (
-                        <div className="flex items-start gap-3 border p-3 rounded bg-black text-gray-500 text-sm italic">
-                          <div className="text-xl pt-1">📬</div>
-                          <div>
-                            {summary.email_opened} email opened
-                            {summary.email_opened > 1 ? "s" : ""}
+        {/* Activity Feed */}
+        <div>
+          <h3 className="text-xs font-bold uppercase tracking-widest mb-4 border-b border-[#45CC2D]/30 pb-1 flex justify-between items-center">
+            <span>Activity Log</span>
+            <span className="text-[10px] opacity-50">{activity.length} EVENTS</span>
+          </h3>
+
+          {loading ? (
+            <p className="text-[#45CC2D] animate-pulse">LOADING STREAM…</p>
+          ) : timeline.length === 0 ? (
+            <p className="text-[#45CC2D]/50 italic text-sm">No activity recorded.</p>
+          ) : (
+            <div className="flex flex-col gap-6 relative">
+              {/* Vertical line connecting days */}
+              <div className="absolute left-[7px] top-2 bottom-2 w-px bg-[#45CC2D]/20 z-0"></div>
+
+              {timeline.map(({ dayKey, dayLabel, items, summary }) => (
+                <div key={dayKey} className="relative z-10">
+                  <div className="inline-block bg-black pr-2 mb-2">
+                    <span className="text-[10px] border border-[#45CC2D] px-1 py-0.5 text-[#45CC2D]">
+                      {dayLabel}
+                    </span>
+                  </div>
+                  
+                  <div className="flex flex-col gap-2 pl-4">
+                    {/* Summary (Email Opens/Clicks) */}
+                    {(summary.email_opened > 0 || summary.email_clicked > 0) && (
+                      <div className="border border-dashed border-[#45CC2D]/40 p-2 text-xs text-[#45CC2D]/70 bg-black/50">
+                        {summary.email_opened > 0 && (
+                          <div className="flex items-center gap-2">
+                            <span>📬</span>
+                            <span>{summary.email_opened} email opened</span>
                           </div>
-                        </div>
-                      )}
-                      {summary.email_clicked > 0 && (
-                        <div className="flex items-start gap-3 border p-3 rounded bg-black text-gray-500 text-sm italic">
-                          <div className="text-xl pt-1">🔗</div>
-                          <div>
-                            {summary.email_clicked} link clicked
-                            {summary.email_clicked > 1 ? "s" : ""}
+                        )}
+                        {summary.email_clicked > 0 && (
+                          <div className="flex items-center gap-2 mt-1">
+                            <span>🔗</span>
+                            <span>{summary.email_clicked} link clicked</span>
                           </div>
-                        </div>
-                      )}
-                    </>
-                  )}
-                  {items.map((item) => (
-                    <div
-                      key={item.__rowId}
-                      className="flex items-start gap-3 border p-3 rounded bg-black"
-                    >
-                      {item.id && (
-                        <input
-                          type="checkbox"
-                          className="h-5 w-5 rounded bg-black border-[#45CC2D] text-[#45CC2D] focus:ring-[#45CC2D] focus:ring-offset-black"
-                          checked={selectedIds.has(item.__rowId)}
-                          onChange={() => toggleItem(item.__rowId)}
-                          aria-label="Select activity row"
-                        />
-                      )}
-                      <div className="text-xl pt-1">{item.icon}</div>
-                      <div className="flex-1">
-                        <p
-                          className={`${
-                            item.emphasis ? "font-bold" : "font-semibold"
-                          }`}
-                        >
-                          {item.label}
-                          {/* TODO: Add resend or expand affordances here */}
-                        </p>
-                        {item.kind === "rsvp" && item.meta?.response && (
-                          <p className="text-sm text-gray-700">
-                            RSVP: {item.meta.response}
-                          </p>
                         )}
-                        {item.kind === "email_sent" && item.meta?.subject && (
-                          <p className="text-sm text-gray-700">
-                            Subject: {item.meta.subject}
-                          </p>
-                        )}
-                        <p className="text-xs text-gray-500 mt-1">
-                          {formatRelativeTime(item.date, new Date())} ·{" "}
-                          {item.date.toLocaleString(undefined, {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </p>
                       </div>
-                    </div>
-                  ))}
+                    )}
+
+                    {/* Timeline Items */}
+                    {items.map((item) => (
+                      <div
+                        key={item.__rowId}
+                        className={`
+                          group flex items-start gap-3 p-2 border border-[#45CC2D]/30 hover:border-[#45CC2D] transition-colors
+                          ${selectedIds.has(item.__rowId) ? "bg-[#45CC2D]/10 border-[#45CC2D]" : "bg-black"}
+                        `}
+                      >
+                         {/* Selection Checkbox */}
+                        {item.id && (
+                          <input
+                            type="checkbox"
+                            className="mt-1 h-4 w-4 rounded-none bg-black border border-[#45CC2D] text-[#45CC2D] focus:ring-0 focus:ring-offset-0 checked:bg-[#45CC2D] checked:border-[#45CC2D]"
+                            checked={selectedIds.has(item.__rowId)}
+                            onChange={() => toggleItem(item.__rowId)}
+                          />
+                        )}
+
+                        <div className="text-lg leading-none pt-0.5 grayscale group-hover:grayscale-0 transition-all">{item.icon}</div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm leading-tight break-words ${item.emphasis ? "font-bold text-[#45CC2D]" : "text-[#45CC2D]/90"}`}>
+                            {item.label}
+                          </p>
+                          
+                          {item.kind === "rsvp" && item.meta?.response && (
+                            <p className="text-xs text-[#45CC2D] mt-1 pl-2 border-l border-[#45CC2D]/50">
+                              STATUS: {item.meta.response.toUpperCase()}
+                            </p>
+                          )}
+                          
+                          {item.kind === "email_sent" && item.meta?.subject && (
+                            <p className="text-xs text-[#45CC2D]/70 mt-1 truncate">
+                              "{item.meta.subject}"
+                            </p>
+                          )}
+
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className="text-[10px] text-[#45CC2D]/50 uppercase">
+                              {formatRelativeTime(item.date, new Date())}
+                            </span>
+                            <span className="text-[10px] text-[#45CC2D]/30">
+                              {item.date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </div>
+      {showSendModal && (
+        <SendCommunicationModal
+          mode="invite"
+          guestIds={[guest.id]}
+          onClose={() => setShowSendModal(false)}
+        />
+      )}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { sendAdminNudge, sendAdminInvite } from "./api/client";
+import SendCommunicationModal from "./components/SendCommunicationModal";
 
 interface BulkActionsProps {
   selectedIds: string[];
@@ -7,78 +7,37 @@ interface BulkActionsProps {
   currentGroup?: string | null;
 }
 
+type ActionMode = "nudge" | "invite";
+
 export default function BulkActions({
   selectedIds,
   clearSelection,
   currentGroup,
 }: BulkActionsProps) {
-  type ActionMode = "nudge" | "invite";
-
   const [showModal, setShowModal] = useState(false);
   const [mode, setMode] = useState<ActionMode>("nudge");
-  const [isPreview, setIsPreview] = useState(false); // New state for toggle
-  const [subject, setSubject] = useState("");
-  const [text, setText] = useState("");
-  const [html, setHtml] = useState("");
-  const [sending, setSending] = useState(false);
-  const [inviteTemplate, setInviteTemplate] = useState<"default" | "friendly">("default");
 
   const hasSelection = selectedIds.length > 0;
   const canNudgeGroup = Boolean(currentGroup) && !hasSelection;
-  const canSubmit = subject.trim() !== "" && (text.trim() !== "" || html.trim() !== "");
 
-  async function handleSend() {
-    if (sending) return;
-    setSending(true);
-
-    try {
-      if (mode === "nudge") {
-        if (hasSelection) {
-          await sendAdminNudge(selectedIds, subject, html, text);
-          clearSelection();
-        } else if (currentGroup) {
-          await sendAdminNudge(["GROUP:" + currentGroup], subject, html, text);
-        }
-      }
-
-      if (mode === "invite") {
-        for (const guestId of selectedIds) {
-          await sendAdminInvite(guestId, inviteTemplate);
-        }
-        clearSelection();
-      }
-
-      resetForm();
-    } catch {
-      alert("Action failed.");
-    } finally {
-      setSending(false);
-    }
+  function open(mode: ActionMode) {
+    setMode(mode);
+    setShowModal(true);
   }
 
-  function resetForm() {
+  function close() {
     setShowModal(false);
-    setMode("nudge");
-    setIsPreview(false);
-    setSubject("");
-    setText("");
-    setHtml("");
   }
 
-  function renderInviteTemplate(template: "default" | "friendly", subject: string, html: string, text: string) {
-    // Placeholder render function for invite templates.
-    // This can be replaced with actual template rendering logic.
-    if (template === "friendly") {
-      return `<div style="font-family:sans-serif;padding:20px;color:#333;">
-                <h1>Friendly Invite</h1>
-                <p>${html || text || "You are invited!"}</p>
-              </div>`;
-    }
-    return `<div style="font-family:sans-serif;padding:20px;color:#333;">
-              <h1>Standard Invite</h1>
-              <p>${html || text || "You are invited!"}</p>
-            </div>`;
+  function handleSuccess() {
+    clearSelection();
+    close();
   }
+
+  const targetGuestIds =
+    mode === "nudge" && !hasSelection && currentGroup
+      ? [`GROUP:${currentGroup}`]
+      : selectedIds;
 
   return (
     <div>
@@ -86,10 +45,7 @@ export default function BulkActions({
         {canNudgeGroup && (
           <button
             className="px-3 py-1 border border-primary text-primary text-xs uppercase tracking-tighter hover:bg-primary hover:text-surface"
-            onClick={() => {
-              setMode("nudge");
-              setShowModal(true);
-            }}
+            onClick={() => open("nudge")}
           >
             Nudge Group: {currentGroup}
           </button>
@@ -99,20 +55,14 @@ export default function BulkActions({
           <>
             <button
               className="px-3 py-1 border border-success text-success text-xs uppercase tracking-tighter hover:bg-success hover:text-surface"
-              onClick={() => {
-                setMode("nudge");
-                setShowModal(true);
-              }}
+              onClick={() => open("nudge")}
             >
               Nudge Selected ({selectedIds.length})
             </button>
 
             <button
               className="px-3 py-1 border border-warning text-warning text-xs uppercase tracking-tighter hover:bg-warning hover:text-surface"
-              onClick={() => {
-                setMode("invite");
-                setShowModal(true);
-              }}
+              onClick={() => open("invite")}
             >
               Send Invite
             </button>
@@ -121,128 +71,12 @@ export default function BulkActions({
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-[600px] rounded-lg bg-black shadow-2xl border border-[#45CC2D]/30 text-white flex flex-col max-h-[90vh]">
-            
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
-              <div>
-                <h2 className="text-lg font-semibold uppercase tracking-tight">
-                  {mode === "nudge" ? "Compose Nudge" : "Send Invite"}
-                </h2>
-                <p className="text-[11px] text-gray-500 uppercase">
-                  Subject: <span className="text-gray-300">{subject || "(No Subject)"}</span>
-                </p>
-              </div>
-              <button 
-                className="text-gray-500 hover:text-white transition-colors text-xl" 
-                onClick={resetForm}
-              >✕</button>
-            </div>
-
-            {/* Body */}
-            <div className="px-5 py-4 overflow-y-auto flex-1 custom-scrollbar">
-              {mode === "invite" && !isPreview && (
-                <div className="space-y-1">
-                  <label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">
-                    Invite Template
-                  </label>
-                  <select
-                    value={inviteTemplate}
-                    onChange={(e) => setInviteTemplate(e.target.value as any)}
-                    className="w-full bg-black border border-gray-800 text-white p-2 text-sm"
-                  >
-                    <option value="default">Standard Invite</option>
-                    <option value="friendly">Friendly Reminder</option>
-                  </select>
-                </div>
-              )}
-
-              {isPreview ? (
-                /* PREVIEW MODE */
-                <div className="space-y-4">
-                  <div className="border border-gray-800 rounded bg-white overflow-hidden h-[400px]">
-                    <iframe
-                      title="Email Preview"
-                      srcDoc={
-                        mode === "invite"
-                          ? renderInviteTemplate(inviteTemplate, subject, html, text)
-                          : html || `<div style="font-family:sans-serif;padding:20px;color:#666;">No HTML content provided. Only plain text will be sent.</div>`
-                      }
-                      className="w-full h-full border-none"
-                    />
-                  </div>
-                  <div className="bg-neutral-900 p-3 rounded border border-gray-800">
-                    <label className="text-[10px] uppercase text-gray-500 block mb-1">Plain Text Fallback</label>
-                    <p className="text-xs text-gray-300 whitespace-pre-wrap">{text || "(Empty)"}</p>
-                  </div>
-                </div>
-              ) : (
-                /* EDIT MODE */
-                <div className="space-y-4">
-                  <div className="space-y-1">
-                    <label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Subject Line</label>
-                    <input
-                      className="w-full bg-black border border-gray-800 text-white p-2 rounded text-sm focus:border-[#45CC2D] focus:ring-1 focus:ring-[#45CC2D] outline-none transition-all"
-                      value={subject}
-                      onChange={(e) => setSubject(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Plain Text Version</label>
-                    <textarea
-                      className="w-full bg-black border border-gray-800 text-white p-2 rounded text-sm h-[80px] focus:border-[#45CC2D] focus:ring-1 focus:ring-[#45CC2D] outline-none transition-all resize-none"
-                      value={text}
-                      onChange={(e) => setText(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">HTML Template</label>
-                    <textarea
-                      className="w-full bg-black border border-gray-800 text-[#45CC2D] p-2 rounded text-sm h-[180px] focus:border-[#45CC2D] focus:ring-1 focus:ring-[#45CC2D] outline-none transition-all font-mono resize-none"
-                      value={html}
-                      onChange={(e) => setHtml(e.target.value)}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Footer */}
-            <div className="flex items-center justify-between px-5 py-4 border-t border-gray-800 bg-neutral-900/30">
-              <button
-                type="button"
-                className="text-xs font-bold uppercase text-[#45CC2D] hover:underline"
-                onClick={() => setIsPreview(!isPreview)}
-              >
-                {isPreview ? "← Back to Editor" : "👁 Preview HTML"}
-              </button>
-              
-              <div className="flex items-center gap-3">
-                <button 
-                  className="text-xs text-gray-500 hover:text-white transition-colors uppercase font-bold" 
-                  onClick={resetForm}
-                  disabled={sending}
-                >
-                  Abort
-                </button>
-                <button
-                  className={`px-6 py-2 text-sm font-bold rounded transition-all uppercase
-                    ${canSubmit && !sending
-                      ? "bg-[#45CC2D] text-black hover:scale-105 active:scale-95" 
-                      : "bg-gray-800 text-gray-500 cursor-not-allowed"}
-                  `}
-                  onClick={handleSend}
-                  disabled={!canSubmit || sending}
-                >
-                  {sending ? "Sending..." : "Confirm Dispatch"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <SendCommunicationModal
+          mode={mode}
+          guestIds={targetGuestIds}
+          onClose={close}
+          onSuccess={handleSuccess}
+        />
       )}
     </div>
   );
