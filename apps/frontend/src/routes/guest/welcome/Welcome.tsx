@@ -55,7 +55,7 @@ export default function Welcome() {
           src={imgBanner} 
           alt="Banner" 
           // Precision sizing using arbitrary values
-          className="w-[21rem] md:w-[33.5rem] object-contain drop-shadow-sm opacity-100"
+          className="w-[28rem] md:w-[34rem] object-contain drop-shadow-sm opacity-100"
         />
       </div>
 
