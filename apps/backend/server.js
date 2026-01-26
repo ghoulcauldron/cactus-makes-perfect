@@ -47,7 +47,7 @@ const port = process.env.PORT ? Number(process.env.PORT) : 3000;
 const PUBLIC_URL = process.env.PUBLIC_URL || "https://www.cactusmakesperfect.org";
 
 app.use(express.json());
-
+/**---------Deprecated: use separate admin app---------
 // ---- Basic auth for everything (keep while private) ----
 const auth = (req, res, next) => {
   const creds = basicAuth(req);
@@ -64,7 +64,7 @@ app.use((req, res, next) => {
     return next();
   }
   return auth(req, res, next);
-});
+});*/
 
 // ---- Supabase ----
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -234,7 +234,7 @@ async function sendEmail({ to, subject, html, text }) {
 
 // ---- API: send invite ----
 let lastToken = null;
-app.post("/api/v1/invites/send", async (req, res) => {
+app.post("/api/v1/admin/invites/send", requireAdminAuth, async (req, res) => {
   try {
     console.log("Received invite send request");
     const { email } = req.body;
@@ -309,7 +309,7 @@ app.post("/api/v1/invites/send", async (req, res) => {
 });
 
 // ---- API: resend invite ----
-app.post("/api/v1/invites/resend", async (req, res) => {
+app.post("/api/v1/admin/invites/resend", requireAdminAuth, async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: "Missing email" });

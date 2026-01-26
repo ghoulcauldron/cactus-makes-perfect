@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { sendAdminNudge } from "./api/client";
+import { sendAdminNudge, sendAdminInvite } from "./api/client";
 
 interface BulkActionsProps {
   selectedIds: string[];
@@ -12,72 +12,123 @@ export default function BulkActions({
   clearSelection,
   currentGroup,
 }: BulkActionsProps) {
-  const [showNudge, setShowNudge] = useState(false);
+  type ActionMode = "nudge" | "invite";
+
+  const [showModal, setShowModal] = useState(false);
+  const [mode, setMode] = useState<ActionMode>("nudge");
   const [isPreview, setIsPreview] = useState(false); // New state for toggle
   const [subject, setSubject] = useState("");
   const [text, setText] = useState("");
   const [html, setHtml] = useState("");
   const [sending, setSending] = useState(false);
+  const [inviteTemplate, setInviteTemplate] = useState<"default" | "friendly">("default");
 
   const hasSelection = selectedIds.length > 0;
   const canNudgeGroup = Boolean(currentGroup) && !hasSelection;
   const canSubmit = subject.trim() !== "" && (text.trim() !== "" || html.trim() !== "");
 
   async function handleSend() {
-    if (!canSubmit || sending) return;
+    if (sending) return;
     setSending(true);
+
     try {
-      if (hasSelection) {
-        await sendAdminNudge(selectedIds, subject, html, text);
-        clearSelection();
-      } else if (currentGroup) {
-        await sendAdminNudge(["GROUP:" + currentGroup], subject, html, text);
+      if (mode === "nudge") {
+        if (hasSelection) {
+          await sendAdminNudge(selectedIds, subject, html, text);
+          clearSelection();
+        } else if (currentGroup) {
+          await sendAdminNudge(["GROUP:" + currentGroup], subject, html, text);
+        }
       }
+
+      if (mode === "invite") {
+        for (const guestId of selectedIds) {
+          await sendAdminInvite(guestId, inviteTemplate);
+        }
+        clearSelection();
+      }
+
       resetForm();
-    } catch (e) {
-      alert("Failed to send nudge.");
+    } catch {
+      alert("Action failed.");
     } finally {
       setSending(false);
     }
   }
 
   function resetForm() {
-    setShowNudge(false);
+    setShowModal(false);
+    setMode("nudge");
     setIsPreview(false);
     setSubject("");
     setText("");
     setHtml("");
   }
 
+  function renderInviteTemplate(template: "default" | "friendly", subject: string, html: string, text: string) {
+    // Placeholder render function for invite templates.
+    // This can be replaced with actual template rendering logic.
+    if (template === "friendly") {
+      return `<div style="font-family:sans-serif;padding:20px;color:#333;">
+                <h1>Friendly Invite</h1>
+                <p>${html || text || "You are invited!"}</p>
+              </div>`;
+    }
+    return `<div style="font-family:sans-serif;padding:20px;color:#333;">
+              <h1>Standard Invite</h1>
+              <p>${html || text || "You are invited!"}</p>
+            </div>`;
+  }
+
   return (
-    <div className="flex items-center gap-3 font-mono">
-      {canNudgeGroup && (
-        <button
-          className="px-3 py-1 border border-primary text-primary text-xs uppercase tracking-tighter hover:bg-[#9ae68c] hover:text-surface transition-colors"
-          onClick={() => setShowNudge(true)}
-        >
-          Nudge Group: {currentGroup}
-        </button>
-      )}
+    <div>
+      <div className="flex items-center gap-3 font-mono">
+        {canNudgeGroup && (
+          <button
+            className="px-3 py-1 border border-primary text-primary text-xs uppercase tracking-tighter hover:bg-primary hover:text-surface"
+            onClick={() => {
+              setMode("nudge");
+              setShowModal(true);
+            }}
+          >
+            Nudge Group: {currentGroup}
+          </button>
+        )}
 
-      {hasSelection && (
-        <button
-          className="px-3 py-1 border border-[#45CC2D] bg-black text-[#45CC2D] text-xs font-bold uppercase tracking-tighter hover:bg-[#9ae68c] hover:text-surface transition-colors"
-          onClick={() => setShowNudge(true)}
-        >
-          Nudge Selected ({selectedIds.length})
-        </button>
-      )}
+        {hasSelection && (
+          <>
+            <button
+              className="px-3 py-1 border border-success text-success text-xs uppercase tracking-tighter hover:bg-success hover:text-surface"
+              onClick={() => {
+                setMode("nudge");
+                setShowModal(true);
+              }}
+            >
+              Nudge Selected ({selectedIds.length})
+            </button>
 
-      {showNudge && (
+            <button
+              className="px-3 py-1 border border-warning text-warning text-xs uppercase tracking-tighter hover:bg-warning hover:text-surface"
+              onClick={() => {
+                setMode("invite");
+                setShowModal(true);
+              }}
+            >
+              Send Invite
+            </button>
+          </>
+        )}
+      </div>
+
+      {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="w-full max-w-[600px] rounded-lg bg-black shadow-2xl border border-[#45CC2D]/30 text-white flex flex-col max-h-[90vh]">
             
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
               <div>
-                <h2 className="text-lg font-semibold text-white uppercase tracking-tight">
-                  {isPreview ? "🔍 Previewing Nudge" : "📧 Compose Nudge"}
+                <h2 className="text-lg font-semibold uppercase tracking-tight">
+                  {mode === "nudge" ? "Compose Nudge" : "Send Invite"}
                 </h2>
                 <p className="text-[11px] text-gray-500 uppercase">
                   Subject: <span className="text-gray-300">{subject || "(No Subject)"}</span>
@@ -91,13 +142,33 @@ export default function BulkActions({
 
             {/* Body */}
             <div className="px-5 py-4 overflow-y-auto flex-1 custom-scrollbar">
+              {mode === "invite" && !isPreview && (
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">
+                    Invite Template
+                  </label>
+                  <select
+                    value={inviteTemplate}
+                    onChange={(e) => setInviteTemplate(e.target.value as any)}
+                    className="w-full bg-black border border-gray-800 text-white p-2 text-sm"
+                  >
+                    <option value="default">Standard Invite</option>
+                    <option value="friendly">Friendly Reminder</option>
+                  </select>
+                </div>
+              )}
+
               {isPreview ? (
                 /* PREVIEW MODE */
                 <div className="space-y-4">
                   <div className="border border-gray-800 rounded bg-white overflow-hidden h-[400px]">
                     <iframe
                       title="Email Preview"
-                      srcDoc={html || `<div style="font-family:sans-serif;padding:20px;color:#666;">No HTML content provided. Only plain text will be sent.</div>`}
+                      srcDoc={
+                        mode === "invite"
+                          ? renderInviteTemplate(inviteTemplate, subject, html, text)
+                          : html || `<div style="font-family:sans-serif;padding:20px;color:#666;">No HTML content provided. Only plain text will be sent.</div>`
+                      }
                       className="w-full h-full border-none"
                     />
                   </div>

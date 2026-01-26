@@ -534,7 +534,7 @@ To add the admin subdomain:
 | All `/api/v1/admin/*` endpoints reject missing/invalid token | ☑️ | |
 | End-to-end nudge flow tested live | ☑️ | UI → Mailgun → email_logs |
 | End-to-end resend invite tested live | ☑️ | UI → invite_tokens + Mailgun |
-| Dashboard loads with real production data | ⬜ | |
+| Dashboard loads with real production data | ☑️ | |
 | Pilot with 2–3 real guests | ⬜ | |
 | Final OK from organizers | ⬜ | |
 
@@ -634,14 +634,14 @@ To add the admin subdomain:
 
 ### 7) QA Checklist (Phase 9)
 
-- [ ] `/api/v1/admin/login` returns admin JWT; invalid secret returns 401.
-- [ ] All `/api/v1/admin/*` endpoints reject missing/invalid token.
-- [ ] Guests table loads with correct joins (last RSVP + invite state).
-- [ ] Guest sidebar shows unified activity chronologically.
-- [ ] Bulk **Nudge** sends and logs (emails_log + user_activity).
+- [x] `/api/v1/admin/login` returns admin JWT; invalid secret returns 401.
+- [x] All `/api/v1/admin/*` endpoints reject missing/invalid token.
+- [x] Guests table loads with correct joins (last RSVP + invite state).
+- [x] Guest sidebar shows unified activity chronologically.
+- [x] Bulk **Nudge** sends and logs (emails_log + user_activity).
 - [ ] Bulk **Resend Invite** creates new invite_tokens rows and logs.
-- [ ] Subdomain `area51.cactusmakesperfect.org` serves admin SPA.
-- [ ] Basic Auth (optional) prompts in early QA.
+- [x] Subdomain `area51.cactusmakesperfect.org` serves admin SPA.
+- [/] Basic Auth (optional) prompts in early QA.
 
 ### 8) Rollout Plan
 

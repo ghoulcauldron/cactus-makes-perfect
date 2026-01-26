@@ -236,7 +236,7 @@ export default function GuestSidebar({ guest, onClose }: GuestSidebarProps) {
             }}
           />
         )}
-
+        {/*
         <div className="flex items-center mb-2 space-x-2">
           <input
             type="checkbox"
@@ -254,7 +254,7 @@ export default function GuestSidebar({ guest, onClose }: GuestSidebarProps) {
           >
             {denseMode ? "Compact" : "Detailed"}
           </button>
-        </div>
+        </div>*/}
 
         {loading ? (
           <p className="text-gray-500">Loading…</p>

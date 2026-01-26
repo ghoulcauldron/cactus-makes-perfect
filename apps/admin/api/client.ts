@@ -96,6 +96,22 @@ export async function sendAdminNudge(
 }
 
 // ------------------------------
+// INVITES (admin)
+// ------------------------------
+export async function sendAdminInvite(
+  guestId: string,
+  template?: string
+) {
+  return apiFetch("/admin/invites/send", {
+    method: "POST",
+    body: JSON.stringify({
+      guest_id: guestId,
+      template,
+    }),
+  });
+}
+
+// ------------------------------
 // GROUP / HOUSEHOLD MGMT
 // ------------------------------
 export async function updateGuestGroup(
