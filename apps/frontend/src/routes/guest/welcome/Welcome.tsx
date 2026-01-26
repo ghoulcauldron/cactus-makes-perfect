@@ -52,7 +52,7 @@ export default function Welcome() {
 
       {/* --- LAYER 3: CACTUS TITLE (Top Center) --- */}
       {/* Adjust 'top-10' or 'mt-10' to play with vertical positioning */}
-      <div className="absolute top-20 z-20 w-full flex justify-center pt-12 md:pt-16 pointer-events-none">
+      <div className="absolute top-25 z-20 w-full flex justify-center pt-12 md:pt-16 pointer-events-none">
         <img 
           src={imgCactusTitle} 
           alt="Cactus Title" 
