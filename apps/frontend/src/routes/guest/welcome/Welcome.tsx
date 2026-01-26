@@ -22,7 +22,7 @@ export default function Welcome() {
   const bgDesktop = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/bg_rays_1920x1080.png";
   const bgMobile = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/bg_rays_492x1080.png";
   const imgWindow = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/picture_window.png";
-  const imgCactusTitle = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/cactus.png";
+  const imgCactusTitle = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/cactus_2.png";
 
   return (
     <div className="min-h-screen w-full relative overflow-hidden bg-cactus-sand flex flex-col items-center justify-center">
@@ -52,7 +52,7 @@ export default function Welcome() {
 
       {/* --- LAYER 3: CACTUS TITLE (Top Center) --- */}
       {/* Adjust 'top-10' or 'mt-10' to play with vertical positioning */}
-      <div className="absolute top-30 z-20 w-full flex justify-center pt-12 md:pt-16 pointer-events-none">
+      <div className="absolute top-20 z-20 w-full flex justify-center pt-12 md:pt-16 pointer-events-none">
         <img 
           src={imgCactusTitle} 
           alt="Cactus Title" 
