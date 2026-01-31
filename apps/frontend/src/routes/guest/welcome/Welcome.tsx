@@ -17,8 +17,7 @@ export default function Welcome() {
     navigate("/", { replace: true });
   };
 
-  // --- NEW ASSETS (Full Canvas Export) ---
-  // Layer Order: Bottom (Background) -> Top (Foreground Rocks)
+  // --- ASSETS (Full Canvas Export) ---
   const imgBackground = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0004_background.png";
   const imgRocksMain  = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0003_rocks_main.png";
   const imgBeam       = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0002_tractor_beam.png";
@@ -27,73 +26,83 @@ export default function Welcome() {
 
   return (
     // MAIN WRAPPER
-    // bg-[#8DAF7E] is a placeholder green typical of the art style, used for the letterbox bars
-    <div className="min-h-screen w-full bg-[#8DAF7E] flex items-center justify-center overflow-hidden p-4 md:p-8">
+    // h-screen w-full overflow-hidden: Locks the viewport, disables scrolling.
+    // bg-[#8DAF7E]: Fills any empty space at the top (on tall mobile screens) with sky color.
+    <div className="h-screen w-full bg-[#8DAF7E] overflow-hidden relative">
       
-      {/* SCENE CONTAINER 
-          Since all images share the same canvas size, we stack them here.
-          'aspect-video' forces a standard 16:9 ratio which is typical for screen exports.
-          If your art is 4:3, change 'aspect-video' to 'aspect-[4/3]'.
+      {/* SCENE CONTAINER (The Stage) 
+          - absolute bottom-0: Anchors the bottom of the image to the bottom of the window.
+          - w-full: Forces the image to always match the browser width (vw).
       */}
-      <div className="relative w-full max-w-7xl aspect-video shadow-2xl bg-black/10 rounded-lg overflow-hidden">
-        
-        {/* Layer 1: Background (Bottom) */}
-        <div className="absolute inset-0 z-0">
+      <div className="absolute bottom-0 w-full left-0 z-0 pointer-events-none">
+        <div className="relative w-full h-auto">
+          
+          {/* Layer 1: Background (The Anchor) 
+              - relative, w-full, h-auto: This image defines the height of the container based on the width.
+              - block: Removes tiny inline spacing gaps.
+          */}
           <img 
             src={imgBackground} 
             alt="Background" 
-            className="w-full h-full object-contain"
+            className="relative w-full h-auto block z-0"
           />
-        </div>
 
-        {/* Layer 2: Main Rocks */}
-        <div className="absolute inset-0 z-10 pointer-events-none">
+          {/* LAYERS 2-5: Overlays
+              - absolute inset-0: Stretches them to match the Background image exactly.
+          */}
+          
+          {/* Layer 2: Main Rocks */}
           <img 
             src={imgRocksMain} 
             alt="Main Rocks" 
-            className="w-full h-full object-contain"
+            className="absolute inset-0 w-full h-full z-10"
           />
-        </div>
 
-        {/* Layer 3: Tractor Beam */}
-        {/* Added mix-blend-screen for a glowing light effect */}
-        <div className="absolute inset-0 z-20 pointer-events-none">
+          {/* Layer 3: Tractor Beam */}
           <img 
             src={imgBeam} 
             alt="Tractor Beam" 
-            className="w-full h-full object-contain mix-blend-screen opacity-90"
+            className="absolute inset-0 w-full h-full z-20 mix-blend-screen opacity-90"
           />
-        </div>
 
-        {/* Layer 4: UFO */}
-        <div className="absolute inset-0 z-30 pointer-events-none">
+          {/* Layer 4: UFO */}
           <img 
             src={imgUFO} 
             alt="UFO" 
-            className="w-full h-full object-contain"
+            className="absolute inset-0 w-full h-full z-30"
           />
-        </div>
 
-        {/* Layer 5: Foreground Rocks (Top) */}
-        <div className="absolute inset-0 z-40 pointer-events-none">
+          {/* Layer 5: Foreground Rocks */}
           <img 
             src={imgRocksFG} 
             alt="Foreground Rocks" 
-            className="w-full h-full object-contain"
+            className="absolute inset-0 w-full h-full z-40"
           />
         </div>
-
-        {/* --- UI OVERLAYS --- */}
-        {/* Placed at z-50 to sit on top of the art */}
-        <footer className="absolute bottom-3 md:bottom-6 w-full text-center z-50">
-          <p className="text-[#3E2F55] font-mono text-xs md:text-sm font-bold tracking-widest opacity-90 bg-white/20 inline-block px-4 py-1 rounded backdrop-blur-sm">
-            🌞 Santa Fe, NM • August 2026
-          </p>
-        </footer>
-
       </div>
 
-      {/* MODALS (Unchanged) */}
+      {/* --- UI OVERLAYS (Buttons/Text) --- */}
+      {/* Positioned relative to the SCREEN, not the image */}
+      
+      {/* Footer - Anchored to screen bottom */}
+      <footer className="absolute bottom-3 md:bottom-6 w-full text-center z-50 pointer-events-auto">
+        {/* RSVP BUTTON */}
+        <div className="mb-4">
+           <button 
+             onClick={() => setRSVPModalOpen(true)}
+             className="bg-[#D96C75] text-[#3E2F55] font-bold py-2 px-8 rounded-full shadow-lg hover:bg-[#C45B64] hover:scale-105 transition-all text-sm md:text-base border-2 border-[#3E2F55]"
+           >
+             RSVP NOW
+           </button>
+        </div>
+
+        {/* TEXT */}
+        <p className="text-[#3E2F55] font-mono text-[10px] md:text-xs font-bold tracking-[0.2em] opacity-80 bg-[#8DAF7E]/30 inline-block px-3 py-1 rounded backdrop-blur-[2px]">
+          SANTA FE, NM • AUGUST 2026
+        </p>
+      </footer>
+
+      {/* MODALS */}
       {isRSVPModalOpen && (
         <RSVPModal
           isOpen={isRSVPModalOpen}
