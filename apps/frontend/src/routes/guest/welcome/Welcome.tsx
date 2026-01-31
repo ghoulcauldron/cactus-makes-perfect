@@ -22,7 +22,7 @@ export default function Welcome() {
     // 1. VIEWPORT CONTAINER
     // h-screen: Force the container to be exactly the height of the window.
     // overflow-hidden: Hides the parts of the images that get "clipped" off the sides.
-    <div className="h-screen w-full bg-[#8DAF7E] overflow-hidden relative">
+    <div className="h-screen w-full bg-[#90c974] overflow-hidden relative">
       
       {/* LAYER 1: Background */}
       <img 
