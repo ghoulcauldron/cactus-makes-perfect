@@ -4,7 +4,6 @@ import { useState } from "react";
 
 export default function Welcome() {
   console.log("Rendering Welcome.tsx component"); // Debug
-  const showReset = import.meta.env.VITE_SHOW_RESET_BUTTON === "true";
   const navigate = useNavigate();
 
   const [isRSVPModalOpen, setRSVPModalOpen] = useState(false);
@@ -18,55 +17,79 @@ export default function Welcome() {
     navigate("/", { replace: true });
   };
 
-  // Asset URLs
-  const bgDesktop = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/bg_rays_1920x1080.png";
-  const bgMobile = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/bg_rays_492x1080.png";
-  const imgWindow = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/picture_window.png";
-  const imgCactusTitle = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/cactus_2.png";
-  const imgBanner = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/banner.png";
+  // --- NEW ASSETS (Z-Index Order: Bottom to Top) ---
+  const imgLayerBase     = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0007_bg_green_color.png";
+  const imgLayerMountains= "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0004_mountains.png";
+  const imgLayerRocksMain= "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0003_rocks_main.png";
+  const imgLayerBeam     = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0002_tractor_beam.png";
+  const imgLayerUFO      = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0001_ufo.png";
+  const imgLayerRocksFG  = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0000_rocks_fg.png";
 
   return (
-    <div className="min-h-screen w-full relative overflow-hidden bg-cactus-sand flex flex-col items-center justify-center">
+    <div className="min-h-screen w-full relative overflow-hidden bg-black flex flex-col items-center justify-center">
       
-      {/* --- LAYER 1: RESPONSIVE BACKGROUND (z-0) --- */}
+      {/* --- SCENE LAYERS --- */}
+
+      {/* Layer 1 (Bottom): Background Color */}
       <div className="absolute inset-0 z-0">
-        <picture>
-          <source media="(max-width: 767px)" srcSet={bgMobile} />
-          <img 
-            src={bgDesktop} 
-            alt="Background Rays" 
-            className="w-full h-full object-cover"
-          />
-        </picture>
-      </div>
-
-      {/* --- LAYER 2: PICTURE WINDOW (z-10) --- */}
-      <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
         <img 
-          src={imgWindow} 
-          alt="Decorative Window" 
-          className="max-w-[90%] max-h-[90%] object-contain opacity-90"
+          src={imgLayerBase} 
+          alt="Background Base" 
+          className="w-full h-full object-cover"
         />
       </div>
 
-      {/* --- LAYER 2.5: BANNER (z-15) --- */}
-      <div className="absolute top-[11.25rem] md:top-32 z-[15] w-full flex justify-center pt-12 md:pt-16 pointer-events-none">
+      {/* Layer 2: Mountains */}
+      <div className="absolute inset-0 z-10 pointer-events-none">
         <img 
-          src={imgBanner} 
-          alt="Banner" 
-          // Precision sizing using arbitrary values
-          className="w-[27.5rem] md:w-[33.7rem] object-contain drop-shadow-sm opacity-90"
+          src={imgLayerMountains} 
+          alt="Mountains" 
+          className="w-full h-full object-cover"
         />
       </div>
 
-      {/* --- LAYER 3: CACTUS TITLE (z-20) --- */}
-      <div className="absolute top-48 md:top-36 z-20 w-full flex justify-center pt-12 md:pt-16 pointer-events-none">
+      {/* Layer 3: Main Rocks */}
+      <div className="absolute inset-0 z-20 pointer-events-none">
         <img 
-          src={imgCactusTitle} 
-          alt="Cactus Title" 
-          className="w-48 md:w-64 object-contain drop-shadow-md"
+          src={imgLayerRocksMain} 
+          alt="Main Rocks" 
+          className="w-full h-full object-cover"
         />
       </div>
+
+      {/* Layer 4: Tractor Beam */}
+      <div className="absolute inset-0 z-30 pointer-events-none">
+        <img 
+          src={imgLayerBeam} 
+          alt="Tractor Beam" 
+          className="w-full h-full object-cover mix-blend-screen opacity-90"
+        />
+      </div>
+
+      {/* Layer 5: UFO */}
+      <div className="absolute inset-0 z-40 pointer-events-none">
+        <img 
+          src={imgLayerUFO} 
+          alt="UFO" 
+          className="w-full h-full object-cover"
+        />
+      </div>
+
+      {/* Layer 6 (Top): Foreground Rocks */}
+      <div className="absolute inset-0 z-50 pointer-events-none">
+        <img 
+          src={imgLayerRocksFG} 
+          alt="Foreground Rocks" 
+          className="w-full h-full object-cover"
+        />
+      </div>
+
+      {/* --- UI / OVERLAYS (z-60+) --- */}
+      
+      {/* Footer */}
+      <footer className="absolute bottom-4 text-sm text-white/80 font-mono z-[60] text-shadow-sm">
+        🌞 Santa Fe, NM • August 2026
+      </footer>
 
       {/* MODALS (Unchanged logic) */}
       {isRSVPModalOpen && (
@@ -77,7 +100,7 @@ export default function Welcome() {
       )}
 
       {isEventInfoModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
           <div className="bg-white rounded-lg max-w-3xl w-full p-6 relative shadow-2xl">
             <button
               onClick={() => setEventInfoModalOpen(false)}
@@ -125,11 +148,6 @@ export default function Welcome() {
           </div>
         </div>
       )}
-
-      {/* Footer */}
-      <footer className="absolute bottom-4 text-sm text-gray-600 font-mono opacity-80 z-20">
-        🌞 Santa Fe, NM • August 2026
-      </footer>
     </div>
   );
 }
