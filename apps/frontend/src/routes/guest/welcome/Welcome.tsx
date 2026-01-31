@@ -20,7 +20,7 @@ export default function Welcome() {
   return (
     // 1. VIEWPORT LOCK
     // bg-[#8DAF7E] matches the sky color for top letterboxing
-    <div className="h-screen w-full bg-[#8DAF7E] overflow-hidden relative flex flex-col justify-end">
+    <div className="h-screen w-full bg-[#90C974d] overflow-hidden relative flex flex-col justify-end">
       
       {/* 2. THE STACK CONTAINER 
           - w-full: Forces width to match browser.
@@ -48,7 +48,7 @@ export default function Welcome() {
         <img 
           src={imgRocksMain} 
           alt="Main Rocks" 
-          className="absolute top-0 left-0 w-full h-auto z-10"
+          className="absolute top-0 left-0 w-auto h-auto z-10"
         />
 
         {/* Tractor Beam */}
