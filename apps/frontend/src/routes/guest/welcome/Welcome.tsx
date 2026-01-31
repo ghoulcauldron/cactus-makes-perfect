@@ -10,88 +10,80 @@ export default function Welcome() {
   const [isEventInfoModalOpen, setEventInfoModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"schedule" | "faqs">("schedule");
 
-  // --- UPDATED ASSETS (Correct URLs) ---
+  // --- ASSETS (Full Canvas Exports) ---
   const imgLayerBase      = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0004_background.png";
+  const imgLayerMountains = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0004_mountains.png";
   const imgLayerRocksMain = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0003_rocks_main.png";
   const imgLayerBeam      = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0002_tractor_beam.png";
   const imgLayerUFO       = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0001_ufo.png";
   const imgLayerRocksFG   = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0000_rocks_fg.png";
 
   return (
-    // 1. MAIN WRAPPER:
-    //    - 'bg-[#8DAF7E]' provides the sky color for letterboxing on tall screens.
-    //    - 'flex items-end justify-center' anchors the artboard to the bottom-center.
-    <div className="h-screen w-full bg-[#8DAF7E] overflow-hidden relative flex items-end justify-center">
+    <div className="h-screen w-full bg-[#8DAF7E] overflow-hidden relative">
       
-      {/* 2. SCENE CONTAINER (The "Artboard"):
-          - 'w-full': Fills width up to...
-          - 'max-w-[177.78vh]': ...a 16:9 ratio limit relative to height. 
-             This prevents the image from getting wider than the screen can show vertically.
-          - 'aspect-video': Locks the container to 16:9 so layers inside scale perfectly together.
+      {/* SCENE COMPOSITION 
+          Since all images are the same size (Full Canvas), we simply stack them.
+          'object-cover' ensures they fill the screen.
+          'object-center' ensures they scale from the middle out, staying perfectly aligned.
       */}
-      <div className="relative w-full max-w-[177.78vh] aspect-video">
-        
-        {/* Layer 1: Background (Base) */}
-        <div className="absolute inset-0 z-0">
-          <img 
-            src={imgLayerBase} 
-            alt="Background" 
-            className="w-full h-full object-cover"
-          />
+
+      {/* Layer 1: Background Base */}
+      <img 
+        src={imgLayerBase} 
+        alt="Background" 
+        className="absolute inset-0 w-full h-full object-cover object-center z-0"
+      />
+
+      {/* Layer 2: Mountains */}
+      <img 
+        src={imgLayerMountains} 
+        alt="Mountains" 
+        className="absolute inset-0 w-full h-full object-cover object-center z-10"
+      />
+
+      {/* Layer 3: Main Rocks */}
+      <img 
+        src={imgLayerRocksMain} 
+        alt="Main Rocks" 
+        className="absolute inset-0 w-full h-full object-cover object-center z-20"
+      />
+
+      {/* Layer 4: Tractor Beam */}
+      <img 
+        src={imgLayerBeam} 
+        alt="Tractor Beam" 
+        className="absolute inset-0 w-full h-full object-cover object-center z-30 mix-blend-screen opacity-90"
+      />
+
+      {/* Layer 5: UFO */}
+      <img 
+        src={imgLayerUFO} 
+        alt="UFO" 
+        className="absolute inset-0 w-full h-full object-cover object-center z-40 animate-pulse-slow"
+      />
+
+      {/* Layer 6: Foreground Rocks */}
+      <img 
+        src={imgLayerRocksFG} 
+        alt="Foreground Rocks" 
+        className="absolute inset-0 w-full h-full object-cover object-center z-50"
+      />
+
+      {/* --- UI OVERLAYS --- */}
+      {/* Anchored to the screen bottom, sitting above the layers (z-60) */}
+      <footer className="absolute bottom-6 w-full text-center z-[60]">
+        <div className="mb-4">
+           <button 
+             onClick={() => setRSVPModalOpen(true)}
+             className="bg-[#D96C75] text-[#3E2F55] font-bold py-3 px-10 rounded-full shadow-xl border-2 border-[#3E2F55] hover:scale-105 transition-transform"
+           >
+             RSVP NOW
+           </button>
         </div>
-
-        {/* Layer 2: Main Rocks */}
-        <div className="absolute inset-0 z-10 pointer-events-none">
-          <img 
-            src={imgLayerRocksMain} 
-            alt="Main Rocks" 
-            className="w-full h-full object-cover"
-          />
-        </div>
-
-        {/* Layer 3: Tractor Beam */}
-        <div className="absolute inset-0 z-20 pointer-events-none">
-          <img 
-            src={imgLayerBeam} 
-            alt="Beam" 
-            className="w-full h-full object-cover mix-blend-screen opacity-90"
-          />
-        </div>
-
-        {/* Layer 4: UFO */}
-        <div className="absolute inset-0 z-30 pointer-events-none">
-          <img 
-            src={imgLayerUFO} 
-            alt="UFO" 
-            className="w-full h-full object-cover animate-pulse-slow"
-          />
-        </div>
-
-        {/* Layer 5: Foreground Rocks */}
-        <div className="absolute inset-0 z-40 pointer-events-none">
-          <img 
-            src={imgLayerRocksFG} 
-            alt="Foreground Rocks" 
-            className="w-full h-full object-cover"
-          />
-        </div>
-
-        {/* --- UI OVERLAYS (Inside the container so they stick to the art) --- */}
-        <footer className="absolute bottom-[5%] w-full text-center z-50 pointer-events-auto">
-          <div className="mb-[2%]">
-             <button 
-               onClick={() => setRSVPModalOpen(true)}
-               className="bg-[#D96C75] text-[#3E2F55] font-bold py-2 px-6 md:py-3 md:px-10 rounded-full shadow-xl border-2 border-[#3E2F55] hover:scale-105 transition-transform text-sm md:text-base"
-             >
-               RSVP NOW
-             </button>
-          </div>
-          <p className="text-[#3E2F55] font-mono text-[10px] md:text-xs font-bold tracking-[0.2em] opacity-80">
-            SANTA FE, NM • AUGUST 2026
-          </p>
-        </footer>
-
-      </div>
+        <p className="text-[#3E2F55] font-mono text-xs font-bold tracking-[0.2em] opacity-80 bg-white/20 inline-block px-2 py-1 rounded">
+          SANTA FE, NM • AUGUST 2026
+        </p>
+      </footer>
 
       {/* MODALS */}
       {isRSVPModalOpen && (
