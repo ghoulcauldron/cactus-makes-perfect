@@ -10,8 +10,7 @@ export default function Welcome() {
   const [isEventInfoModalOpen, setEventInfoModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"schedule" | "faqs">("schedule");
 
-  // --- ASSETS (Corrected 5-Layer Stack) ---
-  // Render Order: Bottom (Background) -> Top (Foreground)
+  // Assets
   const imgBackground = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0004_background.png";
   const imgRocksMain  = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0003_rocks_main.png";
   const imgBeam       = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0002_tractor_beam.png";
@@ -20,69 +19,62 @@ export default function Welcome() {
 
   return (
     // 1. VIEWPORT LOCK
-    // h-screen: Locks the height to the window.
-    // bg-[#8DAF7E]: Matches the sky color so if the screen is taller than the image (mobile), the top is seamless.
-    <div className="h-screen w-full bg-[#8DAF7E] overflow-hidden relative">
+    // bg-[#8DAF7E] matches the sky color for top letterboxing
+    <div className="h-screen w-full bg-[#8DAF7E] overflow-hidden relative flex flex-col justify-end">
       
       {/* 2. THE STACK CONTAINER 
-          - absolute bottom-0: Pins the art to the floor.
-          - w-full: Forces the art to span the full width of the browser.
-          - pointer-events-none: Allows clicks to pass through transparent areas (optional, but good practice).
+          - w-full: Forces width to match browser.
+          - relative: allows absolute positioning inside.
       */}
-      <div className="absolute bottom-0 w-full pointer-events-none select-none">
+      <div className="relative w-full pointer-events-none select-none">
         
-        {/* 3. RELATIVE WRAPPER
-            This is the "Canvas". It gets its height from the first image (Background).
+        {/* LAYER 1: Background (The Anchor)
+            - relative: This image pushes the document flow. It sits at the bottom naturally.
+            - w-full h-auto: Pure aspect ratio preservation.
         */}
-        <div className="relative w-full">
-          
-          {/* LAYER 1: Background (The Anchor)
-              - relative: Occupies actual space in the DOM.
-              - w-full h-auto: This is CRITICAL. It ensures the aspect ratio is preserved. No stretching.
-          */}
-          <img 
-            src={imgBackground} 
-            alt="Background" 
-            className="relative w-full h-auto block z-0"
-          />
+        <img 
+          src={imgBackground} 
+          alt="Background" 
+          className="relative w-full h-auto block z-0"
+        />
 
-          {/* LAYERS 2-5: The Overlays
-              - absolute inset-0: Stretches them to the exact boundaries of the Background image.
-              - Since they are the same canvas size, the transparent pixels align the content perfectly.
-          */}
-          
-          {/* Main Rocks */}
-          <img 
-            src={imgRocksMain} 
-            alt="Main Rocks" 
-            className="absolute inset-0 w-full h-full z-10"
-          />
+        {/* LAYERS 2-5: The Overlays
+            - absolute top-0 left-0: Pins them to the top-left of the CONTAINER (not the screen).
+            - w-full h-auto: Calculates height independently. 
+              This prevents "matching" distortion if the background image is slightly different.
+        */}
+        
+        {/* Main Rocks */}
+        <img 
+          src={imgRocksMain} 
+          alt="Main Rocks" 
+          className="absolute top-0 left-0 w-full h-auto z-10"
+        />
 
-          {/* Tractor Beam */}
-          <img 
-            src={imgBeam} 
-            alt="Tractor Beam" 
-            className="absolute inset-0 w-full h-full z-20 mix-blend-screen opacity-90"
-          />
+        {/* Tractor Beam */}
+        <img 
+          src={imgBeam} 
+          alt="Tractor Beam" 
+          className="absolute top-0 left-0 w-full h-auto z-20 mix-blend-screen opacity-90"
+        />
 
-          {/* UFO */}
-          <img 
-            src={imgUFO} 
-            alt="UFO" 
-            className="absolute inset-0 w-full h-full z-30 animate-pulse-slow"
-          />
+        {/* UFO */}
+        <img 
+          src={imgUFO} 
+          alt="UFO" 
+          className="absolute top-0 left-0 w-full h-auto z-30 animate-pulse-slow"
+        />
 
-          {/* Foreground Rocks */}
-          <img 
-            src={imgRocksFG} 
-            alt="Foreground Rocks" 
-            className="absolute inset-0 w-full h-full z-40"
-          />
-        </div>
+        {/* Foreground Rocks */}
+        <img 
+          src={imgRocksFG} 
+          alt="Foreground Rocks" 
+          className="absolute top-0 left-0 w-full h-auto z-40"
+        />
       </div>
 
       {/* --- UI OVERLAYS --- */}
-      {/* Positioned relative to the SCREEN, not the images. z-50 ensures clickable. */}
+      {/* Positioned absolute bottom-6 to sit on top of everything */}
       <footer className="absolute bottom-6 w-full text-center z-50 pointer-events-auto">
         <div className="mb-4">
            <button 
