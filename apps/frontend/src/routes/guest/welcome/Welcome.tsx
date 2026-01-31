@@ -10,68 +10,80 @@ export default function Welcome() {
   const [isEventInfoModalOpen, setEventInfoModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"schedule" | "faqs">("schedule");
 
-  // --- ASSETS (Full Canvas Exports) ---
-  const imgLayerBase      = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0004_background.png";
-  const imgLayerMountains = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0004_mountains.png";
-  const imgLayerRocksMain = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0003_rocks_main.png";
-  const imgLayerBeam      = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0002_tractor_beam.png";
-  const imgLayerUFO       = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0001_ufo.png";
-  const imgLayerRocksFG   = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0000_rocks_fg.png";
+  // --- ASSETS (Corrected 5-Layer Stack) ---
+  // Render Order: Bottom (Background) -> Top (Foreground)
+  const imgBackground = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0004_background.png";
+  const imgRocksMain  = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0003_rocks_main.png";
+  const imgBeam       = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0002_tractor_beam.png";
+  const imgUFO        = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0001_ufo.png";
+  const imgRocksFG    = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0000_rocks_fg.png";
 
   return (
+    // 1. VIEWPORT LOCK
+    // h-screen: Locks the height to the window.
+    // bg-[#8DAF7E]: Matches the sky color so if the screen is taller than the image (mobile), the top is seamless.
     <div className="h-screen w-full bg-[#8DAF7E] overflow-hidden relative">
       
-      {/* SCENE COMPOSITION 
-          Since all images are the same size (Full Canvas), we simply stack them.
-          'object-cover' ensures they fill the screen.
-          'object-center' ensures they scale from the middle out, staying perfectly aligned.
+      {/* 2. THE STACK CONTAINER 
+          - absolute bottom-0: Pins the art to the floor.
+          - w-full: Forces the art to span the full width of the browser.
+          - pointer-events-none: Allows clicks to pass through transparent areas (optional, but good practice).
       */}
+      <div className="absolute bottom-0 w-full pointer-events-none select-none">
+        
+        {/* 3. RELATIVE WRAPPER
+            This is the "Canvas". It gets its height from the first image (Background).
+        */}
+        <div className="relative w-full">
+          
+          {/* LAYER 1: Background (The Anchor)
+              - relative: Occupies actual space in the DOM.
+              - w-full h-auto: This is CRITICAL. It ensures the aspect ratio is preserved. No stretching.
+          */}
+          <img 
+            src={imgBackground} 
+            alt="Background" 
+            className="relative w-full h-auto block z-0"
+          />
 
-      {/* Layer 1: Background Base */}
-      <img 
-        src={imgLayerBase} 
-        alt="Background" 
-        className="absolute inset-0 w-full h-full object-cover object-center z-0"
-      />
+          {/* LAYERS 2-5: The Overlays
+              - absolute inset-0: Stretches them to the exact boundaries of the Background image.
+              - Since they are the same canvas size, the transparent pixels align the content perfectly.
+          */}
+          
+          {/* Main Rocks */}
+          <img 
+            src={imgRocksMain} 
+            alt="Main Rocks" 
+            className="absolute inset-0 w-full h-full z-10"
+          />
 
-      {/* Layer 2: Mountains */}
-      <img 
-        src={imgLayerMountains} 
-        alt="Mountains" 
-        className="absolute inset-0 w-full h-full object-cover object-center z-10"
-      />
+          {/* Tractor Beam */}
+          <img 
+            src={imgBeam} 
+            alt="Tractor Beam" 
+            className="absolute inset-0 w-full h-full z-20 mix-blend-screen opacity-90"
+          />
 
-      {/* Layer 3: Main Rocks */}
-      <img 
-        src={imgLayerRocksMain} 
-        alt="Main Rocks" 
-        className="absolute inset-0 w-full h-full object-cover object-center z-20"
-      />
+          {/* UFO */}
+          <img 
+            src={imgUFO} 
+            alt="UFO" 
+            className="absolute inset-0 w-full h-full z-30 animate-pulse-slow"
+          />
 
-      {/* Layer 4: Tractor Beam */}
-      <img 
-        src={imgLayerBeam} 
-        alt="Tractor Beam" 
-        className="absolute inset-0 w-full h-full object-cover object-center z-30 mix-blend-screen opacity-90"
-      />
-
-      {/* Layer 5: UFO */}
-      <img 
-        src={imgLayerUFO} 
-        alt="UFO" 
-        className="absolute inset-0 w-full h-full object-cover object-center z-40 animate-pulse-slow"
-      />
-
-      {/* Layer 6: Foreground Rocks */}
-      <img 
-        src={imgLayerRocksFG} 
-        alt="Foreground Rocks" 
-        className="absolute inset-0 w-full h-full object-cover object-center z-50"
-      />
+          {/* Foreground Rocks */}
+          <img 
+            src={imgRocksFG} 
+            alt="Foreground Rocks" 
+            className="absolute inset-0 w-full h-full z-40"
+          />
+        </div>
+      </div>
 
       {/* --- UI OVERLAYS --- */}
-      {/* Anchored to the screen bottom, sitting above the layers (z-60) */}
-      <footer className="absolute bottom-6 w-full text-center z-[60]">
+      {/* Positioned relative to the SCREEN, not the images. z-50 ensures clickable. */}
+      <footer className="absolute bottom-6 w-full text-center z-50 pointer-events-auto">
         <div className="mb-4">
            <button 
              onClick={() => setRSVPModalOpen(true)}
@@ -80,7 +92,7 @@ export default function Welcome() {
              RSVP NOW
            </button>
         </div>
-        <p className="text-[#3E2F55] font-mono text-xs font-bold tracking-[0.2em] opacity-80 bg-white/20 inline-block px-2 py-1 rounded">
+        <p className="text-[#3E2F55] font-mono text-xs font-bold tracking-[0.2em] opacity-80 inline-block px-2 py-1 rounded">
           SANTA FE, NM • AUGUST 2026
         </p>
       </footer>
