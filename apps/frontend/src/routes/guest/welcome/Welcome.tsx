@@ -17,81 +17,83 @@ export default function Welcome() {
     navigate("/", { replace: true });
   };
 
-  // --- NEW ASSETS (Z-Index Order: Bottom to Top) ---
-  const imgLayerBase     = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0007_bg_green_color.png";
-  const imgLayerMountains= "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0004_mountains.png";
-  const imgLayerRocksMain= "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0003_rocks_main.png";
-  const imgLayerBeam     = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0002_tractor_beam.png";
-  const imgLayerUFO      = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0001_ufo.png";
-  const imgLayerRocksFG  = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0000_rocks_fg.png";
+  // --- NEW ASSETS (Full Canvas Export) ---
+  // Layer Order: Bottom (Background) -> Top (Foreground Rocks)
+  const imgBackground = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0004_background.png";
+  const imgRocksMain  = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0003_rocks_main.png";
+  const imgBeam       = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0002_tractor_beam.png";
+  const imgUFO        = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0001_ufo.png";
+  const imgRocksFG    = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0000_rocks_fg.png";
 
   return (
-    <div className="min-h-screen w-full relative overflow-hidden bg-black flex flex-col items-center justify-center">
+    // MAIN WRAPPER
+    // bg-[#8DAF7E] is a placeholder green typical of the art style, used for the letterbox bars
+    <div className="min-h-screen w-full bg-[#8DAF7E] flex items-center justify-center overflow-hidden p-4 md:p-8">
       
-      {/* --- SCENE LAYERS --- */}
+      {/* SCENE CONTAINER 
+          Since all images share the same canvas size, we stack them here.
+          'aspect-video' forces a standard 16:9 ratio which is typical for screen exports.
+          If your art is 4:3, change 'aspect-video' to 'aspect-[4/3]'.
+      */}
+      <div className="relative w-full max-w-7xl aspect-video shadow-2xl bg-black/10 rounded-lg overflow-hidden">
+        
+        {/* Layer 1: Background (Bottom) */}
+        <div className="absolute inset-0 z-0">
+          <img 
+            src={imgBackground} 
+            alt="Background" 
+            className="w-full h-full object-contain"
+          />
+        </div>
 
-      {/* Layer 1 (Bottom): Background Color */}
-      <div className="absolute inset-0 z-0">
-        <img 
-          src={imgLayerBase} 
-          alt="Background Base" 
-          className="w-full h-full object-cover"
-        />
+        {/* Layer 2: Main Rocks */}
+        <div className="absolute inset-0 z-10 pointer-events-none">
+          <img 
+            src={imgRocksMain} 
+            alt="Main Rocks" 
+            className="w-full h-full object-contain"
+          />
+        </div>
+
+        {/* Layer 3: Tractor Beam */}
+        {/* Added mix-blend-screen for a glowing light effect */}
+        <div className="absolute inset-0 z-20 pointer-events-none">
+          <img 
+            src={imgBeam} 
+            alt="Tractor Beam" 
+            className="w-full h-full object-contain mix-blend-screen opacity-90"
+          />
+        </div>
+
+        {/* Layer 4: UFO */}
+        <div className="absolute inset-0 z-30 pointer-events-none">
+          <img 
+            src={imgUFO} 
+            alt="UFO" 
+            className="w-full h-full object-contain"
+          />
+        </div>
+
+        {/* Layer 5: Foreground Rocks (Top) */}
+        <div className="absolute inset-0 z-40 pointer-events-none">
+          <img 
+            src={imgRocksFG} 
+            alt="Foreground Rocks" 
+            className="w-full h-full object-contain"
+          />
+        </div>
+
+        {/* --- UI OVERLAYS --- */}
+        {/* Placed at z-50 to sit on top of the art */}
+        <footer className="absolute bottom-3 md:bottom-6 w-full text-center z-50">
+          <p className="text-[#3E2F55] font-mono text-xs md:text-sm font-bold tracking-widest opacity-90 bg-white/20 inline-block px-4 py-1 rounded backdrop-blur-sm">
+            🌞 Santa Fe, NM • August 2026
+          </p>
+        </footer>
+
       </div>
 
-      {/* Layer 2: Mountains */}
-      <div className="absolute inset-0 z-10 pointer-events-none">
-        <img 
-          src={imgLayerMountains} 
-          alt="Mountains" 
-          className="w-full h-full object-cover"
-        />
-      </div>
-
-      {/* Layer 3: Main Rocks */}
-      <div className="absolute inset-0 z-20 pointer-events-none">
-        <img 
-          src={imgLayerRocksMain} 
-          alt="Main Rocks" 
-          className="w-full h-full object-cover"
-        />
-      </div>
-
-      {/* Layer 4: Tractor Beam */}
-      <div className="absolute inset-0 z-30 pointer-events-none">
-        <img 
-          src={imgLayerBeam} 
-          alt="Tractor Beam" 
-          className="w-full h-full object-cover mix-blend-screen opacity-90"
-        />
-      </div>
-
-      {/* Layer 5: UFO */}
-      <div className="absolute inset-0 z-40 pointer-events-none">
-        <img 
-          src={imgLayerUFO} 
-          alt="UFO" 
-          className="w-full h-full object-cover"
-        />
-      </div>
-
-      {/* Layer 6 (Top): Foreground Rocks */}
-      <div className="absolute inset-0 z-50 pointer-events-none">
-        <img 
-          src={imgLayerRocksFG} 
-          alt="Foreground Rocks" 
-          className="w-full h-full object-cover"
-        />
-      </div>
-
-      {/* --- UI / OVERLAYS (z-60+) --- */}
-      
-      {/* Footer */}
-      <footer className="absolute bottom-4 text-sm text-white/80 font-mono z-[60] text-shadow-sm">
-        🌞 Santa Fe, NM • August 2026
-      </footer>
-
-      {/* MODALS (Unchanged logic) */}
+      {/* MODALS (Unchanged) */}
       {isRSVPModalOpen && (
         <RSVPModal
           isOpen={isRSVPModalOpen}
