@@ -15,7 +15,7 @@ export default function Welcome() {
   const imgBackground = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0004_background.png";
   const imgRocksMain  = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0003_rocks_main.png";
   const imgBeam       = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0002_tractor_beam.png";
-  const imgUFO        = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0001_ufo.png";
+  const imgUFO        = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0005_logo.png";
   const imgRocksFG    = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0000_rocks_fg.png";
 
   return (
@@ -43,12 +43,12 @@ export default function Welcome() {
         className="absolute inset-0 w-full h-full object-cover object-bottom z-10"
       />
 
-      {/* LAYER 3: Tractor Beam */}
+      {/* LAYER 3: Tractor Beam 
       <img 
         src={imgBeam} 
         alt="Tractor Beam" 
         className="absolute inset-0 w-full h-full object-cover object-bottom z-20 mix-blend-screen opacity-90"
-      />
+      />*/}
 
       {/* LAYER 4: UFO */}
       <img 
