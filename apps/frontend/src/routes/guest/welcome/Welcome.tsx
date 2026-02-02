@@ -22,9 +22,8 @@ function GraphicButton({
       onMouseLeave={() => setState('up')}
       onMouseDown={() => setState('down')}
       onMouseUp={() => setState('hover')}
-      // Added extensive overrides to kill any green background or focus rings
       className={`relative select-none focus:outline-none focus:ring-0 transition-transform active:scale-95 bg-transparent hover:bg-transparent active:bg-transparent focus:bg-transparent border-none p-0 outline-none ${className}`}
-      style={{ WebkitTapHighlightColor: 'transparent' }} // Extra fix for mobile tap highlights
+      style={{ WebkitTapHighlightColor: 'transparent' }}
     >
       <img 
         src={state === 'up' ? srcUp : state === 'hover' ? srcHover : srcDown} 
@@ -85,17 +84,20 @@ export default function Welcome() {
       <div className="absolute inset-0 z-[80] flex items-center justify-center pointer-events-none">
         
         {/* Container for the button group */}
-        <div className="relative w-[300px] h-[500px] mt-[10vh] pointer-events-auto">
+        {/* increased height slightly to accommodate lower button positions */}
+        <div className="relative w-[300px] h-[600px] mt-[10vh] pointer-events-auto">
           
           {/* RSVP Button */}
           <div className={`
             absolute left-1/2 -translate-x-1/2 
             
-            /* Mobile: W 128px (20% smaller), Down 200px (100+100), Left 50px */
-            w-[128px] h-auto -ml-[50px] top-[200px]
+            /* Mobile: W 128px, Left 50px */
+            /* Vertical Shift: Was 200px -> Now 250px */
+            w-[128px] h-auto -ml-[50px] top-[250px]
             
-            /* Desktop: W 180px (20% smaller), Down 50px, Left 100px */
-            md:w-[180px] md:h-auto md:-ml-[100px] md:top-[50px]
+            /* Desktop: W 180px, Left 100px */
+            /* Vertical Shift: Was 50px -> Now 100px */
+            md:w-[180px] md:h-auto md:-ml-[100px] md:top-[100px]
           `}>
             <GraphicButton 
               srcUp={btnRsvpUp} 
@@ -110,11 +112,13 @@ export default function Welcome() {
           <div className={`
             absolute left-1/2 -translate-x-1/2
             
-            /* Mobile: W 128px (20% smaller), Down 300px (250+50), Left 40px */
-            w-[128px] h-auto -ml-[40px] top-[300px] 
+            /* Mobile: W 128px, Left 40px */
+            /* Vertical Shift: Was 300px -> Now 350px */
+            w-[128px] h-auto -ml-[40px] top-[350px] 
 
-            /* Desktop: W 190px (20% smaller), Down 200px (150+50), Left 10px */
-            md:w-[190px] md:h-auto md:-ml-[10px] md:top-[200px] 
+            /* Desktop: W 190px, Left 10px */
+            /* Vertical Shift: Was 200px -> Now 250px */
+            md:w-[190px] md:h-auto md:-ml-[10px] md:top-[250px] 
           `}>
             <GraphicButton 
               srcUp={btnInfoUp} 
