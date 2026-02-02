@@ -22,8 +22,9 @@ function GraphicButton({
       onMouseLeave={() => setState('up')}
       onMouseDown={() => setState('down')}
       onMouseUp={() => setState('hover')}
-      // Added 'bg-transparent' and removed any default borders/padding to fix green background issue
-      className={`relative select-none focus:outline-none transition-transform active:scale-95 bg-transparent border-none p-0 ${className}`}
+      // Added extensive overrides to kill any green background or focus rings
+      className={`relative select-none focus:outline-none focus:ring-0 transition-transform active:scale-95 bg-transparent hover:bg-transparent active:bg-transparent focus:bg-transparent border-none p-0 outline-none ${className}`}
+      style={{ WebkitTapHighlightColor: 'transparent' }} // Extra fix for mobile tap highlights
     >
       <img 
         src={state === 'up' ? srcUp : state === 'hover' ? srcHover : srcDown} 
@@ -84,17 +85,17 @@ export default function Welcome() {
       <div className="absolute inset-0 z-[80] flex items-center justify-center pointer-events-none">
         
         {/* Container for the button group */}
-        <div className="relative w-[300px] h-[400px] mt-[10vh] pointer-events-auto">
+        <div className="relative w-[300px] h-[500px] mt-[10vh] pointer-events-auto">
           
           {/* RSVP Button */}
           <div className={`
             absolute left-1/2 -translate-x-1/2 
             
-            /* Mobile: Scale down, move left 50px, move down 100px */
-            w-[160px] h-auto -ml-[50px] top-[100px]
+            /* Mobile: W 128px (20% smaller), Down 200px (100+100), Left 50px */
+            w-[128px] h-auto -ml-[50px] top-[200px]
             
-            /* Desktop: Original size, centered top */
-            md:w-[225px] md:h-[206px] md:ml-0 md:top-0
+            /* Desktop: W 180px (20% smaller), Down 50px, Left 100px */
+            md:w-[180px] md:h-auto md:-ml-[100px] md:top-[50px]
           `}>
             <GraphicButton 
               srcUp={btnRsvpUp} 
@@ -107,13 +108,13 @@ export default function Welcome() {
 
           {/* INFO Button */}
           <div className={`
-            absolute left-1/2 
+            absolute left-1/2 -translate-x-1/2
             
-            /* Mobile: Scale down, move left 30px (relative to center), move down 100px (relative to desktop pos) */
-            w-[160px] h-auto -ml-[40px] top-[250px] translate-x-0
+            /* Mobile: W 128px (20% smaller), Down 300px (250+50), Left 40px */
+            w-[128px] h-auto -ml-[40px] top-[300px] 
 
-            /* Desktop: Original size, original position (150px down, slightly shifted left) */
-            md:w-[238px] md:h-[162px] md:ml-0 md:top-[150px] md:translate-x-[-10px]
+            /* Desktop: W 190px (20% smaller), Down 200px (150+50), Left 10px */
+            md:w-[190px] md:h-auto md:-ml-[10px] md:top-[200px] 
           `}>
             <GraphicButton 
               srcUp={btnInfoUp} 
