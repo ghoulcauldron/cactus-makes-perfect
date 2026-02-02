@@ -12,60 +12,73 @@ export default function Welcome() {
 
   // --- ASSETS ---
   // Render Order: Bottom (Background) -> Top (Foreground)
-  const imgBackground = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0004_background.png";
-  const imgRocksMain  = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0003_rocks_main.png";
-  const imgBeam       = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0002_tractor_beam.png";
-  const imgUFO        = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0005_logo.png";
-  const imgRocksFG    = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0000_rocks_fg.png";
+  const imgBackground  = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0004_background.png";
+  const imgRocksMain   = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0003_rocks_main.png";
+  // New: Alien in back
+  const imgAlienBack   = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_solo_alien_in_back_front_bg.png";
+  const imgBeam        = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0002_tractor_beam.png";
+  const imgUFO         = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0005_logo.png";
+  const imgRocksFG     = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0000_rocks_fg.png";
+  // New: Aliens/Cacti in front
+  const imgAliensFront = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0000_aliens_cacti_top.png";
 
   return (
     // 1. VIEWPORT CONTAINER
-    // h-screen: Force the container to be exactly the height of the window.
-    // overflow-hidden: Hides the parts of the images that get "clipped" off the sides.
     <div className="h-screen w-full bg-[#90c974] overflow-hidden relative">
       
-      {/* LAYER 1: Background */}
+      {/* LAYER 1: Background (z-0) */}
       <img 
         src={imgBackground} 
         alt="Background" 
-        // w-full h-full: Force image to take up the whole box.
-        // object-cover: "Zoom in" until the box is filled. maintain aspect ratio.
-        // object-bottom: If cropping is needed, crop the TOP/SIDES, keep the BOTTOM fixed.
         className="absolute inset-0 w-full h-full object-cover object-bottom z-0"
       />
 
-      {/* LAYER 2: Main Rocks */}
+      {/* LAYER 2: Main Rocks (z-10) */}
       <img 
         src={imgRocksMain} 
         alt="Main Rocks" 
-        // We apply the exact same class to every layer. 
-        // Since they are the same canvas size, they will zoom and crop identically.
         className="absolute inset-0 w-full h-full object-cover object-bottom z-10"
       />
 
-      {/* LAYER 3: Tractor Beam 
+      {/* LAYER 3: Alien In Back (z-20) */}
+      <img 
+        src={imgAlienBack} 
+        alt="Alien Back" 
+        className="absolute inset-0 w-full h-full object-cover object-bottom z-20"
+      />
+
+      {/* LAYER 4: Tractor Beam (z-30) 
+          (Commented out per your snippet, but indices shifted to make room)
       <img 
         src={imgBeam} 
         alt="Tractor Beam" 
-        className="absolute inset-0 w-full h-full object-cover object-bottom z-20 mix-blend-screen opacity-90"
-      />*/}
+        className="absolute inset-0 w-full h-full object-cover object-bottom z-30 mix-blend-screen opacity-90"
+      />
+      */}
 
-      {/* LAYER 4: UFO */}
+      {/* LAYER 5: UFO (z-40) */}
       <img 
         src={imgUFO} 
         alt="UFO" 
-        className="absolute inset-0 w-full h-full object-cover object-bottom z-30 animate-pulse-slow"
+        className="absolute inset-0 w-full h-full object-cover object-bottom z-40 animate-pulse-slow"
       />
 
-      {/* LAYER 5: Foreground Rocks */}
+      {/* LAYER 6: Foreground Rocks (z-50) */}
       <img 
         src={imgRocksFG} 
         alt="Foreground Rocks" 
-        className="absolute inset-0 w-full h-full object-cover object-bottom z-40"
+        className="absolute inset-0 w-full h-full object-cover object-bottom z-50"
       />
 
-      {/* --- UI OVERLAYS --- */}
-      <footer className="absolute bottom-6 w-full text-center z-50 pointer-events-auto">
+      {/* LAYER 7: Aliens Front (z-60) */}
+      <img 
+        src={imgAliensFront} 
+        alt="Aliens Front" 
+        className="absolute inset-0 w-full h-full object-cover object-bottom z-60"
+      />
+
+      {/* --- UI OVERLAYS (z-70) --- */}
+      <footer className="absolute bottom-6 w-full text-center z-70 pointer-events-auto">
         <div className="mb-4">
            <button 
              onClick={() => setRSVPModalOpen(true)}
