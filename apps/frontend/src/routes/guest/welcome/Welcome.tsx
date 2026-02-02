@@ -3,7 +3,6 @@ import RSVPModal from "../modals/RSVPModal";
 import { useState } from "react";
 
 // --- REUSABLE GRAPHIC BUTTON COMPONENT ---
-// Handles the Up/Hover/Down state swapping for image-based buttons
 function GraphicButton({ 
   srcUp, 
   srcHover, 
@@ -23,7 +22,8 @@ function GraphicButton({
       onMouseLeave={() => setState('up')}
       onMouseDown={() => setState('down')}
       onMouseUp={() => setState('hover')}
-      className={`relative select-none focus:outline-none transition-transform active:scale-95 ${className}`}
+      // Added 'bg-transparent' and removed any default borders/padding to fix green background issue
+      className={`relative select-none focus:outline-none transition-transform active:scale-95 bg-transparent border-none p-0 ${className}`}
     >
       <img 
         src={state === 'up' ? srcUp : state === 'hover' ? srcHover : srcDown} 
@@ -77,15 +77,25 @@ export default function Welcome() {
       {/* LAYER 6: Foreground Rocks (z-50) */}
       <img src={imgRocksFG} alt="Foreground Rocks" className="absolute inset-0 w-full h-full object-cover object-bottom z-50" />
 
-      {/* --- BUTTONS LAYER (z-55) --- */}
-      {/* Positioned absolutely in the center of the screen to float above the floor but below the frontmost aliens */}
-      <div className="absolute inset-0 z-[55] flex items-center justify-center pointer-events-none">
+      {/* LAYER 7: Aliens Front (z-[60]) */}
+      <img src={imgAliensFront} alt="Aliens Front" className="absolute inset-0 w-full h-full object-cover object-bottom z-[60] pointer-events-none" />
+
+      {/* --- BUTTONS LAYER (z-[80] - Topmost) --- */}
+      <div className="absolute inset-0 z-[80] flex items-center justify-center pointer-events-none">
         
-        {/* Container for the button group - nudged down slightly to sit on the "floor" visually */}
+        {/* Container for the button group */}
         <div className="relative w-[300px] h-[400px] mt-[10vh] pointer-events-auto">
           
-          {/* RSVP Button: Centered top */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[225px] h-[206px]">
+          {/* RSVP Button */}
+          <div className={`
+            absolute left-1/2 -translate-x-1/2 
+            
+            /* Mobile: Scale down, move left 50px, move down 100px */
+            w-[160px] h-auto -ml-[50px] top-[100px]
+            
+            /* Desktop: Original size, centered top */
+            md:w-[225px] md:h-[206px] md:ml-0 md:top-0
+          `}>
             <GraphicButton 
               srcUp={btnRsvpUp} 
               srcHover={btnRsvpHover} 
@@ -95,9 +105,16 @@ export default function Welcome() {
             />
           </div>
 
-          {/* INFO Button: Below and shifted right by ~50px */}
-          {/* Top position calculated: ~150px down from the start of the RSVP button */}
-          <div className="absolute top-[150px] left-1/2 translate-x-[-10px] w-[238px] h-[162px]">
+          {/* INFO Button */}
+          <div className={`
+            absolute left-1/2 
+            
+            /* Mobile: Scale down, move left 30px (relative to center), move down 100px (relative to desktop pos) */
+            w-[160px] h-auto -ml-[40px] top-[250px] translate-x-0
+
+            /* Desktop: Original size, original position (150px down, slightly shifted left) */
+            md:w-[238px] md:h-[162px] md:ml-0 md:top-[150px] md:translate-x-[-10px]
+          `}>
             <GraphicButton 
               srcUp={btnInfoUp} 
               srcHover={btnInfoHover} 
@@ -109,9 +126,6 @@ export default function Welcome() {
 
         </div>
       </div>
-
-      {/* LAYER 7: Aliens Front (z-[60]) */}
-      <img src={imgAliensFront} alt="Aliens Front" className="absolute inset-0 w-full h-full object-cover object-bottom z-[60] pointer-events-none" />
 
       {/* --- UI OVERLAYS (z-[70]) --- */}
       <footer className="absolute bottom-6 w-full text-center z-[70] pointer-events-auto">
