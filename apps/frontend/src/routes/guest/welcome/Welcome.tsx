@@ -11,19 +11,15 @@ export default function Welcome() {
   const [activeTab, setActiveTab] = useState<"schedule" | "faqs">("schedule");
 
   // --- ASSETS ---
-  // Render Order: Bottom (Background) -> Top (Foreground)
   const imgBackground  = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0004_background.png";
   const imgRocksMain   = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0003_rocks_main.png";
-  // New: Alien in back
   const imgAlienBack   = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_solo_alien_in_back_front_bg.png";
-  const imgBeam        = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0002_tractor_beam.png";
+  // const imgBeam     = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0002_tractor_beam.png";
   const imgUFO         = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0005_logo.png";
   const imgRocksFG     = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0000_rocks_fg.png";
-  // New: Aliens/Cacti in front
   const imgAliensFront = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0000_aliens_cacti_top.png";
 
   return (
-    // 1. VIEWPORT CONTAINER
     <div className="h-screen w-full bg-[#90c974] overflow-hidden relative">
       
       {/* LAYER 1: Background (z-0) */}
@@ -40,16 +36,12 @@ export default function Welcome() {
         className="absolute inset-0 w-full h-full object-cover object-bottom z-10"
       />
 
-
-
-      {/* LAYER 4: Tractor Beam (z-30) 
-          (Commented out per your snippet, but indices shifted to make room)
+      {/* LAYER 3: Alien In Back (z-20) */}
       <img 
-        src={imgBeam} 
-        alt="Tractor Beam" 
-        className="absolute inset-0 w-full h-full object-cover object-bottom z-30 mix-blend-screen opacity-90"
+        src={imgAlienBack} 
+        alt="Alien Back" 
+        className="absolute inset-0 w-full h-full object-cover object-bottom z-20"
       />
-      */}
 
       {/* LAYER 5: UFO (z-40) */}
       <img 
@@ -65,15 +57,15 @@ export default function Welcome() {
         className="absolute inset-0 w-full h-full object-cover object-bottom z-50"
       />
 
-      {/* LAYER 7: Aliens Front (z-60) */}
+      {/* LAYER 7: Aliens Front (z-[60]) <-- FIXED: Added Brackets */}
       <img 
         src={imgAliensFront} 
         alt="Aliens Front" 
-        className="absolute inset-0 w-full h-full object-cover object-bottom z-60"
+        className="absolute inset-0 w-full h-full object-cover object-bottom z-[60]"
       />
 
-      {/* --- UI OVERLAYS (z-70) --- */}
-      <footer className="absolute bottom-6 w-full text-center z-70 pointer-events-auto">
+      {/* --- UI OVERLAYS (z-[70]) <-- FIXED: Added Brackets --- */}
+      <footer className="absolute bottom-6 w-full text-center z-[70] pointer-events-auto">
         <div className="mb-4">
            <button 
              onClick={() => setRSVPModalOpen(true)}
