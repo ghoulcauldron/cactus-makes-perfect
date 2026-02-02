@@ -84,20 +84,20 @@ export default function Welcome() {
       <div className="absolute inset-0 z-[80] flex items-center justify-center pointer-events-none">
         
         {/* Container for the button group */}
-        {/* increased height slightly to accommodate lower button positions */}
-        <div className="relative w-[300px] h-[600px] mt-[10vh] pointer-events-auto">
+        {/* Increased height to 800px to ensure buttons don't clip when moved down */}
+        <div className="relative w-[300px] h-[800px] mt-[10vh] pointer-events-auto">
           
           {/* RSVP Button */}
           <div className={`
             absolute left-1/2 -translate-x-1/2 
             
             /* Mobile: W 128px, Left 50px */
-            /* Vertical Shift: Was 200px -> Now 250px */
-            w-[128px] h-auto -ml-[50px] top-[250px]
+            /* Vertical Shift: +50px (was 250 -> 300) */
+            w-[128px] h-auto -ml-[50px] top-[300px]
             
             /* Desktop: W 180px, Left 100px */
-            /* Vertical Shift: Was 50px -> Now 100px */
-            md:w-[180px] md:h-auto md:-ml-[100px] md:top-[100px]
+            /* Vertical Shift: +50px (was 100 -> 150) */
+            md:w-[180px] md:h-auto md:-ml-[100px] md:top-[150px]
           `}>
             <GraphicButton 
               srcUp={btnRsvpUp} 
@@ -113,12 +113,12 @@ export default function Welcome() {
             absolute left-1/2 -translate-x-1/2
             
             /* Mobile: W 128px, Left 40px */
-            /* Vertical Shift: Was 300px -> Now 350px */
-            w-[128px] h-auto -ml-[40px] top-[350px] 
+            /* Vertical Shift: +50px (was 350 -> 400) */
+            w-[128px] h-auto -ml-[40px] top-[400px] 
 
             /* Desktop: W 190px, Left 10px */
-            /* Vertical Shift: Was 200px -> Now 250px */
-            md:w-[190px] md:h-auto md:-ml-[10px] md:top-[250px] 
+            /* Vertical Shift: +50px (was 250 -> 300) */
+            md:w-[190px] md:h-auto md:-ml-[10px] md:top-[300px] 
           `}>
             <GraphicButton 
               srcUp={btnInfoUp} 
