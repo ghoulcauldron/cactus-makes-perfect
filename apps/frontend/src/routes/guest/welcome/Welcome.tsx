@@ -40,12 +40,7 @@ export default function Welcome() {
         className="absolute inset-0 w-full h-full object-cover object-bottom z-10"
       />
 
-      {/* LAYER 3: Alien In Back (z-20) */}
-      <img 
-        src={imgAlienBack} 
-        alt="Alien Back" 
-        className="absolute inset-0 w-full h-full object-cover object-bottom z-20"
-      />
+
 
       {/* LAYER 4: Tractor Beam (z-30) 
           (Commented out per your snippet, but indices shifted to make room)
