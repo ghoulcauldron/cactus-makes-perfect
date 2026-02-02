@@ -90,10 +90,10 @@ export default function Welcome() {
           absolute pointer-events-auto
           
           /* Mobile: W 128px, Left -50px, Top +50px (Below Center) */
-          w-[128px] h-auto -ml-[50px] top-[50px]
+          w-[128px] h-auto -ml-[175px] top-[100px]
           
           /* Desktop: W 180px, Left -100px, Top -100px (Above Center) */
-          md:w-[180px] md:h-auto md:-ml-[100px] md:top-[-100px]
+          md:w-[180px] md:h-auto md:-ml-[150px] md:top-[0px]
         `}>
           <GraphicButton 
             srcUp={btnRsvpUp} 
@@ -109,7 +109,7 @@ export default function Welcome() {
           absolute pointer-events-auto
           
           /* Mobile: W 128px, Left -40px, Top +180px (Below Center) */
-          w-[128px] h-auto -ml-[40px] top-[180px]
+          w-[128px] h-auto -ml-[20px] top-[180px]
 
           /* Desktop: W 190px, Left -10px, Top +100px (Below Center) */
           md:w-[190px] md:h-auto md:-ml-[10px] md:top-[100px] 
@@ -127,7 +127,7 @@ export default function Welcome() {
 
       {/* --- UI OVERLAYS (z-[70]) --- */}
       <footer className="absolute bottom-6 w-full text-center z-[70] pointer-events-auto">
-        <p className="text-[#3E2F55] font-mono text-xs font-bold tracking-[0.2em] opacity-80 inline-block px-2 py-1 rounded">
+        <p className="text-[#ffffff] font-mono text-xs font-bold tracking-[0.2em] opacity-100 inline-block px-2 py-1 rounded">
           SANTA FE, NM • AUGUST 2026
         </p>
       </footer>
