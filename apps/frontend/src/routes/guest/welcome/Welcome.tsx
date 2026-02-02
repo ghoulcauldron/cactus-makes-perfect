@@ -2,6 +2,38 @@ import { useNavigate } from "react-router-dom";
 import RSVPModal from "../modals/RSVPModal";
 import { useState } from "react";
 
+// --- REUSABLE GRAPHIC BUTTON COMPONENT ---
+// Handles the Up/Hover/Down state swapping for image-based buttons
+function GraphicButton({ 
+  srcUp, 
+  srcHover, 
+  srcDown, 
+  alt, 
+  onClick, 
+  className 
+}: { 
+  srcUp: string, srcHover: string, srcDown: string, alt: string, onClick: () => void, className?: string 
+}) {
+  const [state, setState] = useState<'up' | 'hover' | 'down'>('up');
+
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setState('hover')}
+      onMouseLeave={() => setState('up')}
+      onMouseDown={() => setState('down')}
+      onMouseUp={() => setState('hover')}
+      className={`relative select-none focus:outline-none transition-transform active:scale-95 ${className}`}
+    >
+      <img 
+        src={state === 'up' ? srcUp : state === 'hover' ? srcHover : srcDown} 
+        alt={alt}
+        className="w-full h-full object-contain"
+      />
+    </button>
+  );
+}
+
 export default function Welcome() {
   console.log("Rendering Welcome.tsx component");
   const navigate = useNavigate();
@@ -10,70 +42,79 @@ export default function Welcome() {
   const [isEventInfoModalOpen, setEventInfoModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"schedule" | "faqs">("schedule");
 
-  // --- ASSETS ---
+  // --- ASSETS: SCENE LAYERS ---
   const imgBackground  = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0004_background.png";
   const imgRocksMain   = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0003_rocks_main.png";
   const imgAlienBack   = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_solo_alien.png";
-  // const imgBeam     = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0002_tractor_beam.png";
   const imgUFO         = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0005_logo.png";
   const imgRocksFG     = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0000_rocks_fg.png";
   const imgAliensFront = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0000_aliens_cacti_top.png";
+
+  // --- ASSETS: BUTTONS ---
+  const btnRsvpUp    = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/buttons/RSVP_button_up.png";
+  const btnRsvpHover = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/buttons/RSVP_button_hover.png";
+  const btnRsvpDown  = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/buttons/RSVP_button_down.png";
+
+  const btnInfoUp    = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/buttons/INFO_button_up.png";
+  const btnInfoHover = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/buttons/INFO_button_hover.png";
+  const btnInfoDown  = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/buttons/INFO_button_down.png";
 
   return (
     <div className="h-screen w-full bg-[#90c974] overflow-hidden relative">
       
       {/* LAYER 1: Background (z-0) */}
-      <img 
-        src={imgBackground} 
-        alt="Background" 
-        className="absolute inset-0 w-full h-full object-cover object-bottom z-0"
-      />
+      <img src={imgBackground} alt="Background" className="absolute inset-0 w-full h-full object-cover object-bottom z-0" />
 
       {/* LAYER 2: Main Rocks (z-10) */}
-      <img 
-        src={imgRocksMain} 
-        alt="Main Rocks" 
-        className="absolute inset-0 w-full h-full object-cover object-bottom z-10"
-      />
+      <img src={imgRocksMain} alt="Main Rocks" className="absolute inset-0 w-full h-full object-cover object-bottom z-10" />
 
       {/* LAYER 3: Alien In Back (z-20) */}
-      <img 
-        src={imgAlienBack} 
-        alt="Alien Back" 
-        className="absolute inset-0 w-full h-full object-cover object-bottom z-20"
-      />
+      <img src={imgAlienBack} alt="Alien Back" className="absolute inset-0 w-full h-full object-cover object-bottom z-20" />
 
       {/* LAYER 5: UFO (z-40) */}
-      <img 
-        src={imgUFO} 
-        alt="UFO" 
-        className="absolute inset-0 w-full h-full object-cover object-bottom z-40 animate-pulse-slow"
-      />
+      <img src={imgUFO} alt="UFO" className="absolute inset-0 w-full h-full object-cover object-bottom z-40 animate-pulse-slow" />
 
       {/* LAYER 6: Foreground Rocks (z-50) */}
-      <img 
-        src={imgRocksFG} 
-        alt="Foreground Rocks" 
-        className="absolute inset-0 w-full h-full object-cover object-bottom z-50"
-      />
+      <img src={imgRocksFG} alt="Foreground Rocks" className="absolute inset-0 w-full h-full object-cover object-bottom z-50" />
 
-      {/* LAYER 7: Aliens Front (z-[60]) <-- FIXED: Added Brackets */}
-      <img 
-        src={imgAliensFront} 
-        alt="Aliens Front" 
-        className="absolute inset-0 w-full h-full object-cover object-bottom z-[60]"
-      />
+      {/* --- BUTTONS LAYER (z-55) --- */}
+      {/* Positioned absolutely in the center of the screen to float above the floor but below the frontmost aliens */}
+      <div className="absolute inset-0 z-[55] flex items-center justify-center pointer-events-none">
+        
+        {/* Container for the button group - nudged down slightly to sit on the "floor" visually */}
+        <div className="relative w-[300px] h-[400px] mt-[10vh] pointer-events-auto">
+          
+          {/* RSVP Button: Centered top */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[225px] h-[206px]">
+            <GraphicButton 
+              srcUp={btnRsvpUp} 
+              srcHover={btnRsvpHover} 
+              srcDown={btnRsvpDown} 
+              alt="RSVP" 
+              onClick={() => setRSVPModalOpen(true)}
+            />
+          </div>
 
-      {/* --- UI OVERLAYS (z-[70]) <-- FIXED: Added Brackets --- */}
-      <footer className="absolute bottom-6 w-full text-center z-[70] pointer-events-auto">
-        <div className="mb-4">
-           <button 
-             onClick={() => setRSVPModalOpen(true)}
-             className="bg-[#D96C75] text-[#3E2F55] font-bold py-3 px-10 rounded-full shadow-xl border-2 border-[#3E2F55] hover:scale-105 transition-transform"
-           >
-             RSVP NOW
-           </button>
+          {/* INFO Button: Below and shifted right by ~50px */}
+          {/* Top position calculated: ~150px down from the start of the RSVP button */}
+          <div className="absolute top-[150px] left-1/2 translate-x-[-10px] w-[238px] h-[162px]">
+            <GraphicButton 
+              srcUp={btnInfoUp} 
+              srcHover={btnInfoHover} 
+              srcDown={btnInfoDown} 
+              alt="Info" 
+              onClick={() => setEventInfoModalOpen(true)}
+            />
+          </div>
+
         </div>
+      </div>
+
+      {/* LAYER 7: Aliens Front (z-[60]) */}
+      <img src={imgAliensFront} alt="Aliens Front" className="absolute inset-0 w-full h-full object-cover object-bottom z-[60] pointer-events-none" />
+
+      {/* --- UI OVERLAYS (z-[70]) --- */}
+      <footer className="absolute bottom-6 w-full text-center z-[70] pointer-events-auto">
         <p className="text-[#3E2F55] font-mono text-xs font-bold tracking-[0.2em] opacity-80 inline-block px-2 py-1 rounded">
           SANTA FE, NM • AUGUST 2026
         </p>
@@ -81,10 +122,7 @@ export default function Welcome() {
 
       {/* MODALS */}
       {isRSVPModalOpen && (
-        <RSVPModal
-          isOpen={isRSVPModalOpen}
-          onClose={() => setRSVPModalOpen(false)}
-        />
+        <RSVPModal isOpen={isRSVPModalOpen} onClose={() => setRSVPModalOpen(false)} />
       )}
 
       {isEventInfoModalOpen && (
