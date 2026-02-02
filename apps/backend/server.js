@@ -833,6 +833,96 @@ app.get("/api/v1/admin/guest/:id/activity", requireAdminAuth, async (req, res) =
   }
 });
 
+// ---- Admin: CREATE guest ----
+app.post("/api/v1/admin/guests/create", requireAdminAuth, async (req, res) => {
+  try {
+    const {
+      first_name,
+      last_name,
+      email,
+      group_label,
+      auto_invite = false, // future-safe
+    } = req.body || {};
+
+    if (!email) {
+      return res.status(400).json({ error: "Missing email" });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const canonGroup = canonicalizeGroupLabel(group_label);
+
+    // 1. Check for existing guest
+    const { data: existing } = await supabase
+      .from("guests")
+      .select("id")
+      .eq("email", normalizedEmail)
+      .maybeSingle();
+
+    if (existing) {
+      return res.status(409).json({
+        error: "Guest already exists",
+        guest_id: existing.id,
+      });
+    }
+
+    // 2. Insert guest
+    const { data: guest, error } = await supabase
+      .from("guests")
+      .insert([
+        {
+          first_name: first_name || null,
+          last_name: last_name || null,
+          email: normalizedEmail,
+          group_label: canonGroup,
+        },
+      ])
+      .select()
+      .single();
+
+    if (error || !guest) {
+      console.error("[AdminGuestCreate] Insert failed", error);
+      return res.status(422).json({ error: "Failed to create guest" });
+    }
+
+    // 3. Activity log
+    await supabase.from("user_activity").insert([
+      {
+        guest_id: guest.id,
+        kind: "guest_created",
+        meta: {
+          email: normalizedEmail,
+          group_label: canonGroup,
+          admin: req.admin,
+        },
+      },
+    ]);
+
+    // 4. Optional auto-invite (Phase 2 ready, but OFF by default)
+    if (auto_invite === true) {
+      try {
+        await fetch(`${process.env.INTERNAL_API_URL || "http://localhost:3000"}/api/v1/admin/invites/send`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: req.headers.authorization,
+          },
+          body: JSON.stringify({ guest_id: guest.id }),
+        });
+      } catch (e) {
+        console.warn("[AdminGuestCreate] Auto-invite failed", e);
+      }
+    }
+
+    return res.json({
+      ok: true,
+      guest,
+    });
+  } catch (e) {
+    console.error("[AdminGuestCreate] Unexpected error", e);
+    return res.status(500).json({ error: "Internal error" });
+  }
+});
+
 // ---- Admin: Resend Invite ----
 app.post("/api/v1/admin/resend", requireAdminAuth, async (req, res) => {
   try {

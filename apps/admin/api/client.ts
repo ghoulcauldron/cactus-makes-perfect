@@ -123,6 +123,23 @@ export async function sendAdminInvite(
 }
 
 // ------------------------------
+// GUEST CREATE (admin)
+// ------------------------------
+export async function createAdminGuest(payload: {
+  email: string;
+  first_name?: string;
+  last_name?: string;
+  phone?: string | null;
+  group_label?: string | null;
+  subscribed?: boolean;
+}) {
+  return apiFetch("/admin/guests/create", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+// ------------------------------
 // GROUP / HOUSEHOLD MGMT
 // ------------------------------
 export async function updateGuestGroup(
