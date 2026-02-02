@@ -81,11 +81,9 @@ export default function Welcome() {
       <img src={imgAliensFront} alt="Aliens Front" className="absolute inset-0 w-full h-full object-cover object-bottom z-[60] pointer-events-none" />
 
       {/* --- BUTTONS LAYER (z-[80] - Topmost) --- */}
-      {/* Using a fixed 0x0 anchor at dead center of screen to guarantee consistent positioning */}
       <div className="absolute top-1/2 left-1/2 w-0 h-0 z-[80] overflow-visible pointer-events-none">
           
         {/* RSVP Button */}
-        {/* 'top' values are now relative to the CENTER LINE. Negative = Above, Positive = Below. */}
         <div className={`
           absolute pointer-events-auto
           
@@ -134,11 +132,18 @@ export default function Welcome() {
 
       {/* MODALS */}
       {isRSVPModalOpen && (
-        <RSVPModal isOpen={isRSVPModalOpen} onClose={() => setRSVPModalOpen(false)} />
+        // WRAPPER FIX: Wrapped in z-[200] to ensure it sits on top of z-[80] buttons
+        <div className="relative z-[200]">
+          <RSVPModal
+            isOpen={isRSVPModalOpen}
+            onClose={() => setRSVPModalOpen(false)}
+          />
+        </div>
       )}
 
       {isEventInfoModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
+        // Changed from z-[100] to z-[200] to be safe
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[200] p-4">
           <div className="bg-white rounded-lg max-w-3xl w-full p-6 relative shadow-2xl">
             <button
               onClick={() => setEventInfoModalOpen(false)}
