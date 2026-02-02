@@ -109,7 +109,7 @@ export default function Welcome() {
           absolute pointer-events-auto
           
           /* Mobile: W 128px, Left -40px, Top +180px (Below Center) */
-          w-[128px] h-auto -ml-[25px] top-[150px]
+          w-[128px] h-auto -ml-[25px] top-[140px]
 
           /* Desktop: W 190px, Left -10px, Top +100px (Below Center) */
           md:w-[190px] md:h-auto md:-ml-[30px] md:top-[75px] 
