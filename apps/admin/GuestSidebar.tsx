@@ -138,7 +138,7 @@ export default function GuestSidebar({ guest, onClose }: GuestSidebarProps) {
         }
         
         const kindInfo = kindMap[item.kind] || {
-          icon: "❔",
+          icon: "❗",
           label: item.kind || "Unknown",
         };
         groups[dayKey].items.push({

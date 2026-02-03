@@ -312,9 +312,8 @@ app.post("/api/v1/admin/invites/send", async (req, res) => {
 
     const inviteUrl = `${PUBLIC_URL}/invite?token=${encodeURIComponent(token)}`;
 
-    // --- 3. Template rendering (Area 51 Style) ---
+    // --- 3. Template rendering (Refined Area 51 Style) ---
     
-    // Styles for email (inline is safest)
     const styles = {
       container: "background-color: #000000; color: #45CC2D; font-family: 'Courier New', Courier, monospace; padding: 40px 20px; text-align: center;",
       card: "max-width: 600px; margin: 0 auto; border: 2px solid #45CC2D; background-color: #0a0a0a; text-align: left;",
@@ -325,7 +324,7 @@ app.post("/api/v1/admin/invites/send", async (req, res) => {
       footer: "border-top: 1px solid #45CC2D; padding: 10px 20px; font-size: 10px; text-transform: uppercase; color: #45CC2D; opacity: 0.7;"
     };
 
-    let subject = "INCOMING TRANSMISSION: S&G Wedding 🌵";
+    let subject = "INCOMING TRANSMISSION: S&G 🌵";
     
     let html = `
       <div style="${styles.container}">
@@ -335,15 +334,20 @@ app.post("/api/v1/admin/invites/send", async (req, res) => {
           </div>
           
           <div style="${styles.body}">
+            <p style="margin-bottom: 16px; font-weight: bold;">
+              IN THE YEAR 2006, CONTACT WAS MADE.<br/>
+              TWO TRAJECTORIES ALIGNED.
+            </p>
+
             <p style="margin-bottom: 16px;"><strong>EARTH DWELLERS.</strong></p>
             
             <p style="margin-bottom: 16px;">
-              It would be our greatest pleasure if you would join us to celebrate a nuptial milestone.
+              It would be our greatest pleasure if you would join us to witness this next phase of our evolution.
             </p>
             
             <p style="margin-bottom: 16px;">
-              The link below will be your portal to the next galaxy. 
-              Please activate the link and enter your code, followed by the = sign.
+              The link below is your portal to the next galaxy. 
+              Activate the link and input your clearance code to proceed.
             </p>
 
             <div style="${styles.codeBox}">
@@ -351,11 +355,12 @@ app.post("/api/v1/admin/invites/send", async (req, res) => {
             </div>
 
             <p style="margin-bottom: 16px;">
-              Kindly let us know if you can come by February 15th, 2026 so we can start crunching the numbers and make sure it all adds up perfectly.
+              <strong>DIRECTIVE:</strong> Confirm your coordinates by February 15th, 2026. 
+              Precise data is required for resource allocation and system calibration.
             </p>
 
             <p style="margin-top: 30px; margin-bottom: 0;">
-              We can’t wait to see you there xx.
+              Awaiting your signal.
             </p>
             
             <p style="margin-top: 10px;">
@@ -377,19 +382,23 @@ app.post("/api/v1/admin/invites/send", async (req, res) => {
 
     // Plain text fallback
     let text = `
+IN THE YEAR 2006, CONTACT WAS MADE.
+TWO TRAJECTORIES ALIGNED.
+
 EARTH DWELLERS.
 
-It would be our greatest pleasure if you would join us to celebrate a nuptial milestone.
+It would be our greatest pleasure if you would join us to witness this next phase of our evolution.
 
-The link below will be your portal to the next galaxy. 
-Please activate the link and enter your code.
+The link below is your portal to the next galaxy. 
+Activate the link and input your clearance code to proceed.
 
 YOUR CODE: ${code}
 PORTAL LINK: ${inviteUrl}
 
-Kindly let us know if you can come by February 15th, 2026 so we can start crunching the numbers and make sure it all adds up perfectly.
+DIRECTIVE: Confirm your coordinates by February 15th, 2026. 
+Precise data is required for resource allocation and system calibration.
 
-We can’t wait to see you there xx.
+Awaiting your signal.
 
 BIG LOVE,
 S&G

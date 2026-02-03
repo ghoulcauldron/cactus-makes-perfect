@@ -70,13 +70,13 @@ export function renderInviteTemplate(
     border: 1px solid #45CC2D;
   `;
 
-  // Note: In the preview, we don't have the real token/code, so we use placeholders.
+  // Placeholders for preview
   const previewCode = "123456";
   const previewLink = "#";
 
   switch (template) {
     case "friendly":
-       // Keep friendly as a backup or alternative if desired, or duplicate the logic below
+       // Keep friendly as an alternative or duplicate the default logic
        return `...`; 
 
     case "default":
@@ -89,15 +89,22 @@ export function renderInviteTemplate(
             </div>
             
             <div style="${bodyStyle}">
-              <p style="margin-bottom: 16px;"><strong>EARTH DWELLERS.</strong></p>
-              
-              <p style="margin-bottom: 16px;">
-                It would be our greatest pleasure if you would join us to celebrate a nuptial milestone.
+              <p style="margin-bottom: 16px; font-weight: bold;">
+                IN THE YEAR 2006, CONTACT WAS MADE.<br/>
+                TWO TRAJECTORIES ALIGNED.
               </p>
               
               <p style="margin-bottom: 16px;">
-                The link below will be your portal to the next galaxy. 
-                Please activate the link and enter your code, followed by the = sign.
+                <strong>EARTH DWELLERS.</strong>
+              </p>
+              
+              <p style="margin-bottom: 16px;">
+                It would be our greatest pleasure if you would join us to witness this next phase of our evolution.
+              </p>
+              
+              <p style="margin-bottom: 16px;">
+                The link below is your portal to the next galaxy. 
+                Activate the link and input your clearance code to proceed.
               </p>
 
               <div style="${codeBoxStyle}">
@@ -105,11 +112,12 @@ export function renderInviteTemplate(
               </div>
 
               <p style="margin-bottom: 16px;">
-                Kindly let us know if you can come by February 15th, 2026 so we can start crunching the numbers and make sure it all adds up perfectly.
+                <strong>DIRECTIVE:</strong> Confirm your coordinates by February 15th, 2026. 
+                Precise data is required for resource allocation and system calibration.
               </p>
 
               <p style="margin-top: 30px; margin-bottom: 0;">
-                We can’t wait to see you there xx.
+                Awaiting your signal.
               </p>
               
               <p style="margin-top: 10px;">
