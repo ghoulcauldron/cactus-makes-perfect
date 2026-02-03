@@ -31,14 +31,26 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
   });
 
   // Helpful dev/debug logging
-  if (!res.ok) {
-    const msg = await res.text().catch(() => "");
+    if (!res.ok) {
+    const raw = await res.text().catch(() => "");
+    let data: any = null;
+
+    try {
+      data = raw ? JSON.parse(raw) : null;
+    } catch {
+      data = raw || null;
+    }
+
     console.error("❌ API Error", {
       path,
       status: res.status,
-      body: msg,
+      body: data,
     });
-    throw new Error(`API error: ${res.status}`);
+
+    const err: any = new Error(`API error: ${res.status}`);
+    err.status = res.status;
+    err.data = data;
+    throw err;
   }
 
   // Avoid JSON errors on empty responses
@@ -95,10 +107,10 @@ export async function sendAdminNudge({
   html: string;
   text: string;
 }) {
-  return apiFetch("/api/v1/admin/nudges/send", {
+  return apiFetch("/admin/guests/nudge", {
     method: "POST",
     body: JSON.stringify({
-      guest_id: guestId,
+      guest_ids: [guestId],
       subject,
       html,
       text,
@@ -133,10 +145,12 @@ export async function createAdminGuest(payload: {
   group_label?: string | null;
   subscribed?: boolean;
 }) {
-  return apiFetch("/admin/guests/create", {
+  const res = await apiFetch("/admin/guests/create", {
     method: "POST",
     body: JSON.stringify(payload),
   });
+
+  return res.guest; // ✅ critical for created.id
 }
 
 // ------------------------------
