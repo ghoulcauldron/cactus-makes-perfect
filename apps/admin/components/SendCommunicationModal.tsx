@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/react';
+import { ChevronUpDownIcon, CheckIcon } from '@heroicons/react/20/solid';
 import { sendAdminInvite, sendAdminNudge } from "../api/client";
 import { renderInviteTemplate } from "../utils/renderInviteTemplate";
 
@@ -23,7 +25,6 @@ const A51_STYLES = {
 };
 
 function generateArea51Html(content: string) {
-  // Convert newlines to <br/> for the HTML email
   const formattedContent = content.replace(/\n/g, "<br/>");
 
   return `
@@ -43,6 +44,17 @@ function generateArea51Html(content: string) {
   `;
 }
 
+// --- Dropdown Options Definitions ---
+const INVITE_OPTIONS: { id: InviteTemplate; label: string }[] = [
+  { id: 'default', label: 'Standard Invite (Area 51)' },
+  { id: 'friendly', label: 'Friendly Reminder' },
+];
+
+const NUDGE_OPTIONS: { id: NudgeStyle; label: string }[] = [
+  { id: 'area51', label: 'Area 51 Transmission (Templated)' },
+  { id: 'custom', label: 'Custom HTML (Raw)' },
+];
+
 export default function SendCommunicationModal({
   mode,
   guestIds,
@@ -57,25 +69,24 @@ export default function SendCommunicationModal({
 
   // Nudge Mode State
   const [nudgeStyle, setNudgeStyle] = useState<NudgeStyle>("area51");
-  const [nudgeMessage, setNudgeMessage] = useState(""); // Simple text for template
-  const [customHtml, setCustomHtml] = useState("");     // Raw HTML for custom
-  const [customText, setCustomText] = useState("");     // Raw Text for custom
+  const [nudgeMessage, setNudgeMessage] = useState(""); 
+  const [customHtml, setCustomHtml] = useState("");     
+  const [customText, setCustomText] = useState("");     
 
   // Modal State
   const [isPreview, setIsPreview] = useState(false);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
 
-  // Validation Logic
+  // Validation
   const canSubmit = mode === "invite"
     ? guestIds.length > 0
     : mode === "nudge" && nudgeStyle === "area51"
       ? subject.trim().length > 0 && nudgeMessage.trim().length > 0
-      : subject.trim().length > 0 && guestIds.length > 0; // Custom mode generally just needs a subject to proceed safely
+      : subject.trim().length > 0 && guestIds.length > 0;
 
   async function handleSend() {
     if (!canSubmit || sending) return;
-
     setSending(true);
 
     try {
@@ -89,7 +100,7 @@ export default function SendCommunicationModal({
 
           if (nudgeStyle === "area51") {
             finalHtml = generateArea51Html(nudgeMessage);
-            finalText = nudgeMessage; // Simple fallback
+            finalText = nudgeMessage; 
           } else {
             finalHtml = customHtml;
             finalText = customText;
@@ -127,7 +138,6 @@ export default function SendCommunicationModal({
     if (mode === "invite") {
       return renderInviteTemplate(inviteTemplate, subject, "", "");
     }
-    // Nudge
     if (nudgeStyle === "area51") {
       return generateArea51Html(nudgeMessage || "(No message content entered...)");
     }
@@ -158,32 +168,95 @@ export default function SendCommunicationModal({
         {/* Body */}
         <div className="px-5 py-4 overflow-y-auto flex-1 custom-scrollbar">
 
-          {/* Controls: Template Selectors */}
+          {/* Controls: Template Selectors (Headless UI) */}
           {!isPreview && (
             <div className="space-y-4 mb-6">
-              {mode === "invite" ? (
-                <div className="space-y-1">
+              
+              {/* INVITE TEMPLATE SELECTOR */}
+              {mode === "invite" && (
+                <div className="space-y-2">
                   <label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Invite Template</label>
-                  <select
-                    value={inviteTemplate}
-                    onChange={(e) => setInviteTemplate(e.target.value as InviteTemplate)}
-                    className="w-full bg-neutral-900 border border-gray-800 text-white p-2 text-sm focus:border-[#45CC2D] outline-none"
-                  >
-                    <option value="default">Standard Invite (Area 51)</option>
-                    <option value="friendly">Friendly Reminder</option>
-                  </select>
+                  <div className="relative">
+                    <Listbox value={inviteTemplate} onChange={setInviteTemplate}>
+                      <ListboxButton className="relative w-full cursor-default rounded border border-[#45CC2D] bg-black py-2 pl-3 pr-10 text-left text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#45CC2D] transition-all">
+                        <span className="block truncate">
+                          {INVITE_OPTIONS.find(o => o.id === inviteTemplate)?.label}
+                        </span>
+                        <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                          <ChevronUpDownIcon className="h-4 w-4 text-gray-500" aria-hidden="true" />
+                        </span>
+                      </ListboxButton>
+                      <ListboxOptions className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md bg-[#0a0a0a] border border-[#45CC2D] py-1 shadow-2xl focus:outline-none">
+                        {INVITE_OPTIONS.map((option) => (
+                          <ListboxOption
+                            key={option.id}
+                            value={option.id}
+                            className={({ active }) => `
+                              relative cursor-default select-none py-2 pl-10 pr-4 text-sm transition-colors
+                              ${active ? 'bg-[#45CC2D] text-black' : 'text-gray-300'}
+                            `}
+                          >
+                            {({ selected }) => (
+                              <>
+                                <span className={`block truncate ${selected ? 'font-bold' : 'font-normal'}`}>
+                                  {option.label}
+                                </span>
+                                {selected && (
+                                  <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                                    <CheckIcon className="h-4 w-4" aria-hidden="true" />
+                                  </span>
+                                )}
+                              </>
+                            )}
+                          </ListboxOption>
+                        ))}
+                      </ListboxOptions>
+                    </Listbox>
+                  </div>
                 </div>
-              ) : (
-                <div className="space-y-1">
+              )}
+
+              {/* NUDGE STYLE SELECTOR */}
+              {mode === "nudge" && (
+                <div className="space-y-2">
                   <label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Nudge Style</label>
-                  <select
-                    value={nudgeStyle}
-                    onChange={(e) => setNudgeStyle(e.target.value as NudgeStyle)}
-                    className="w-full bg-neutral-900 border border-gray-800 text-white p-2 text-sm focus:border-[#45CC2D] outline-none"
-                  >
-                    <option value="area51">Area 51 Transmission (Templated)</option>
-                    <option value="custom">Custom HTML (Raw)</option>
-                  </select>
+                  <div className="relative">
+                    <Listbox value={nudgeStyle} onChange={setNudgeStyle}>
+                      <ListboxButton className="relative w-full cursor-default rounded border border-[#45CC2D] bg-black py-2 pl-3 pr-10 text-left text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#45CC2D] transition-all">
+                        <span className="block truncate">
+                          {NUDGE_OPTIONS.find(o => o.id === nudgeStyle)?.label}
+                        </span>
+                        <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                          <ChevronUpDownIcon className="h-4 w-4 text-gray-500" aria-hidden="true" />
+                        </span>
+                      </ListboxButton>
+                      <ListboxOptions className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md bg-[#0a0a0a] border border-[#45CC2D] py-1 shadow-2xl focus:outline-none">
+                        {NUDGE_OPTIONS.map((option) => (
+                          <ListboxOption
+                            key={option.id}
+                            value={option.id}
+                            className={({ active }) => `
+                              relative cursor-default select-none py-2 pl-10 pr-4 text-sm transition-colors
+                              ${active ? 'bg-[#45CC2D] text-black' : 'text-gray-300'}
+                            `}
+                          >
+                            {({ selected }) => (
+                              <>
+                                <span className={`block truncate ${selected ? 'font-bold' : 'font-normal'}`}>
+                                  {option.label}
+                                </span>
+                                {selected && (
+                                  <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                                    <CheckIcon className="h-4 w-4" aria-hidden="true" />
+                                  </span>
+                                )}
+                              </>
+                            )}
+                          </ListboxOption>
+                        ))}
+                      </ListboxOptions>
+                    </Listbox>
+                  </div>
                 </div>
               )}
             </div>
