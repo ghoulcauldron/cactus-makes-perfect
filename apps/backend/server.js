@@ -520,7 +520,7 @@ app.post("/api/v1/auth/verify", async (req, res) => {
 
     await supabase
       .from("invite_tokens")
-      .update({ used_at: new Date().toISOString(), delivery_status: "responded" })
+      .update({ delivery_status: "responded" })
       .eq("token", token);
 
     const jwt = await issueJWT({ guest_id: invite.guest.id, email: invite.guest.email });
