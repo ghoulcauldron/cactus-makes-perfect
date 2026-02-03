@@ -3,10 +3,12 @@ import React from "react";
 export default function AddGuestSuccessModal({
   created,
   existing,
+  invitesAttempted,
   onClose,
 }: {
   created: number;
   existing: number;
+  invitesAttempted: boolean;
   onClose: () => void;
 }) {
   return (
@@ -29,8 +31,16 @@ export default function AddGuestSuccessModal({
           {existing > 0 && (
             <p className="text-gray-400">
               <span className="font-bold">{existing}</span>{" "}
-              {existing === 1 ? "guest already existed" : "guests already existed"} and
-              were left unchanged.
+              {existing === 1
+                ? "guest already existed"
+                : "guests already existed"}{" "}
+              and were left unchanged.
+            </p>
+          )}
+
+          {invitesAttempted && (
+            <p className="text-[#45CC2D] text-xs uppercase font-bold tracking-wide pt-2">
+              ✓ Invites sent
             </p>
           )}
         </div>

@@ -500,15 +500,16 @@ export default function AdminDashboard() {
       )}
 
       {showAddSuccessModal && addSummary ? (
-        <AddGuestSuccessModal
-          created={addSummary.created}
-          existing={addSummary.existing}
-          onClose={() => {
-            setShowAddSuccessModal(false);
-            setAddSummary(null);
-          }}
-        />
-      ) : null}
+      <AddGuestSuccessModal
+        created={addSummary.created}
+        existing={addSummary.existing}
+        invitesAttempted={addSummary.invitesAttempted}
+        onClose={() => {
+          setShowAddSuccessModal(false);
+          setAddSummary(null);
+        }}
+      />
+    ) : null}
     </>
   );
 }
