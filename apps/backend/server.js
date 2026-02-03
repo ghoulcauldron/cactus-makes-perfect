@@ -312,21 +312,88 @@ app.post("/api/v1/admin/invites/send", async (req, res) => {
 
     const inviteUrl = `${PUBLIC_URL}/invite?token=${encodeURIComponent(token)}`;
 
-    // 3. Template rendering
-    let subject = "You're Invited! 🌵";
-    let html = `<p>Hello ${guest.first_name || ""},</p>
-      <p>Your entry code: <b>${code}</b></p>
-      <p>Or click to continue: <a href="${inviteUrl}">${inviteUrl}</a></p>`;
-    let text = `Hello ${guest.first_name || ""}\nCode: ${code}\nLink: ${inviteUrl}`;
+    // --- 3. Template rendering (Area 51 Style) ---
+    
+    // Styles for email (inline is safest)
+    const styles = {
+      container: "background-color: #000000; color: #45CC2D; font-family: 'Courier New', Courier, monospace; padding: 40px 20px; text-align: center;",
+      card: "max-width: 600px; margin: 0 auto; border: 2px solid #45CC2D; background-color: #0a0a0a; text-align: left;",
+      header: "background-color: #45CC2D; color: #000000; padding: 10px 20px; font-weight: bold; text-transform: uppercase; font-size: 14px; letter-spacing: 2px;",
+      body: "padding: 30px; font-size: 14px; line-height: 1.6;",
+      codeBox: "border: 1px dashed #45CC2D; padding: 15px; margin: 20px 0; text-align: center; color: #ffffff; font-size: 18px; letter-spacing: 3px;",
+      button: "display: block; width: fit-content; margin: 30px auto 0; background-color: #45CC2D; color: #000000; text-decoration: none; padding: 12px 24px; font-weight: bold; text-transform: uppercase; font-size: 14px; border: 1px solid #45CC2D;",
+      footer: "border-top: 1px solid #45CC2D; padding: 10px 20px; font-size: 10px; text-transform: uppercase; color: #45CC2D; opacity: 0.7;"
+    };
 
-    if (template === "friendly") {
-      subject = "Invite 🌵 — Santa Fe Anniversary";
-      html = `<p>Hi ${guest.first_name || ""}!</p>
-        <p>Your entry code: <b>${code}</b></p>
-        <p>Continue here: <a href="${inviteUrl}">${inviteUrl}</a></p>
-        <p>See you soon ❤️</p>`;
-      text = `Hi ${guest.first_name || ""}!\nCode: ${code}\nLink: ${inviteUrl}\nSee you soon.`;
-    }
+    let subject = "INCOMING TRANSMISSION: S&G Wedding 🌵";
+    
+    let html = `
+      <div style="${styles.container}">
+        <div style="${styles.card}">
+          <div style="${styles.header}">
+            /// INCOMING TRANSMISSION ///
+          </div>
+          
+          <div style="${styles.body}">
+            <p style="margin-bottom: 16px;"><strong>EARTH DWELLERS.</strong></p>
+            
+            <p style="margin-bottom: 16px;">
+              It would be our greatest pleasure if you would join us to celebrate a nuptial milestone.
+            </p>
+            
+            <p style="margin-bottom: 16px;">
+              The link below will be your portal to the next galaxy. 
+              Please activate the link and enter your code, followed by the = sign.
+            </p>
+
+            <div style="${styles.codeBox}">
+              CODE: ${code}
+            </div>
+
+            <p style="margin-bottom: 16px;">
+              Kindly let us know if you can come by February 15th, 2026 so we can start crunching the numbers and make sure it all adds up perfectly.
+            </p>
+
+            <p style="margin-top: 30px; margin-bottom: 0;">
+              We can’t wait to see you there xx.
+            </p>
+            
+            <p style="margin-top: 10px;">
+              BIG LOVE,<br/>
+              S&G
+            </p>
+
+            <a href="${inviteUrl}" style="${styles.button}">
+              ACTIVATE PORTAL
+            </a>
+          </div>
+          
+           <div style="${styles.footer}">
+            SECURE LINE: ENCRYPTED // ID: ${guest_id.split('-')[0]}
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Plain text fallback
+    let text = `
+EARTH DWELLERS.
+
+It would be our greatest pleasure if you would join us to celebrate a nuptial milestone.
+
+The link below will be your portal to the next galaxy. 
+Please activate the link and enter your code.
+
+YOUR CODE: ${code}
+PORTAL LINK: ${inviteUrl}
+
+Kindly let us know if you can come by February 15th, 2026 so we can start crunching the numbers and make sure it all adds up perfectly.
+
+We can’t wait to see you there xx.
+
+BIG LOVE,
+S&G
+    `.trim();
 
     // 4. Send email
     await sendEmail({
