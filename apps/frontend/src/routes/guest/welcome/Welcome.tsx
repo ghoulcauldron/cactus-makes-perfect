@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
-import RSVPModal from "../modals/RSVPModal";
 import { useState } from "react";
+import RSVPModal from "../modals/RSVPModal";
+import InfoModal from "../modals/InfoModal"; // <-- New Import
 
 // --- REUSABLE GRAPHIC BUTTON COMPONENT ---
 function GraphicButton({ 
@@ -40,7 +41,7 @@ export default function Welcome() {
 
   const [isRSVPModalOpen, setRSVPModalOpen] = useState(false);
   const [isEventInfoModalOpen, setEventInfoModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"schedule" | "faqs">("schedule");
+  // Removed activeTab state as it is no longer needed in Welcome.tsx
 
   // --- ASSETS: SCENE LAYERS ---
   const imgBackground  = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0004_background.png";
@@ -132,7 +133,6 @@ export default function Welcome() {
 
       {/* MODALS */}
       {isRSVPModalOpen && (
-        // WRAPPER FIX: Wrapped in z-[200] to ensure it sits on top of z-[80] buttons
         <div className="relative z-[200]">
           <RSVPModal
             isOpen={isRSVPModalOpen}
@@ -142,53 +142,11 @@ export default function Welcome() {
       )}
 
       {isEventInfoModalOpen && (
-        // Changed from z-[100] to z-[200] to be safe
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[200] p-4">
-          <div className="bg-white rounded-lg max-w-3xl w-full p-6 relative shadow-2xl">
-            <button
-              onClick={() => setEventInfoModalOpen(false)}
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl font-bold transition"
-              aria-label="Close modal"
-            >
-              &times;
-            </button>
-            <div className="mb-4 border-b border-gray-300 flex space-x-4">
-              <button
-                onClick={() => setActiveTab("schedule")}
-                className={`py-2 px-4 font-semibold border-b-2 transition ${
-                  activeTab === "schedule"
-                    ? "border-sunset text-sunset"
-                    : "border-transparent text-gray-600 hover:text-gray-900"
-                }`}
-              >
-                Schedule
-              </button>
-              <button
-                onClick={() => setActiveTab("faqs")}
-                className={`py-2 px-4 font-semibold border-b-2 transition ${
-                  activeTab === "faqs"
-                    ? "border-sunset text-sunset"
-                    : "border-transparent text-gray-600 hover:text-gray-900"
-                }`}
-              >
-                FAQs
-              </button>
-            </div>
-            <div className="overflow-y-auto max-h-[60vh]">
-              {activeTab === "schedule" && (
-                <div>
-                  <h2 className="text-2xl font-bold mb-4 text-cactus-green">Event Schedule</h2>
-                  <p className="mb-2 text-gray-700">Details about the event schedule will go here.</p>
-                </div>
-              )}
-              {activeTab === "faqs" && (
-                <div>
-                  <h2 className="text-2xl font-bold mb-4 text-sunset">Frequently Asked Questions</h2>
-                  <p className="mb-2 text-gray-700">Answers to common questions will go here.</p>
-                </div>
-              )}
-            </div>
-          </div>
+        <div className="relative z-[200]">
+          <InfoModal 
+            isOpen={isEventInfoModalOpen}
+            onClose={() => setEventInfoModalOpen(false)}
+          />
         </div>
       )}
     </div>
