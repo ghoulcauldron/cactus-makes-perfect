@@ -1,12 +1,12 @@
 import React from "react";
 
 export default function AddGuestSuccessModal({
-  count,
-  invitesSent,
+  created,
+  existing,
   onClose,
 }: {
-  count: number;
-  invitesSent: boolean;
+  created: number;
+  existing: number;
   onClose: () => void;
 }) {
   return (
@@ -22,13 +22,15 @@ export default function AddGuestSuccessModal({
         {/* Body */}
         <div className="px-5 py-4 space-y-3 text-sm">
           <p>
-            <span className="font-bold">{count}</span>{" "}
-            {count === 1 ? "guest has" : "guests have"} been successfully added.
+            <span className="font-bold">{created}</span>{" "}
+            {created === 1 ? "guest was" : "guests were"} created.
           </p>
 
-          {invitesSent && (
-            <p className="text-[#45CC2D]">
-              Invitations were sent automatically.
+          {existing > 0 && (
+            <p className="text-gray-400">
+              <span className="font-bold">{existing}</span>{" "}
+              {existing === 1 ? "guest already existed" : "guests already existed"} and
+              were left unchanged.
             </p>
           )}
         </div>

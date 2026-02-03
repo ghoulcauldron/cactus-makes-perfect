@@ -26,8 +26,9 @@ export default function AdminDashboard() {
   const [showAddGuestModal, setShowAddGuestModal] = useState(false);
   const [showAddSuccessModal, setShowAddSuccessModal] = useState(false);
   const [addSummary, setAddSummary] = useState<{
-    count: number;
-    invitesSent: boolean;
+    created: number;
+    existing: number;
+    invitesAttempted: boolean;
   } | null>(null);
 
   async function refreshGuests() {
@@ -94,7 +95,10 @@ export default function AdminDashboard() {
       subscribed: boolean;
     }
   ) {
-    // Optimistic insert
+    let createdCount = 0;
+    let existingCount = 0;
+
+    // ---- 1. Optimistic insert (unchanged) ----
     const optimisticRows = guestsToAdd.map((g) => ({
       id: `optimistic-${Math.random()}`,
       email: g.email,
@@ -109,29 +113,49 @@ export default function AdminDashboard() {
 
     setGuests((prev) => [...optimisticRows, ...prev]);
 
+    // ---- 2. Canonical create loop ----
     for (const guest of guestsToAdd) {
-      const created = await createAdminGuest({
-        email: guest.email,
-        first_name: guest.first_name,
-        last_name: guest.last_name,
-        phone: guest.phone,
-        group_label: guest.group_label,
-        subscribed: options.subscribed,
-      });
+      try {
+        const created = await createAdminGuest({
+          email: guest.email,
+          first_name: guest.first_name,
+          last_name: guest.last_name,
+          group_label: guest.group_label,
+        });
 
-      if (options.sendInvite) {
-        await sendAdminInvite(created.id, options.inviteTemplate);
+        createdCount++;
+
+        if (options.sendInvite) {
+          await sendAdminInvite(created.id, options.inviteTemplate);
+        }
+      } catch (err: any) {
+        // ---- 409: Guest already exists ----
+        if (err?.message?.includes("409")) {
+          existingCount++;
+          // IMPORTANT: Do NOT send/resend invites for existing guests as a side-effect of CSV import.
+          // Resends must be explicit admin actions (GuestSidebar / BulkActions).
+          continue;
+        }
+
+        // ---- Real error → stop batch ----
+        console.error("Add guest failed:", err);
+        throw err;
       }
     }
 
+    // ---- 3. Reconcile UI with truth ----
     await refreshGuests();
 
+    // ---- 4. Close modal ----
     setShowAddGuestModal(false);
 
+    // ---- 5. Success summary ----
     setAddSummary({
-      count: guestsToAdd.length,
-      invitesSent: options.sendInvite,
+      created: createdCount,
+      existing: existingCount,
+      invitesAttempted: options.sendInvite,
     });
+
     setShowAddSuccessModal(true);
   }
 
@@ -477,8 +501,8 @@ export default function AdminDashboard() {
 
       {showAddSuccessModal && addSummary ? (
         <AddGuestSuccessModal
-          count={addSummary.count}
-          invitesSent={addSummary.invitesSent}
+          created={addSummary.created}
+          existing={addSummary.existing}
           onClose={() => {
             setShowAddSuccessModal(false);
             setAddSummary(null);
