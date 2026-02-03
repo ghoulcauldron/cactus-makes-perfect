@@ -61,7 +61,7 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
                   (Uber/Shuttle required for final leg).
                 </p>
                 <p className="text-xs italic opacity-70">
-                  ** TACTICAL ADVICE: Refuel at "Duran's Pharmacy" before departure.
+                  ** TACTICAL ADVICE: Refuel at "Duran's Pharmacy" before departure from ABQ.
                 </p>
               </div>
             </div>
