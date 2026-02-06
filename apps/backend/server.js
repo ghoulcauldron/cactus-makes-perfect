@@ -311,6 +311,7 @@ app.post("/api/v1/admin/invites/send", async (req, res) => {
     const { token, code, expires_at } = tokenRow;
 
     const inviteUrl = `${PUBLIC_URL}/invite?token=${encodeURIComponent(token)}`;
+    const subject = "📂 PROJECT: CACTUS MAKES PERFECT (Operation 20 Year Dare)";
 
     // --- 3. Template rendering (Refined Area 51 Style) ---
     
@@ -323,61 +324,104 @@ app.post("/api/v1/admin/invites/send", async (req, res) => {
       button: "display: block; width: fit-content; margin: 30px auto 0; background-color: #45CC2D; color: #000000; text-decoration: none; padding: 12px 24px; font-weight: bold; text-transform: uppercase; font-size: 14px; border: 1px solid #45CC2D;",
       footer: "border-top: 1px solid #45CC2D; padding: 10px 20px; font-size: 10px; text-transform: uppercase; color: #45CC2D; opacity: 0.7;"
     };
-
-    let subject = "INCOMING TRANSMISSION: S&G 🌵";
     
+    // HARDENED EMAIL TEMPLATE (Table-based layout)
     let html = `
-      <div style="${styles.container}">
-        <div style="${styles.card}">
-          <div style="${styles.header}">
-            /// INCOMING TRANSMISSION ///
-          </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
+  <meta name="supported-color-schemes" content="dark">
+  <style>
+    /* Resets for email clients */
+    body { margin: 0; padding: 0; width: 100% !important; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+    table { border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    img { border: 0; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic; }
+  </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #000000; color: #45CC2D; font-family: 'Courier New', Courier, monospace;">
+  
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#000000" style="background-color: #000000; width: 100%;" role="presentation">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        
+        <table width="600" border="0" cellpadding="0" cellspacing="0" bgcolor="#0a0a0a" style="max-width: 600px; width: 100%; background-color: #0a0a0a; border: 2px solid #45CC2D; text-align: left;" role="presentation">
           
-          <div style="${styles.body}">
-            <p style="margin-bottom: 16px; font-weight: bold;">
-              IN THE YEAR 2006, CONTACT WAS MADE.<br/>
-              TWO TRAJECTORIES ALIGNED.
-            </p>
+          <tr>
+            <td bgcolor="#45CC2D" style="background-color: #45CC2D; color: #000000; padding: 10px 20px; font-weight: bold; font-family: 'Courier New', Courier, monospace; text-transform: uppercase; font-size: 14px; letter-spacing: 2px;">
+              /// INCOMING TRANSMISSION ///
+            </td>
+          </tr>
 
-            <p style="margin-bottom: 16px;"><strong>EARTH DWELLERS.</strong></p>
-            
-            <p style="margin-bottom: 16px;">
-              It would be our greatest pleasure if you would join us to witness this next phase of our evolution.
-            </p>
-            
-            <p style="margin-bottom: 16px;">
-              The link below is your portal to the next galaxy. 
-              Activate the link and input your clearance code to proceed.
-            </p>
+          <tr>
+            <td style="padding: 30px; font-family: 'Courier New', Courier, monospace; font-size: 14px; line-height: 1.6; color: #45CC2D;">
+              
+              <p style="margin: 0 0 16px 0; font-weight: bold; color: #45CC2D;">
+                IN THE YEAR 2006, CONTACT WAS MADE.<br/>
+                TWO TRAJECTORIES ALIGNED.
+              </p>
 
-            <div style="${styles.codeBox}">
-              CODE: ${code}
-            </div>
+              <p style="margin: 0 0 16px 0; color: #45CC2D;"><strong>EARTH DWELLERS.</strong></p>
+              
+              <p style="margin: 0 0 16px 0; color: #45CC2D;">
+                It would be our greatest pleasure if you would join us to witness this next phase of our evolution.
+              </p>
+              
+              <p style="margin: 0 0 16px 0; color: #45CC2D;">
+                The link below is your portal to the next galaxy. 
+                Activate the link and input your clearance code to proceed.
+              </p>
 
-            <p style="margin-bottom: 16px;">
-              <strong>DIRECTIVE:</strong> Confirm your coordinates by February 15th, 2026. 
-              Precise data is required for resource allocation and system calibration.
-            </p>
+              <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" role="presentation">
+                <tr>
+                  <td align="center" style="border: 1px dashed #45CC2D; padding: 15px; color: #ffffff; font-size: 18px; letter-spacing: 3px; font-family: 'Courier New', Courier, monospace;">
+                    CODE: ${code}
+                  </td>
+                </tr>
+              </table>
 
-            <p style="margin-top: 30px; margin-bottom: 0;">
-              Awaiting your signal.
-            </p>
-            
-            <p style="margin-top: 10px;">
-              BIG LOVE,<br/>
-              S&G
-            </p>
+              <p style="margin: 0 0 16px 0; color: #45CC2D;">
+                <strong>DIRECTIVE:</strong> Confirm your coordinates by February 15th, 2026. 
+                Precise data is required for resource allocation and system calibration.
+              </p>
 
-            <a href="${inviteUrl}" style="${styles.button}">
-              ACTIVATE PORTAL
-            </a>
-          </div>
+              <p style="margin: 30px 0 0 0; color: #45CC2D;">
+                Awaiting your signal.
+              </p>
+              
+              <p style="margin: 10px 0 0 0; color: #45CC2D;">
+                BIG LOVE,<br/>
+                S&G
+              </p>
+
+              <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin-top: 30px;" role="presentation">
+                <tr>
+                  <td align="center">
+                    <a href="${inviteUrl}" style="background-color: #45CC2D; color: #000000; text-decoration: none; padding: 12px 24px; font-weight: bold; text-transform: uppercase; font-size: 14px; border: 1px solid #45CC2D; display: inline-block; font-family: 'Courier New', Courier, monospace;">
+                      ACTIVATE PORTAL
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
           
-           <div style="${styles.footer}">
-            SECURE LINE: ENCRYPTED // ID: ${guest_id.split('-')[0]}
-          </div>
-        </div>
-      </div>
+          <tr>
+            <td style="border-top: 1px solid #45CC2D; padding: 10px 20px; font-size: 10px; text-transform: uppercase; color: #45CC2D; opacity: 0.7; font-family: 'Courier New', Courier, monospace;">
+              SECURE LINE: ENCRYPTED // ID: ${guest_id.split('-')[0]}<br/>
+              EYES ONLY. DO NOT REPLY.
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
     `;
 
     // Plain text fallback

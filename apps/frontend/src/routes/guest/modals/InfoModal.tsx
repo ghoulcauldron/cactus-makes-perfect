@@ -57,11 +57,11 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
               <div>
                 <strong className="block text-xs uppercase mb-1"> Ground Transport:</strong>
                 <p className="opacity-90 mb-2">
-                  Secure a rental unit or proceed to the rail station for the <span className="text-white bg-[#45CC2D]/20 px-1 font-bold">$9 RAILRUNNER</span> transport. 
+                  Secure a rental unit or proceed to the rail station for the <span className="text-white bg-[#45CC2D]/20 px-1 font-bold"><a href="https://www.riometro.org/174/Downtown-Albuquerque" target="_blank">$9 RAILRUNNER</a></span> transport. 
                   (Uber/Shuttle required for final leg).
                 </p>
                 <p className="text-xs italic opacity-70">
-                  ** TACTICAL ADVICE: Refuel at "Duran's Pharmacy" before departure from ABQ.
+                  ** TACTICAL ADVICE: Refuel at <a href="https://duransrx.com/" target="_blank" className="underline">Duran's Pharmacy</a> before departure from ABQ.
                 </p>
               </div>
             </div>
@@ -84,7 +84,7 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
               {/* Route B */}
               <div className="border border-[#45CC2D]/40 p-3 hover:bg-[#45CC2D]/5 transition-colors">
                  <h4 className="font-bold text-xs uppercase text-white mb-1">Route Beta (Scenic)</h4>
-                <p className="text-xs opacity-80">Via The Turquoise Trail (Madrid).</p>
+                <p className="text-xs opacity-80"><a href="https://www.turquoisetrail.org/stops/category/madrid/" target="_blank" className="underline">Via The Turquoise Trail (Madrid)</a>.</p>
                 <p className="text-xs opacity-60 mt-1">
                   Warning: Distractions include desert artifacts, crystals, and rogue performers.
                 </p>
