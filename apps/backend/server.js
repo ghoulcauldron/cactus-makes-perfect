@@ -311,7 +311,7 @@ app.post("/api/v1/admin/invites/send", async (req, res) => {
     const { token, code, expires_at } = tokenRow;
 
     const inviteUrl = `${PUBLIC_URL}/invite?token=${encodeURIComponent(token)}`;
-    const subject = "📂 PROJECT: CACTUS MAKES PERFECT (Operation 20 Year Dare)";
+    const subject = "🌵 PROJECT: CACTUS MAKES PERFECT (Operation: 20 Year Dare) 🌵";
 
     // --- 3. Template rendering (HARDENED: Table Shell + Gradient Hack) ---
     
@@ -374,7 +374,7 @@ app.post("/api/v1/admin/invites/send", async (req, res) => {
 
               <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" role="presentation">
                 <tr>
-                  <td align="center" style="border: 1px dashed #45CC2D; background-color: #000000; background-image: linear-gradient(#000000, #000000); padding: 15px; color: #ffffff; font-size: 18px; letter-spacing: 3px; font-family: 'Courier New', Courier, monospace;">
+                  <td align="center" style="border: 1px dashed #45CC2D; background-color: #000000; background-image: linear-gradient(#000000, #000000); padding: 15px; color: #45CC2D; font-weight: bold; font-size: 18px; letter-spacing: 3px; font-family: 'Courier New', Courier, monospace;">
                     CODE: ${code}
                   </td>
                 </tr>
