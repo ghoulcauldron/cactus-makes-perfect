@@ -8,15 +8,18 @@ export function renderInviteTemplate(
   htmlOverride?: string,
   textOverride?: string
 ) {
-  if (htmlOverride?.trim()) return htmlOverride;
+  // If admin pasted custom HTML, preview that verbatim
+  if (htmlOverride?.trim()) {
+    return htmlOverride;
+  }
 
   const previewCode = "123456";
   const previewLink = "#";
 
-  // We return the Full Table Structure now
+  // --- HARDENED PREVIEW (Matches Backend Gradient Hack) ---
   return `
-    <div style="background-color: #000000; padding: 20px;">
-      <table width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#000000" style="background-color: #000000; width: 100%; color: #45CC2D; font-family: 'Courier New', Courier, monospace;">
+    <div style="background-color: #000000; background-image: linear-gradient(#000000, #000000); padding: 20px;">
+      <table width="100%" border="0" cellpadding="0" cellspacing="0" style="background-color: #000000; background-image: linear-gradient(#000000, #000000); width: 100%; color: #45CC2D; font-family: 'Courier New', Courier, monospace;">
         <tr>
           <td align="center" style="padding: 20px;">
             

@@ -313,37 +313,29 @@ app.post("/api/v1/admin/invites/send", async (req, res) => {
     const inviteUrl = `${PUBLIC_URL}/invite?token=${encodeURIComponent(token)}`;
     const subject = "📂 PROJECT: CACTUS MAKES PERFECT (Operation 20 Year Dare)";
 
-    // --- 3. Template rendering (Refined Area 51 Style) ---
+    // --- 3. Template rendering (HARDENED: Table Shell + Gradient Hack) ---
     
-    const styles = {
-      container: "background-color: #000000; color: #45CC2D; font-family: 'Courier New', Courier, monospace; padding: 40px 20px; text-align: center;",
-      card: "max-width: 600px; margin: 0 auto; border: 2px solid #45CC2D; background-color: #0a0a0a; text-align: left;",
-      header: "background-color: #45CC2D; color: #000000; padding: 10px 20px; font-weight: bold; text-transform: uppercase; font-size: 14px; letter-spacing: 2px;",
-      body: "padding: 30px; font-size: 14px; line-height: 1.6;",
-      codeBox: "border: 1px dashed #45CC2D; padding: 15px; margin: 20px 0; text-align: center; color: #ffffff; font-size: 18px; letter-spacing: 3px;",
-      button: "display: block; width: fit-content; margin: 30px auto 0; background-color: #45CC2D; color: #000000; text-decoration: none; padding: 12px 24px; font-weight: bold; text-transform: uppercase; font-size: 14px; border: 1px solid #45CC2D;",
-      footer: "border-top: 1px solid #45CC2D; padding: 10px 20px; font-size: 10px; text-transform: uppercase; color: #45CC2D; opacity: 0.7;"
-    };
-    
-    // HARDENED EMAIL TEMPLATE (Table-based layout)
     let html = `
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="color-scheme" content="dark">
-  <meta name="supported-color-schemes" content="dark">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
   <style>
-    /* Resets for email clients */
-    body { margin: 0; padding: 0; width: 100% !important; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
-    table { border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
-    img { border: 0; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic; }
+    :root { color-scheme: light dark; supported-color-schemes: light dark; }
+    body { margin: 0; padding: 0; width: 100% !important; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; background-color: #000000 !important; }
+    /* THE HACK: Force black background via gradient for stubborn iOS */
+    .force-black-bg {
+      background-color: #000000 !important;
+      background-image: linear-gradient(#000000, #000000) !important;
+    }
   </style>
 </head>
-<body style="margin: 0; padding: 0; background-color: #000000; color: #45CC2D; font-family: 'Courier New', Courier, monospace;">
+<body class="force-black-bg" style="margin: 0; padding: 0; background-color: #000000; background-image: linear-gradient(#000000, #000000); color: #45CC2D; font-family: 'Courier New', Courier, monospace;">
   
-  <table width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#000000" style="background-color: #000000; width: 100%;" role="presentation">
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" class="force-black-bg" style="background-color: #000000; background-image: linear-gradient(#000000, #000000); width: 100%;">
     <tr>
       <td align="center" style="padding: 40px 20px;">
         
