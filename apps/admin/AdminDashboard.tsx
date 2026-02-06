@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react"; // Added useMemo
 import { fetchAdminGuests } from "./api/client";
 import GuestSidebar from "./GuestSidebar";
 import BulkActions from "./BulkActions";
 import { useSelection } from "./hooks/useSelection";
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/react';
-import { ChevronUpDownIcon, CheckIcon } from '@heroicons/react/20/solid';
+import { ChevronUpDownIcon, CheckIcon, ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/20/solid'; // Added Up/Down Icons
 import AddGuestModal from "./components/AddGuestModal";
 import AddGuestSuccessModal from "./components/AddGuestSuccessModal";
 import { createAdminGuest, sendAdminInvite } from "./api/client";
@@ -14,6 +14,10 @@ function canonicalizeGroupLabel(label: string | null | undefined): string {
   const cleaned = label.trim().toLowerCase().replace(/\s+/g, "-");
   return cleaned;
 }
+
+// 1. Define Sort Types
+type SortField = "name" | "group" | "rsvp" | null;
+type SortDirection = "asc" | "desc";
 
 export default function AdminDashboard() {
   const [guests, setGuests] = useState<any[]>([]);
@@ -31,6 +35,10 @@ export default function AdminDashboard() {
     invitesAttempted: boolean;
   } | null>(null);
 
+  // 2. Add Sort State
+  const [sortField, setSortField] = useState<SortField>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+
   async function refreshGuests() {
     setLoading(true);
     const data = await fetchAdminGuests();
@@ -42,20 +50,69 @@ export default function AdminDashboard() {
     refreshGuests();
   }, []);
 
-  const filteredGuests = guests.filter((g) => {
-    if (filter === "responded") return g.rsvps?.status;
-    if (filter === "not_responded") return !g.rsvps?.status;
-    if (filter === "group") {
-      return canonicalizeGroupLabel(g.group_label) === selectedGroup;
-    }
-    return true;
-  });
+  const filteredGuests = useMemo(() => {
+    return guests.filter((g) => {
+      if (filter === "responded") return g.rsvps?.status;
+      if (filter === "not_responded") return !g.rsvps?.status;
+      if (filter === "group") {
+        return canonicalizeGroupLabel(g.group_label) === selectedGroup;
+      }
+      return true;
+    });
+  }, [guests, filter, selectedGroup]);
 
+  // 3. Apply Sorting Logic
+  const sortedGuests = useMemo(() => {
+    if (!sortField) return filteredGuests;
+
+    return [...filteredGuests].sort((a, b) => {
+      let valA = "";
+      let valB = "";
+
+      switch (sortField) {
+        case "name":
+          // Sort by Last Name, then First Name
+          valA = `${a.last_name} ${a.first_name}`.toLowerCase();
+          valB = `${b.last_name} ${b.first_name}`.toLowerCase();
+          break;
+        case "group":
+          valA = (a.group_label || "").toLowerCase();
+          valB = (b.group_label || "").toLowerCase();
+          break;
+        case "rsvp":
+          valA = (a.rsvps?.status || "").toLowerCase();
+          valB = (b.rsvps?.status || "").toLowerCase();
+          break;
+      }
+
+      if (valA < valB) return sortDirection === "asc" ? -1 : 1;
+      if (valA > valB) return sortDirection === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [filteredGuests, sortField, sortDirection]);
+
+  // 4. Update Selection Hook to use sortedGuests (so Shift+Click works visually)
   const selection = useSelection({
-    items: filteredGuests,
+    items: sortedGuests,
     getGroupId: (g) => canonicalizeGroupLabel(g.group_label),
   });
   const currentGroup = filter === "group" ? selectedGroup : null;
+
+  // 5. Sort Handler Helper
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(prev => prev === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  // 6. Header Icon Helper
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) return <ChevronUpDownIcon className="h-4 w-4 opacity-30" />;
+    return sortDirection === "asc" ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />;
+  };
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -66,7 +123,8 @@ export default function AdminDashboard() {
 
       if (e.key === "a" || e.key === "A") {
         e.preventDefault();
-        const ids = filteredGuests.map((g) => g.id);
+        // Use sortedGuests for Select All logic
+        const ids = sortedGuests.map((g) => g.id);
         if (!ids.length) return;
         if (selection.isAllSelected(ids)) {
           selection.deselectMany(ids);
@@ -85,7 +143,7 @@ export default function AdminDashboard() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [filteredGuests, selection]);
+  }, [sortedGuests, selection]); // Updated dependency
 
   async function handleAddGuests(
     guestsToAdd: any[],
@@ -98,7 +156,6 @@ export default function AdminDashboard() {
     let createdCount = 0;
     let existingCount = 0;
 
-    // ---- 1. Optimistic insert (unchanged) ----
     const optimisticRows = guestsToAdd.map((g) => ({
       id: `optimistic-${Math.random()}`,
       email: g.email,
@@ -113,7 +170,6 @@ export default function AdminDashboard() {
 
     setGuests((prev) => [...optimisticRows, ...prev]);
 
-    // ---- 2. Canonical create loop ----
     for (const guest of guestsToAdd) {
       try {
         const created = await createAdminGuest({
@@ -129,33 +185,22 @@ export default function AdminDashboard() {
           await sendAdminInvite(created.id, options.inviteTemplate);
         }
       } catch (err: any) {
-        // ---- 409: Guest already exists ----
         if (err?.message?.includes("409")) {
           existingCount++;
-          // IMPORTANT: Do NOT send/resend invites for existing guests as a side-effect of CSV import.
-          // Resends must be explicit admin actions (GuestSidebar / BulkActions).
           continue;
         }
-
-        // ---- Real error → stop batch ----
         console.error("Add guest failed:", err);
         throw err;
       }
     }
 
-    // ---- 3. Reconcile UI with truth ----
     await refreshGuests();
-
-    // ---- 4. Close modal ----
     setShowAddGuestModal(false);
-
-    // ---- 5. Success summary ----
     setAddSummary({
       created: createdCount,
       existing: existingCount,
       invitesAttempted: options.sendInvite,
     });
-
     setShowAddSuccessModal(true);
   }
 
@@ -166,7 +211,7 @@ export default function AdminDashboard() {
   return (
     <>
       <div className="flex flex-col h-screen sm:h-dvh bg-surface text-primary font-mono border-4 border-primary">
-        {/* 1. GLOBAL HEADER (Always Pinned) */}
+        {/* 1. GLOBAL HEADER */}
         <div className="shrink-0 px-3 py-1 border-b border-primary bg-surface uppercase tracking-widest text-sm w-full z-30">
           <div className="flex items-center justify-between w-full">
             <span className="truncate mr-2">CACTUS MAKES PERFECT - AREA 51</span>
@@ -189,8 +234,7 @@ export default function AdminDashboard() {
               selectedGuest ? "hidden lg:flex" : "flex"
             }`}
           >
-            {/* 2. FILTERS & ACTIONS (Pinned) */}
-            {/* This block is outside the overflow-auto div below, so it stays fixed */}
+            {/* 2. FILTERS & ACTIONS */}
             <div className="shrink-0 p-3 sm:p-4 border-b border-primary bg-surface z-20 shadow-sm">
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full lg:w-auto">
@@ -323,7 +367,6 @@ export default function AdminDashboard() {
 
             {/* 3. SCROLLABLE CONTENT (Table Area) */}
             <div className="flex-1 overflow-auto p-3 sm:p-6 z-10">
-              {/* Group Selection Banner (Scrolls with table) */}
               {currentGroup && (
                 <div className="mb-3 flex flex-wrap items-center justify-between border border-primary bg-surface px-3 py-2 gap-2 shadow-md">
                   <div className="flex items-center gap-3">
@@ -332,7 +375,7 @@ export default function AdminDashboard() {
                       className="h-5 w-5 rounded bg-black border-[#45CC2D] text-[#45CC2D] focus:ring-[#45CC2D] focus:ring-offset-black"
                       ref={(el) => {
                         if (!el) return;
-                        const groupIds = filteredGuests.map((g) => g.id);
+                        const groupIds = sortedGuests.map((g) => g.id); // Use sortedGuests
                         const selectedCount = groupIds.filter((id) =>
                           selection.isSelected(id)
                         ).length;
@@ -340,8 +383,8 @@ export default function AdminDashboard() {
                           selectedCount > 0 && selectedCount < groupIds.length;
                       }}
                       checked={
-                        filteredGuests.length > 0 &&
-                        selection.isAllSelected(filteredGuests.map((g) => g.id))
+                        sortedGuests.length > 0 &&
+                        selection.isAllSelected(sortedGuests.map((g) => g.id))
                       }
                       onChange={() => selection.selectAllInGroup(currentGroup)}
                       aria-label={`Select all guests in group ${currentGroup}`}
@@ -349,7 +392,7 @@ export default function AdminDashboard() {
                     <div className="text-sm">
                       <span className="font-semibold">Group:</span>{" "}
                       <span className="font-mono">{currentGroup}</span>{" "}
-                      <span className="text-gray-500">({filteredGuests.length})</span>
+                      <span className="text-gray-500">({sortedGuests.length})</span>
                     </div>
                   </div>
 
@@ -370,25 +413,25 @@ export default function AdminDashboard() {
               <div className="w-full border border-primary">
                 <table className="w-full border-collapse">
                   <thead>
-                    {/* Standard non-sticky row */}
+                    {/* Header Row */}
                     <tr className="text-left border-b border-primary uppercase text-sm">
                       <th className="p-2 w-10">
-                        {filteredGuests.length > 0 && (
+                        {sortedGuests.length > 0 && (
                           <input
                             type="checkbox"
                             className="h-5 w-5 rounded bg-black border-[#45CC2D] text-[#45CC2D] focus:ring-[#45CC2D] focus:ring-offset-black"
                             ref={(el) => {
                               if (!el) return;
-                              const ids = filteredGuests.map((g) => g.id);
+                              const ids = sortedGuests.map((g) => g.id);
                               const selectedCount = ids.filter((id) => selection.isSelected(id)).length;
                               el.indeterminate = selectedCount === ids.length && ids.length > 0;
                             }}
                             checked={
-                              filteredGuests.length > 0 &&
-                              filteredGuests.some((g) => selection.isSelected(g.id))
+                              sortedGuests.length > 0 &&
+                              sortedGuests.some((g) => selection.isSelected(g.id))
                             }
                             onChange={() => {
-                              const ids = filteredGuests.map((g) => g.id);
+                              const ids = sortedGuests.map((g) => g.id);
                               if (selection.isAllSelected(ids)) {
                                 selection.deselectMany(ids);
                               } else {
@@ -399,16 +442,49 @@ export default function AdminDashboard() {
                           />
                         )}
                       </th>
-                      <th className="p-2">Name</th>
+                      
+                      {/* Name Header - Sortable */}
+                      <th 
+                        className="p-2 cursor-pointer hover:bg-primary/20 select-none group"
+                        onClick={() => handleSort("name")}
+                      >
+                        <div className="flex items-center gap-1">
+                          Name
+                          <SortIcon field="name" />
+                        </div>
+                      </th>
+
                       <th className="p-2 hidden md:table-cell">Email</th>
-                      <th className="p-2 hidden md:table-cell">Group</th>
-                      <th className="p-2">RSVP</th>
+
+                      {/* Group Header - Sortable */}
+                      <th 
+                        className="p-2 hidden md:table-cell cursor-pointer hover:bg-primary/20 select-none group"
+                        onClick={() => handleSort("group")}
+                      >
+                        <div className="flex items-center gap-1">
+                          Group
+                          <SortIcon field="group" />
+                        </div>
+                      </th>
+
+                      {/* RSVP Header - Sortable */}
+                      <th 
+                        className="p-2 cursor-pointer hover:bg-primary/20 select-none group"
+                        onClick={() => handleSort("rsvp")}
+                      >
+                        <div className="flex items-center gap-1">
+                          RSVP
+                          <SortIcon field="rsvp" />
+                        </div>
+                      </th>
+
                       <th className="p-2 hidden lg:table-cell">Last Activity</th>
                     </tr>
                   </thead>
 
                   <tbody>
-                    {filteredGuests.map((g) => (
+                    {/* Render sortedGuests instead of filteredGuests */}
+                    {sortedGuests.map((g) => (
                       <tr
                         key={g.id}
                         className={`border-b border-primary cursor-pointer hover:bg-neutral-800 ${
@@ -432,12 +508,10 @@ export default function AdminDashboard() {
                         </td>
 
                         <td className="p-2 align-top sm:align-middle">
-                          {/* Name (Primary) */}
                           <div className="font-bold sm:font-normal">
                             {g.first_name} {g.last_name}
                           </div>
 
-                          {/* Mobile Only: Stacked Details */}
                           <div className="md:hidden flex flex-col gap-0.5 mt-1">
                             <span
                               className={`text-xs truncate max-w-[150px] ${
@@ -460,7 +534,6 @@ export default function AdminDashboard() {
                           </div>
                         </td>
 
-                        {/* Desktop Columns */}
                         <td className="p-2 hidden md:table-cell whitespace-nowrap">
                           {g.email}
                         </td>
