@@ -444,7 +444,7 @@ EARTH DWELLERS.
 It would be our greatest pleasure if you would join us to witness this next phase of our evolution.
 
 The link below is your portal to the next galaxy. 
-Activate the link and input your clearance code to proceed.
+Activate the link, input your clearance code, and press "=" to proceed.
 
 YOUR CODE: ${code}
 PORTAL LINK: ${inviteUrl}
