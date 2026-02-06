@@ -315,6 +315,7 @@ app.post("/api/v1/admin/invites/send", async (req, res) => {
 
     // --- 3. Template rendering (HARDENED: Table Shell + Gradient Hack) ---
     
+    // HARDENED + DEEP GRADIENT HACK TEMPLATE
     let html = `
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
@@ -326,10 +327,15 @@ app.post("/api/v1/admin/invites/send", async (req, res) => {
   <style>
     :root { color-scheme: light dark; supported-color-schemes: light dark; }
     body { margin: 0; padding: 0; width: 100% !important; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; background-color: #000000 !important; }
-    /* THE HACK: Force black background via gradient for stubborn iOS */
+    
+    /* THE HACK: Apply this class to ANYTHING that must stay black/dark */
     .force-black-bg {
       background-color: #000000 !important;
       background-image: linear-gradient(#000000, #000000) !important;
+    }
+    .force-card-bg {
+      background-color: #0a0a0a !important;
+      background-image: linear-gradient(#0a0a0a, #0a0a0a) !important;
     }
   </style>
 </head>
@@ -339,7 +345,7 @@ app.post("/api/v1/admin/invites/send", async (req, res) => {
     <tr>
       <td align="center" style="padding: 40px 20px;">
         
-        <table width="600" border="0" cellpadding="0" cellspacing="0" bgcolor="#0a0a0a" style="max-width: 600px; width: 100%; background-color: #0a0a0a; border: 2px solid #45CC2D; text-align: left;" role="presentation">
+        <table width="600" border="0" cellpadding="0" cellspacing="0" bgcolor="#0a0a0a" class="force-card-bg" style="max-width: 600px; width: 100%; background-color: #0a0a0a; background-image: linear-gradient(#0a0a0a, #0a0a0a); border: 2px solid #45CC2D; text-align: left;" role="presentation">
           
           <tr>
             <td bgcolor="#45CC2D" style="background-color: #45CC2D; color: #000000; padding: 10px 20px; font-weight: bold; font-family: 'Courier New', Courier, monospace; text-transform: uppercase; font-size: 14px; letter-spacing: 2px;">
@@ -368,7 +374,7 @@ app.post("/api/v1/admin/invites/send", async (req, res) => {
 
               <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" role="presentation">
                 <tr>
-                  <td align="center" style="border: 1px dashed #45CC2D; padding: 15px; color: #ffffff; font-size: 18px; letter-spacing: 3px; font-family: 'Courier New', Courier, monospace;">
+                  <td align="center" style="border: 1px dashed #45CC2D; background-color: #000000; background-image: linear-gradient(#000000, #000000); padding: 15px; color: #ffffff; font-size: 18px; letter-spacing: 3px; font-family: 'Courier New', Courier, monospace;">
                     CODE: ${code}
                   </td>
                 </tr>
