@@ -635,6 +635,7 @@ app.get("/api/v1/rsvps/me/:guest_id", async (req, res) => {
     const { guest_id } = req.params;
     if (!guest_id) return res.status(400).json({ error: "Missing guest_id" });
 
+    // Fetch latest RSVP
     const { data, error } = await supabase
       .from("rsvps")
       .select("guest_id,status,submitted_at")
@@ -648,7 +649,22 @@ app.get("/api/v1/rsvps/me/:guest_id", async (req, res) => {
       return res.status(422).json({ error: "Supabase fetch failed", details: error });
     }
 
-    return res.json({ rsvp: data || null });
+    // Fetch latest active invite token for this guest (unused, not expired)
+    const { data: inviteRow, error: inviteErr } = await supabase
+      .from("invite_tokens")
+      .select("expires_at")
+      .eq("guest_id", guest_id)
+      .is("used_at", null)
+      .gt("expires_at", new Date().toISOString())
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    // If inviteRow exists, extract expires_at
+    return res.json({
+      rsvp: data || null,
+      invite: inviteRow ? { expires_at: inviteRow.expires_at } : null,
+    });
   } catch (e) {
     console.error("[RSVP] Unexpected fetch error", e);
     return res.status(500).json({ error: "Internal error" });

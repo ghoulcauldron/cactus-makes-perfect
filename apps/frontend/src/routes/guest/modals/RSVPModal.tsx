@@ -105,11 +105,21 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose }) => {
 
   const formatDeadline = (iso: string) => {
     const d = new Date(iso);
-    return d.toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    }).toUpperCase();
+
+    const day = d.getDate();
+    const month = d.toLocaleString(undefined, { month: "long" });
+    const year = d.getFullYear();
+
+    const suffix =
+      day % 10 === 1 && day !== 11
+        ? "ST"
+        : day % 10 === 2 && day !== 12
+        ? "ND"
+        : day % 10 === 3 && day !== 13
+        ? "RD"
+        : "TH";
+
+    return `${month.toUpperCase()} ${day}${suffix}, ${year}`;
   };
 
   return (
@@ -135,7 +145,7 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose }) => {
               </p>
               {inviteExpiresAt && (
                 <p className="text-[9px] text-[#45CC2D]/60 mt-1 uppercase tracking-widest">
-                  RSVP REQUIRED BY {formatDeadline(inviteExpiresAt)}
+                  RESPOND BY: {formatDeadline(inviteExpiresAt)}
                 </p>
               )}
             </div>
