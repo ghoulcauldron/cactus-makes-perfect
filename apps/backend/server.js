@@ -869,14 +869,17 @@ app.get("/api/v1/admin/guest/:id", requireAdminAuth, async (req, res) => {
 });
 
 // ---- Admin: GET guest activity (normalized) ----
+// apps/backend/server.js
+
+// ---- Admin: GET guest activity (normalized) ----
 app.get("/api/v1/admin/guest/:id/activity", requireAdminAuth, async (req, res) => {
   try {
     const { id } = req.params;
     if (!id) return res.status(400).json({ error: "Missing guest id" });
 
-    const normalized = [];
+    const rawEvents = [];
 
-    // 1. User activity
+    // 1. User Activity (The Real Log)
     const { data: ua } = await supabase
       .from("user_activity")
       .select("*")
@@ -884,37 +887,26 @@ app.get("/api/v1/admin/guest/:id/activity", requireAdminAuth, async (req, res) =
 
     for (const row of ua || []) {
       let kind = row.kind;
+      // Normalize semantics
+      if (kind === "rsvp_submitted") kind = "rsvp_created";
+      if (kind === "invite_resent" || kind === "admin_invite_resent") kind = "invite_sent";
+      if (kind === "auth_success") kind = "invite_used";
 
-      // normalize RSVP semantics
-      if (kind === "rsvp_submitted") {
-        kind = "rsvp_created";
-      }
-
-      // normalize invite resend noise
-      if (kind === "invite_resent" || kind === "admin_invite_resent") {
-        kind = "invite_sent";
-      }
-
-      // normalize auth success as invite used
-      if (kind === "auth_success") {
-        kind = "invite_used";
-      }
-
-      normalized.push({
+      rawEvents.push({
         kind,
         occurred_at: row.created_at,
         meta: row.meta || null
       });
     }
 
-    // 2. Emails log
+    // 2. Emails Log (Telemetry)
     const { data: emails } = await supabase
       .from("emails_log")
       .select("*")
       .eq("guest_id", id);
 
     for (const row of emails || []) {
-      normalized.push({
+      rawEvents.push({
         kind: "email_sent",
         occurred_at: row.sent_at || row.created_at,
         meta: {
@@ -925,52 +917,27 @@ app.get("/api/v1/admin/guest/:id/activity", requireAdminAuth, async (req, res) =
       });
     }
 
-    // 3. RSVPs (detect create vs update)
-    const { data: rsvps } = await supabase
-      .from("rsvps")
-      .select("*")
-      .eq("guest_id", id)
-      .order("submitted_at", { ascending: true });
-
-    if (rsvps && rsvps.length > 0) {
-      rsvps.forEach((row, idx) => {
-        normalized.push({
-          kind: idx === 0 ? "rsvp_created" : "rsvp_updated",
-          occurred_at: row.submitted_at,
-          meta: { status: row.status }
-        });
-      });
-    }
-
-    // 4. Invite tokens
-    const { data: tokens } = await supabase
-      .from("invite_tokens")
-      .select("*")
-      .eq("guest_id", id);
-
-    for (const row of tokens || []) {
-      normalized.push({
-        kind: "invite_sent",
-        occurred_at: row.created_at,
-        meta: {
-          provider: row.provider,
-          delivery_status: row.delivery_status
-        }
-      });
-
-      if (row.used_at) {
-        normalized.push({
-          kind: "invite_used",
-          occurred_at: row.used_at,
-          meta: null
-        });
-      }
-    }
-
-    // Sort newest → oldest
-    normalized.sort(
-      (a, b) => new Date(b.occurred_at) - new Date(a.occurred_at)
+    // 3. Sort Newest -> Oldest
+    rawEvents.sort(
+      (a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime()
     );
+
+    // 4. Deduplicate (The Fix)
+    // We filter out events that look identical to the previous one within a 2-second window.
+    // This catches "Double Clicks" (RSVP) and "Ghosts" (Legacy Invite Token reads).
+    const normalized = rawEvents.filter((item, index) => {
+      if (index === 0) return true; // Always keep the newest
+      const prev = rawEvents[index - 1];
+
+      const sameKind = item.kind === prev.kind;
+      const timeDiff = Math.abs(new Date(item.occurred_at).getTime() - new Date(prev.occurred_at).getTime());
+
+      // If it's the same action within 2 seconds, assume it's a duplicate/ghost and drop it
+      if (sameKind && timeDiff < 2000) {
+        return false;
+      }
+      return true;
+    });
 
     return res.json({ activity: normalized });
   } catch (e) {
