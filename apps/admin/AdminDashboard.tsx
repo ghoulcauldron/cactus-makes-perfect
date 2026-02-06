@@ -61,32 +61,26 @@ function formatActivityDate(dateStr: string | null) {
   });
 }
 
-// --- 2. Smart Status Inference (Fixed) ---
+// --- 2. Smart Status Inference ---
 function inferActivityDisplay(g: any) {
   // RULE 1: RSVP Priority (Highest)
-  // If the guest has ANY RSVP status, show that. This prevents "Invite Used"
-  // from overriding the fact that they are Attending.
   if (g.rsvps?.status) {
     const statusLabel = g.rsvps.status.charAt(0).toUpperCase() + g.rsvps.status.slice(1);
     return { Icon: CheckCircleIcon, label: `RSVP: ${statusLabel}` };
   }
 
-  // RULE 2: Explicit DB Status (Source of Truth)
-  // If the database explicitly tells us what happened, believe it.
+  // RULE 2: Explicit DB Status
   if (g.last_activity_kind && kindMap[g.last_activity_kind]) {
     return kindMap[g.last_activity_kind];
   }
 
   // RULE 3: Fallback Timestamp Inference
-  // If the DB view returns null/unknown kind, we guess based on timestamps.
   const lastTime = new Date(g.last_activity_at || 0).getTime();
   const invitedTime = g.invited_at ? new Date(g.invited_at).getTime() : 0;
   const createdTime = g.created_at ? new Date(g.created_at).getTime() : 0;
 
-  const EPSILON = 5000; // 5s buffer for clock drift/async execution
+  const EPSILON = 5000; 
 
-  // Invite Check: If activity is > 10s after invite, assume they clicked the link.
-  // (We use 10s instead of 60s to catch quick testers, but > EPSILON to avoid race conditions)
   if (invitedTime) {
     if (lastTime > (invitedTime + 10000)) {
        return { Icon: TicketIcon, label: "Invite Used" };
@@ -96,12 +90,10 @@ function inferActivityDisplay(g: any) {
     }
   }
 
-  // Creation Check
   if (!g.last_activity_at || Math.abs(lastTime - createdTime) < EPSILON) {
     return { Icon: UserPlusIcon, label: "Guest Added" };
   }
 
-  // Generic Fallback
   return { 
     Icon: CursorArrowRaysIcon, 
     label: g.last_activity_kind?.replace(/_/g, ' ') || "Activity" 
@@ -385,7 +377,8 @@ export default function AdminDashboard() {
               <div className="w-full border border-primary">
                 <table className="w-full border-collapse">
                   <thead>
-                    <tr className="text-left border-b border-primary uppercase text-sm sticky top-0 bg-surface z-10 shadow-sm">
+                    {/* UPDATED: Removed sticky top-0, z-10, shadow-sm, bg-surface */}
+                    <tr className="text-left border-b border-primary uppercase text-sm">
                       <th className="p-2 w-10 bg-surface">
                         {sortedGuests.length > 0 && (
                           <input
