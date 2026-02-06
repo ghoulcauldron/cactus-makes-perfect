@@ -43,7 +43,7 @@ export function renderInviteTemplate(
                   
                   <p style="margin: 0 0 16px 0;">
                     The link below is your portal to the next galaxy. 
-                    Activate the link and input your clearance code to proceed.
+                    Activate the link, input your clearance code, and press "=" to proceed.
                   </p>
 
                   <div style="border: 1px dashed #45CC2D; background-color: #000000; background-image: linear-gradient(#000000, #000000); padding: 15px; margin: 20px 0; text-align: center; color: #ffffff; font-size: 18px; letter-spacing: 3px;">

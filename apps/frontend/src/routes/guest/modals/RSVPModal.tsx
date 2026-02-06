@@ -106,9 +106,12 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose }) => {
   const formatDeadline = (iso: string) => {
     const d = new Date(iso);
 
-    const day = d.getDate();
-    const month = d.toLocaleString(undefined, { month: "long" });
-    const year = d.getFullYear();
+    const day = d.getUTCDate();
+    const month = d.toLocaleString("en-US", {
+      month: "long",
+      timeZone: "UTC",
+    });
+    const year = d.getUTCFullYear();
 
     const suffix =
       day % 10 === 1 && day !== 11

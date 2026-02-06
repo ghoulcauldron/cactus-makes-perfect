@@ -381,7 +381,7 @@ app.post("/api/v1/admin/invites/send", async (req, res) => {
               
               <p style="margin: 0 0 16px 0; color: #45CC2D;">
                 The link below is your portal to the next galaxy. 
-                Activate the link and input your clearance code to proceed.
+                Activate the link, input your clearance code, and press "=" to proceed.
               </p>
 
               <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" role="presentation">
