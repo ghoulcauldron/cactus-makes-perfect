@@ -51,7 +51,7 @@ export function renderInviteTemplate(
                   </div>
 
                   <p style="margin: 0 0 16px 0;">
-                    <strong>DIRECTIVE:</strong> Confirm your coordinates by February 15th, 2026. 
+                    <strong>DIRECTIVE:</strong> Confirm your coordinates by February 19th, 2026. 
                     Precise data is required for resource allocation and system calibration.
                   </p>
 

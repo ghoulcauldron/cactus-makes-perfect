@@ -38,7 +38,7 @@ async function getOrCreateInviteToken(guest) {
   // Otherwise create a new token
   const code = genCode(6);
   const token = uuidv4();
-  const expires_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+  const expires_at = new Date(Date.now() + RSVP_WINDOW_MS).toISOString();
 
   const { data: inserted } = await supabase
     .from("invite_tokens")
@@ -83,6 +83,10 @@ const port = process.env.PORT ? Number(process.env.PORT) : 3000;
 
 /** PUBLIC_URL: used when composing invite links */
 const PUBLIC_URL = process.env.PUBLIC_URL || "https://www.cactusmakesperfect.org";
+
+/** RSVP window (days): used to compute invite_tokens.expires_at */
+const RSVP_WINDOW_DAYS = Number(process.env.RSVP_WINDOW_DAYS || 14);
+const RSVP_WINDOW_MS = RSVP_WINDOW_DAYS * 24 * 60 * 60 * 1000;
 
 app.use(express.json());
 /**---------Deprecated: use separate admin app---------
@@ -314,7 +318,15 @@ app.post("/api/v1/admin/invites/send", async (req, res) => {
     const subject = "🌵 PROJECT: CACTUS MAKES PERFECT (Operation: 20 Year Dare) 🌵";
 
     // --- 3. Template rendering (HARDENED: Table Shell + Gradient Hack) ---
-    
+
+    // Format expires_at for email templates
+    const expiresDate = new Date(expires_at);
+    const formattedExpires = expiresDate.toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
+
     // HARDENED + DEEP GRADIENT HACK TEMPLATE
     let html = `
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -381,7 +393,7 @@ app.post("/api/v1/admin/invites/send", async (req, res) => {
               </table>
 
               <p style="margin: 0 0 16px 0; color: #45CC2D;">
-                <strong>DIRECTIVE:</strong> Confirm your coordinates by February 15th, 2026. 
+                <strong>DIRECTIVE:</strong> Confirm your coordinates by ${formattedExpires}. 
                 Precise data is required for resource allocation and system calibration.
               </p>
 
@@ -437,7 +449,7 @@ Activate the link and input your clearance code to proceed.
 YOUR CODE: ${code}
 PORTAL LINK: ${inviteUrl}
 
-DIRECTIVE: Confirm your coordinates by February 15th, 2026. 
+DIRECTIVE: Confirm your coordinates by ${formattedExpires}. 
 Precise data is required for resource allocation and system calibration.
 
 Awaiting your signal.
@@ -1060,7 +1072,7 @@ app.post("/api/v1/admin/resend", requireAdminAuth, async (req, res) => {
 
     const code = genCode(6);
     const token = uuidv4();
-    const expires_at = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString();
+    const expires_at = new Date(Date.now() + RSVP_WINDOW_MS).toISOString();
 
     await supabase.from("invite_tokens").insert([
       { guest_id, token, code, expires_at, provider: EMAIL_PROVIDER, delivery_status: "pending" }

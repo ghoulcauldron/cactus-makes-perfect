@@ -34,6 +34,7 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose }) => {
   const [submitted, setSubmitted] = useState(false);
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [inviteExpiresAt, setInviteExpiresAt] = useState<string | null>(null);
 
   // Fetch Logic
   useEffect(() => {
@@ -55,6 +56,9 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose }) => {
             setEditing(false);
           } else {
             setEditing(true); // No previous RSVP, go straight to edit
+          }
+          if (data?.invite?.expires_at) {
+            setInviteExpiresAt(data.invite.expires_at);
           }
         }
       } catch (err) {
@@ -99,6 +103,15 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose }) => {
     return RSVP_OPTIONS.find((o) => o.id === s)?.label || s.toUpperCase();
   };
 
+  const formatDeadline = (iso: string) => {
+    const d = new Date(iso);
+    return d.toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }).toUpperCase();
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="SECURE TERMINAL">
       <div className="font-mono text-[#45CC2D] bg-black p-1">
@@ -120,6 +133,11 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose }) => {
               <p className="text-[10px] text-[#45CC2D]/70 mt-1">
                 PLEASE CONFIRM TRAJECTORY DATA FOR AUGUST 2026
               </p>
+              {inviteExpiresAt && (
+                <p className="text-[9px] text-[#45CC2D]/60 mt-1 uppercase tracking-widest">
+                  RSVP REQUIRED BY {formatDeadline(inviteExpiresAt)}
+                </p>
+              )}
             </div>
 
             {/* --- VIEW STATE (READ ONLY) --- */}
@@ -196,6 +214,12 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose }) => {
                     </ListboxAny>
                   </div>
                 </div>
+
+                {inviteExpiresAt && Date.now() > new Date(inviteExpiresAt).getTime() && (
+                  <div className="border border-red-500/60 bg-red-900/20 p-3 text-xs text-red-400 uppercase tracking-widest">
+                    INVITE EXPIRED — CONTACT HOST
+                  </div>
+                )}
 
                 {/* ACTIONS */}
                 <div className="pt-4 space-y-3">
