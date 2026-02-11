@@ -12,6 +12,22 @@ import cors from "cors";
 import dotenv from "dotenv";
 dotenv.config();
 
+process.on("SIGTERM", () => {
+  console.log("[Signal] SIGTERM received at", new Date().toISOString());
+});
+
+process.on("SIGINT", () => {
+  console.log("[Signal] SIGINT received at", new Date().toISOString());
+});
+
+process.on("unhandledRejection", (err) => {
+  console.error("[UNHANDLED REJECTION]", err);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("[UNCAUGHT EXCEPTION]", err);
+});
+
 // ---- Helper: canonicalize group labels ----
 function canonicalizeGroupLabel(label) {
   if (!label) return null;
@@ -1255,7 +1271,9 @@ app.post("/api/v1/admin/guests/nudge", requireAdminAuth, async (req, res) => {
 const distDir = path.join(__dirname, "public");
 app.use(express.static(distDir));
 app.get("/health", (req, res) => res.json({ ok: true, at: new Date().toISOString() }));
-app.use((_, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
+app.use((req, res) => {
+  res.sendFile(path.join(distDir, "index.html"));
+});
 
 app.listen(port, () => {
   console.log(`Server listening on port ${port} (PUBLIC_URL=${PUBLIC_URL})`);

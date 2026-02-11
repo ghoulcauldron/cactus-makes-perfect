@@ -1,13 +1,14 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { createBrowserRouter, RouterProvider, redirect } from 'react-router-dom'
-import CalculatorAuth from './routes/guest/login/CalculatorAuth'
 import Welcome from './routes/guest/welcome/Welcome'
-import RSVPModal from './routes/guest/modals/RSVPModal'
 import ProtectedRoute from './routes/ProtectedRoute'
 import './index.css'
 import PhotoCalculatorAuth from './routes/guest/login/PhotoCalculatorAuth'
 import './fonts.css';
+
+// --- NEW IMPORT ---
+import TheArtifact from './components/Artifact/TheArtifact';
 
 const router = createBrowserRouter([
   {
@@ -20,6 +21,7 @@ const router = createBrowserRouter([
         } catch {}
         return null;
     },
+
     element: (
       <>
         <PhotoCalculatorAuth />

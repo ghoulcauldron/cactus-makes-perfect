@@ -386,7 +386,7 @@ export default function PhotoCalculatorAuth({
   if (!token) {
     if (!DEBUG) {
       return (
-        <div className="w-screen h-screen bg-cactus-sand flex items-center justify-center">
+        <div className="w-screen h-screen bg-cactus-green flex items-center justify-center">
           <div className="text-xl font-semibold text-center px-8 py-6 bg-white/80 rounded-xl shadow">
             Mingle or I'll mangle!
           </div>
@@ -396,7 +396,7 @@ export default function PhotoCalculatorAuth({
   }
 
   return (
-    <div className="w-screen h-screen bg-cactus-sand relative overflow-hidden">
+    <div className="w-screen h-screen bg-cactus-green relative overflow-hidden">
       {/* Hidden input for paste handling */}
       <input
         ref={pasteInputRef}
