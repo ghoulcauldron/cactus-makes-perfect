@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import ReactDOM from 'react-dom/client'
 import { createBrowserRouter, RouterProvider, redirect } from 'react-router-dom'
 import Welcome from './routes/guest/welcome/Welcome'
@@ -7,8 +7,38 @@ import './index.css'
 import PhotoCalculatorAuth from './routes/guest/login/PhotoCalculatorAuth'
 import './fonts.css';
 
-// --- NEW IMPORT ---
+// --- ARTIFACT IMPORT ---
 import TheArtifact from './components/Artifact/TheArtifact';
+
+// --- SIMPLE DEV GATEKEEPER ---
+// This prevents random users from stumbling onto your 3D test
+function ArtifactGate({ children }: { children: React.ReactNode }) {
+  const [verified, setVerified] = useState(false);
+
+  useEffect(() => {
+    // 1. Check if we already unlocked it this session
+    if (sessionStorage.getItem('artifact_unlock') === 'true') {
+      setVerified(true);
+      return;
+    }
+
+    // 2. If not, prompt the user
+    // NOTE: This uses the browser's native blocking prompt
+    const password = window.prompt("🔐 Restricted Access. Enter Dev Password:");
+
+    if (password === "C4ctu$m4k3s93rf3cT") { // <--- CHANGE THIS PASSWORD IF YOU WANT
+      sessionStorage.setItem('artifact_unlock', 'true');
+      setVerified(true);
+    } else {
+      // 3. Wrong password? Send them home.
+      alert("Access Denied.");
+      window.location.href = "/";
+    }
+  }, []);
+
+  if (!verified) return <div style={{ background: '#000', height: '100vh', width: '100vw' }} />;
+  return <>{children}</>;
+}
 
 const router = createBrowserRouter([
   {
@@ -21,28 +51,15 @@ const router = createBrowserRouter([
         } catch {}
         return null;
     },
-
-    element: (
-      <>
-        <PhotoCalculatorAuth />
-      </>
-    )
+    element: <PhotoCalculatorAuth />
   },
   { 
     path: '/guest/login', 
-    element: (
-      <>
-        <PhotoCalculatorAuth />
-      </>
-    ) 
+    element: <PhotoCalculatorAuth /> 
   },
   {
     path: '/invite',
-    element: (
-      <>
-        <PhotoCalculatorAuth />
-      </>
-    )
+    element: <PhotoCalculatorAuth />
   },
   { 
     path: '/guest/welcome',
@@ -52,6 +69,16 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
+  
+  // --- NEW HIDDEN ROUTE ---
+  {
+    path: '/artifact',
+    element: (
+      <ArtifactGate>
+        <TheArtifact />
+      </ArtifactGate>
+    )
+  }
 ])
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
