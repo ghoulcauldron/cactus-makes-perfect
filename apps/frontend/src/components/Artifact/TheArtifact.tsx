@@ -1,10 +1,30 @@
-import React, { Suspense, useRef, useLayoutEffect, useState, useMemo } from "react";
-import { Canvas, useLoader, useFrame, ThreeEvent } from "@react-three/fiber"; 
+import React, { Suspense, useRef, useLayoutEffect, useState, useMemo, useEffect } from "react";
+import { Canvas, useLoader, useFrame, ThreeEvent, useThree } from "@react-three/fiber"; 
 import { Html, Environment, Float, Stars } from "@react-three/drei"; 
 import { EffectComposer, Bloom } from "@react-three/postprocessing"; 
 import { useDrag } from "@use-gesture/react"; 
 import * as THREE from "three";
 import { animated, useSpring } from "@react-spring/three"; 
+
+// --- RESPONSIVE CAMERA RIG ---
+function ResponsiveCamera() {
+  const { camera, size } = useThree();
+
+  useEffect(() => {
+    const aspect = size.width / size.height;
+    let targetZ = 6; 
+    
+    // Mobile adjustment
+    if (aspect < 1.2) { 
+       targetZ = 5.5 / aspect; 
+    }
+
+    camera.position.z = targetZ;
+    camera.updateProjectionMatrix();
+  }, [size, camera]);
+
+  return null;
+}
 
 // --- 0. SHOOTING STAR SYSTEM ---
 function ShootingStar() {
@@ -85,7 +105,7 @@ function CryptexRingOuter({ dragRef }: { dragRef: React.MutableRefObject<boolean
       rotationRef.current = snapTarget;
       api.start({ rotationZ: snapTarget, immediate: false });
     }
-  });
+  }, { preventScroll: true }); // Prevent scrolling on mobile
 
   return (
     // @ts-ignore
@@ -127,7 +147,7 @@ function CryptexRingInner({ dragRef }: { dragRef: React.MutableRefObject<boolean
       rotationRef.current = snapTarget;
       api.start({ rotationZ: snapTarget, immediate: false });
     }
-  });
+  }, { preventScroll: true });
 
   return (
     // @ts-ignore
@@ -169,7 +189,7 @@ function CryptexRingInnermost({ dragRef }: { dragRef: React.MutableRefObject<boo
       rotationRef.current = snapTarget;
       api.start({ rotationZ: snapTarget, immediate: false });
     }
-  });
+  }, { preventScroll: true });
 
   return (
     // @ts-ignore
@@ -259,8 +279,10 @@ function InteractiveArtifact() {
 // --- MAIN SCENE ---
 export default function TheArtifact() {
   return (
-    <div style={{ width: "100vw", height: "100vh", background: "#000" }}>
+    // FIX: touchAction: "none" is CRITICAL for mobile drag to work without browser scrolling hijacking the touch
+    <div style={{ width: "100vw", height: "100vh", background: "#000", overflow: "hidden", touchAction: "none" }}>
       <Canvas camera={{ position: [0, 0, 6], fov: 40 }}>
+        <ResponsiveCamera />
         <Environment preset="warehouse" blur={0.8} />
         <rectAreaLight width={5} height={5} color="white" intensity={2} position={[3, 3, 3]} lookAt={[0, 0, 0] as any} />
         <rectAreaLight width={5} height={10} color="#aa00ff" intensity={5} position={[-4, 0, 2]} lookAt={[0, 0, 0] as any} />
