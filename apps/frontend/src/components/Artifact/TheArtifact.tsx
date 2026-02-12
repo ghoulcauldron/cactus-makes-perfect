@@ -91,13 +91,31 @@ function CryptexRingOuter({ dragRef }: { dragRef: React.MutableRefObject<boolean
   const texture = useLoader(THREE.TextureLoader, "/artifacts/cryptex_ring1_test.png");
   const [spring, api] = useSpring(() => ({ rotationZ: 0, config: { friction: 20, tension: 150 } }));
   const rotationRef = useRef(0);
+  
+  // Need size to calculate center of screen
+  const { size } = useThree(); 
 
-  const bind = useDrag(({ delta: [dx, dy], down, event, first }) => {
+  const bind = useDrag(({ xy: [x, y], delta: [dx, dy], down, event, first }) => {
     event.stopPropagation();
     if (first) dragRef.current = true;
+    
     if (down) {
-      rotationRef.current -= dx * 0.01; 
-      api.start({ rotationZ: rotationRef.current, immediate: true });
+      // 1. Calculate Vector from Center of Screen to Mouse
+      const cx = x - size.width / 2;
+      const cy = y - size.height / 2;
+
+      // 2. Calculate Angular Delta using Cross Product (2D Moment)
+      // This determines how much the mouse movement "spins" the vector around the center
+      const r2 = cx * cx + cy * cy; // Distance squared
+      
+      if (r2 > 0) {
+        // (x * dy - y * dx) / r^2 gives the angular change in radians
+        // We subtract because screen Y is inverted relative to 3D space
+        const angleDelta = (cx * dy - cy * dx) / r2;
+        rotationRef.current -= angleDelta; 
+        api.start({ rotationZ: rotationRef.current, immediate: true });
+      }
+
     } else {
       const snapAngle = Math.PI / 6; 
       const remainder = rotationRef.current % snapAngle;
@@ -105,7 +123,7 @@ function CryptexRingOuter({ dragRef }: { dragRef: React.MutableRefObject<boolean
       rotationRef.current = snapTarget;
       api.start({ rotationZ: snapTarget, immediate: false });
     }
-  }, { preventScroll: true }); // Prevent scrolling on mobile
+  }, { preventScroll: true });
 
   return (
     // @ts-ignore
@@ -133,13 +151,23 @@ function CryptexRingInner({ dragRef }: { dragRef: React.MutableRefObject<boolean
   const texture = useLoader(THREE.TextureLoader, "/artifacts/cryptex_ring2_test.png");
   const [spring, api] = useSpring(() => ({ rotationZ: 0, config: { friction: 30, tension: 200 } })); 
   const rotationRef = useRef(0);
+  
+  const { size } = useThree();
 
-  const bind = useDrag(({ delta: [dx, dy], down, event, first }) => {
+  const bind = useDrag(({ xy: [x, y], delta: [dx, dy], down, event, first }) => {
     event.stopPropagation();
     if (first) dragRef.current = true;
+    
     if (down) {
-      rotationRef.current -= dx * 0.01; 
-      api.start({ rotationZ: rotationRef.current, immediate: true });
+      const cx = x - size.width / 2;
+      const cy = y - size.height / 2;
+      const r2 = cx * cx + cy * cy;
+      
+      if (r2 > 0) {
+        const angleDelta = (cx * dy - cy * dx) / r2;
+        rotationRef.current -= angleDelta; 
+        api.start({ rotationZ: rotationRef.current, immediate: true });
+      }
     } else {
       const snapAngle = Math.PI / 6; 
       const remainder = rotationRef.current % snapAngle;
@@ -176,12 +204,22 @@ function CryptexRingInnermost({ dragRef }: { dragRef: React.MutableRefObject<boo
   const [spring, api] = useSpring(() => ({ rotationZ: 0, config: { friction: 30, tension: 200 } })); 
   const rotationRef = useRef(0);
 
-  const bind = useDrag(({ delta: [dx, dy], down, event, first }) => {
+  const { size } = useThree();
+
+  const bind = useDrag(({ xy: [x, y], delta: [dx, dy], down, event, first }) => {
     event.stopPropagation(); 
     if (first) dragRef.current = true;
+    
     if (down) {
-      rotationRef.current -= dx * 0.01; 
-      api.start({ rotationZ: rotationRef.current, immediate: true });
+      const cx = x - size.width / 2;
+      const cy = y - size.height / 2;
+      const r2 = cx * cx + cy * cy;
+      
+      if (r2 > 0) {
+        const angleDelta = (cx * dy - cy * dx) / r2;
+        rotationRef.current -= angleDelta; 
+        api.start({ rotationZ: rotationRef.current, immediate: true });
+      }
     } else {
       const snapAngle = Math.PI / 6; 
       const remainder = rotationRef.current % snapAngle;
@@ -279,7 +317,6 @@ function InteractiveArtifact() {
 // --- MAIN SCENE ---
 export default function TheArtifact() {
   return (
-    // FIX: touchAction: "none" is CRITICAL for mobile drag to work without browser scrolling hijacking the touch
     <div style={{ width: "100vw", height: "100vh", background: "#000", overflow: "hidden", touchAction: "none" }}>
       <Canvas camera={{ position: [0, 0, 6], fov: 40 }}>
         <ResponsiveCamera />
