@@ -136,7 +136,7 @@ function CryptexRingOuter({ dragRef }: { dragRef: React.MutableRefObject<boolean
     >
       <mesh>
         <ringGeometry args={[1.02, 1.55, 64]} />
-        <meshPhysicalMaterial color="#c0b0d0" metalness={1.0} roughness={0.1} clearcoat={1.0} side={THREE.DoubleSide} />
+        <meshPhysicalMaterial color="#8e59c3" metalness={1.0} roughness={0.1} clearcoat={1.0} side={THREE.DoubleSide} />
       </mesh>
       <mesh position={[0, 0, 0.005]} raycast={() => null}> 
         <planeGeometry args={[3.2, 3.2]} /> 
@@ -188,7 +188,7 @@ function CryptexRingInner({ dragRef }: { dragRef: React.MutableRefObject<boolean
     >
       <mesh>
         <ringGeometry args={[0.65, 1.03, 64]} />
-        <meshPhysicalMaterial color="#9080a0" metalness={1.0} roughness={0.25} clearcoat={0.8} side={THREE.DoubleSide} />
+        <meshPhysicalMaterial color="#8e59c3" metalness={1.0} roughness={0.3} clearcoat={0.8} side={THREE.DoubleSide} />
       </mesh>
       <mesh position={[0, 0, 0.005]} raycast={() => null}> 
         <planeGeometry args={[3.3, 3.3]} /> 
@@ -240,7 +240,7 @@ function CryptexRingInnermost({ dragRef }: { dragRef: React.MutableRefObject<boo
     >
       <mesh>
         <ringGeometry args={[0.25, 0.645, 64]} />
-        <meshPhysicalMaterial color="#3a2a4a" metalness={1.0} roughness={0.2} clearcoat={0.9} side={THREE.DoubleSide} />
+        <meshPhysicalMaterial color="#8e59c3" metalness={1.0} roughness={0.1} clearcoat={1.0} side={THREE.DoubleSide} />
       </mesh>
       <mesh position={[0, 0, 0.005]} raycast={() => null}> 
         <planeGeometry args={[3.4, 3.4]} /> 
