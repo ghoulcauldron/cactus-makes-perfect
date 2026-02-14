@@ -48,9 +48,9 @@ function ConstellationImages({ visible, layout }: { visible: boolean, layout: an
     });
   }, [texStars, texHand, texConstellation, texBurst]);
 
-  // Opacity Ceilings (Keeping it faint/ethereal as requested)
+  // Opacity Ceilings
   const isMobile = layout.isMobile;
-  const maxHandOpacity = isMobile ? 0.25 : 0.5; 
+  const maxHandOpacity = isMobile ? 0.3 : 0.7; 
   const baseStarOpacity = isMobile ? 0.3 : 0.6;
 
   useFrame((state) => {
@@ -61,9 +61,9 @@ function ConstellationImages({ visible, layout }: { visible: boolean, layout: an
 
     // --- TIMING CONFIG ---
     const T_REST_START = 1.0;   // 0s-1s: Just Stars
-    const T_FADE_IN    = 3.0;   // 1s-3s: Hand Glows In
-    const T_PULSE      = 6.0;   // 3s-6s: Burst Pulses x3
-    const T_FADE_OUT   = 8.0;   // 6s-8s: Fade Out
+    const T_FADE_IN    = 3.0;   // 1s-3s: Hand Glows In (0 to 100%)
+    const T_PULSE      = 6.0;   // 3s-6s: Hand Solid, Burst Pulses x3
+    const T_FADE_OUT   = 8.0;   // 6s-8s: Hand & Burst Fade Out
     // 8s-9s: End Rest (Buffer)
 
     let opHand = 0;
@@ -71,13 +71,12 @@ function ConstellationImages({ visible, layout }: { visible: boolean, layout: an
 
     // --- SEQUENCE LOGIC ---
     if (t < T_REST_START) {
-        // Phase 0: Rest
+        // Phase 0: Rest (Stars only)
         opHand = 0;
         opBurst = 0;
     } 
     else if (t < T_FADE_IN) {
         // Phase 1: Hand Glows from 0 to 100%
-        // Normalize time 0.0 -> 1.0 over duration
         opHand = (t - T_REST_START) / (T_FADE_IN - T_REST_START);
         opBurst = 0;
     } 
@@ -86,15 +85,15 @@ function ConstellationImages({ visible, layout }: { visible: boolean, layout: an
         opHand = 1.0;
         
         const burstTime = t - T_FADE_IN;
-        // Frequency logic: We want 3 pulses in 3 seconds (1Hz)
-        // Cosine wave shifted: (1 - cos(2*PI*t)) / 2 starts at 0, goes to 1, back to 0
+        // Frequency logic: 3 pulses in 3 seconds = 1Hz
+        // (1 - cos) / 2 creates a smooth 0 -> 1 -> 0 wave
         opBurst = (1 - Math.cos(burstTime * Math.PI * 2)) / 2;
     } 
     else if (t < T_FADE_OUT) {
         // Phase 3: Fade Everything Out
         const fadeProgress = (t - T_PULSE) / (T_FADE_OUT - T_PULSE);
         opHand = 1.0 - fadeProgress;
-        opBurst = 0; // Burst finishes exactly at 0 from previous phase
+        opBurst = 0; // Burst ended at 0 in previous phase
     } 
     else {
         // Phase 4: Final Rest
@@ -102,7 +101,7 @@ function ConstellationImages({ visible, layout }: { visible: boolean, layout: an
         opBurst = 0;
     }
 
-    // Apply Opacities (Scaled by 'maxHandOpacity' to keep it faint)
+    // Apply Opacities
     if (refHand.current) refHand.current.opacity = opHand * maxHandOpacity;
     if (refConstellation.current) refConstellation.current.opacity = opHand * maxHandOpacity; 
     if (refBurst.current) refBurst.current.opacity = opBurst * maxHandOpacity; 
@@ -146,22 +145,23 @@ function ConstellationImages({ visible, layout }: { visible: boolean, layout: an
   );
 }
 
-// 3. MAIN MANAGER
+// 3. MAIN MANAGER (Handles Responsive Layout)
 function ConstellationManager({ hasInteracted }: { hasInteracted: boolean }) {
   const { viewport } = useThree();
 
   const layout = useMemo(() => {
     const isMobile = viewport.width < viewport.height;
-    const baseScale = 0.35;
     
+    // Base scale
+    const baseScale = 0.35;
+
     if (isMobile) {
       // --- MOBILE CONFIG ---
-      // Scale: ~2.1x base (Reduced 30% from 3.0)
-      const mobileScale = baseScale * 2.1; 
+      const mobileScale = 0.35 * 2.5; 
 
       return {
         isMobile: true,
-        // Pos: Top Right + 10% Higher
+        // Mobile: Fixed position logic (Top Right)
         pos: [
             viewport.width / 2.1, 
             (viewport.height / 2.1) + (viewport.height * 0.1), 
@@ -171,19 +171,27 @@ function ConstellationManager({ hasInteracted }: { hasInteracted: boolean }) {
         scale: [mobileScale, mobileScale, mobileScale]
       };
     } else {
-      // --- DESKTOP CONFIG ---
-      // Scale: ~2.45x base (Reduced 30% from 3.5)
-      const desktopScale = baseScale * 2.45; 
+      // --- DESKTOP CONFIG (FIXED TRACKING) ---
+      const desktopScale = 0.35 * 2.5;
 
-      const rightAnchor = viewport.width / 2.2; 
-      const paddingRight = viewport.width * 0.05; 
+      // 1. Safe Zone Logic:
+      // We want it to try to stick to the right edge: (viewport.width / 2) - 1.5
+      // BUT we strictly clamp it so it never goes below 2.5 (The center/artifact safe zone).
+      // This prevents overlap on resize.
+      const safeX = Math.max( (viewport.width / 2) - 1.5, 2.5 );
+      
       const shiftDownAmount = viewport.height * -0.10; 
+
+      // 2. Parallax Fix:
+      // Moved Z from -2 to 0 (same plane as artifact) so they don't drift relative to each other on zoom
+      const zDepth = 0; 
+
       const rotZ = THREE.MathUtils.degToRad(-20); 
       const rotY = THREE.MathUtils.degToRad(15); 
 
       return {
         isMobile: false,
-        pos: [rightAnchor - paddingRight, shiftDownAmount, -2],
+        pos: [safeX, shiftDownAmount, zDepth],
         rot: [0, rotY, rotZ], 
         scale: [desktopScale, desktopScale, desktopScale]
       };
