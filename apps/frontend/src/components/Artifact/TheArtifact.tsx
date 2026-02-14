@@ -1,6 +1,6 @@
 import React, { Suspense, useRef, useLayoutEffect, useState, useMemo, useEffect } from "react";
 import { Canvas, useLoader, useFrame, ThreeEvent, useThree } from "@react-three/fiber"; 
-import { Html, Environment, Float, Stars } from "@react-three/drei"; 
+import { Html, Environment, Float, Stars, Line } from "@react-three/drei"; 
 import { EffectComposer, Bloom } from "@react-three/postprocessing"; 
 import { useDrag } from "@use-gesture/react"; 
 import * as THREE from "three";
@@ -8,7 +8,6 @@ import { animated, useSpring } from "@react-spring/three";
 
 // --- UTILS ---
 const triggerHaptic = () => {
-  // 40ms pulse for better Android compatibility
   if (typeof navigator !== 'undefined' && navigator.vibrate) {
     navigator.vibrate(40);
   }
@@ -17,18 +16,97 @@ const triggerHaptic = () => {
 // --- RESPONSIVE CAMERA RIG ---
 function ResponsiveCamera() {
   const { camera, size } = useThree();
-
   useEffect(() => {
     const aspect = size.width / size.height;
     let targetZ = 6; 
-    if (aspect < 1.2) { 
-       targetZ = 5.5 / aspect; 
-    }
+    if (aspect < 1.2) targetZ = 5.5 / aspect; 
     camera.position.z = targetZ;
     camera.updateProjectionMatrix();
   }, [size, camera]);
-
   return null;
+}
+
+// --- CONSTELLATION HAND (The "Nudge") ---
+function ConstellationHand({ visible }: { visible: boolean }) {
+  const groupRef = useRef<THREE.Group>(null);
+  
+  // Hand Geometry Data (Right hand pointing left)
+  const stars = useMemo(() => [
+    new THREE.Vector3(0, 0, 0),       // 0: Index Tip
+    new THREE.Vector3(0.5, 0, 0),     // 1: Index Mid
+    new THREE.Vector3(1.0, 0, 0),     // 2: Index Base
+    new THREE.Vector3(0.8, 0.6, 0),   // 3: Thumb Tip
+    new THREE.Vector3(1.2, 0.3, 0),   // 4: Thumb Base
+    new THREE.Vector3(1.1, -0.3, 0),  // 5: Middle Knuckle
+    new THREE.Vector3(1.15, -0.6, 0), // 6: Ring Knuckle
+    new THREE.Vector3(1.2, -0.9, 0),  // 7: Pinky Knuckle
+    new THREE.Vector3(1.8, -0.1, 0),  // 8: Wrist Top
+    new THREE.Vector3(1.8, -0.8, 0),  // 9: Wrist Bottom
+  ], []);
+
+  // Connections for the "Constellation" lines
+  const lines = useMemo(() => [
+    [stars[0], stars[1]], [stars[1], stars[2]], // Index Finger
+    [stars[3], stars[4]], [stars[4], stars[2]], // Thumb
+    [stars[2], stars[5]], [stars[5], stars[6]], [stars[6], stars[7]], // Knuckles
+    [stars[2], stars[8]], [stars[7], stars[9]], // Hand Back/Palm
+    [stars[8], stars[9]] // Wrist cuff
+  ], [stars]);
+
+  useFrame((state) => {
+    if (!groupRef.current) return;
+    
+    // Animation Loop: 0 to 1 over roughly 3 seconds
+    const t = state.clock.elapsedTime % 3.5;
+    
+    // 1. Position Animation (Nudge)
+    // Move from right (2.8) to left (2.2) to touch the ring
+    const nudge = Math.sin(t * 2) * 0.2; 
+    // Only nudge during the "visible" phase of the loop
+    const basePos = 2.5;
+    groupRef.current.position.x = basePos + (t < 1.5 ? -t * 0.3 : -0.45); // Poke in
+
+    // 2. Opacity Animation (Fade In -> Hold -> Fade Out)
+    let opacity = 0;
+    if (t < 0.5) opacity = t * 2;       // Fade In
+    else if (t < 2.0) opacity = 1;      // Hold
+    else if (t < 3.0) opacity = 3.0 - t;// Fade Out
+    else opacity = 0;                   // Wait
+
+    // Apply opacity to children
+    groupRef.current.children.forEach((child: any) => {
+        if (child.material) {
+            child.material.opacity = visible ? opacity * 0.6 : 0; // Max opacity 0.6
+            child.visible = visible && opacity > 0.01;
+        }
+    });
+  });
+
+  if (!visible) return null;
+
+  return (
+    <group ref={groupRef} position={[2.5, -0.5, 0]} rotation={[0, 0, 0.2]}>
+      {/* The Stars (Joints) */}
+      {stars.map((pos, i) => (
+        <mesh key={i} position={pos}>
+          <sphereGeometry args={[0.04, 8, 8]} />
+          <meshBasicMaterial color="#00ffff" transparent opacity={0.6} />
+        </mesh>
+      ))}
+      
+      {/* The Constellation Lines */}
+      {lines.map((points, i) => (
+        <Line 
+          key={`l-${i}`} 
+          points={points} 
+          color="#00ffff" 
+          transparent 
+          opacity={0.3} 
+          lineWidth={1} 
+        />
+      ))}
+    </group>
+  );
 }
 
 // --- 0. SHOOTING STAR SYSTEM ---
@@ -92,7 +170,7 @@ function CosmicBackground() {
 }
 
 // --- 2. OUTER RING ---
-function CryptexRingOuter({ dragRef }: { dragRef: React.MutableRefObject<boolean> }) {
+function CryptexRingOuter({ dragRef, onInteract }: { dragRef: React.MutableRefObject<boolean>, onInteract: () => void }) {
   const texture = useLoader(THREE.TextureLoader, "/artifacts/cryptex_ring1_test.png");
   const [spring, api] = useSpring(() => ({ rotationZ: 0, config: { friction: 20, tension: 150 } }));
   const rotationRef = useRef(0);
@@ -100,7 +178,10 @@ function CryptexRingOuter({ dragRef }: { dragRef: React.MutableRefObject<boolean
 
   const bind = useDrag(({ xy: [x, y], delta: [dx, dy], down, event, first }) => {
     event.stopPropagation();
-    if (first) dragRef.current = true;
+    if (first) {
+        dragRef.current = true;
+        onInteract(); // Hide hand
+    }
     
     if (down) {
       const cx = x - size.width / 2;
@@ -109,12 +190,10 @@ function CryptexRingOuter({ dragRef }: { dragRef: React.MutableRefObject<boolean
       
       if (r2 > 0) {
         const angleDelta = (cx * dy - cy * dx) / r2;
-        const oldRotation = rotationRef.current;
         const newRotation = rotationRef.current - angleDelta;
 
-        // --- HAPTIC LOGIC ---
         const SLOT = Math.PI / 6; 
-        const oldSlot = Math.floor(oldRotation / SLOT);
+        const oldSlot = Math.floor(rotationRef.current / SLOT);
         const newSlot = Math.floor(newRotation / SLOT);
         
         if (oldSlot !== newSlot) triggerHaptic();
@@ -138,7 +217,7 @@ function CryptexRingOuter({ dragRef }: { dragRef: React.MutableRefObject<boolean
       rotation-z={spring.rotationZ} 
       position={[0, 0, -0.07]} 
       rotation-y={Math.PI} 
-      onClick={(e: any) => e.stopPropagation()}
+      onClick={(e: any) => { e.stopPropagation(); onInteract(); }}
       {...(bind() as any)}
     >
       <mesh>
@@ -154,7 +233,7 @@ function CryptexRingOuter({ dragRef }: { dragRef: React.MutableRefObject<boolean
 }
 
 // --- 3. INNER RING ---
-function CryptexRingInner({ dragRef }: { dragRef: React.MutableRefObject<boolean> }) {
+function CryptexRingInner({ dragRef, onInteract }: { dragRef: React.MutableRefObject<boolean>, onInteract: () => void }) {
   const texture = useLoader(THREE.TextureLoader, "/artifacts/cryptex_ring2_test.png");
   const [spring, api] = useSpring(() => ({ rotationZ: 0, config: { friction: 30, tension: 200 } })); 
   const rotationRef = useRef(0);
@@ -162,7 +241,10 @@ function CryptexRingInner({ dragRef }: { dragRef: React.MutableRefObject<boolean
 
   const bind = useDrag(({ xy: [x, y], delta: [dx, dy], down, event, first }) => {
     event.stopPropagation();
-    if (first) dragRef.current = true;
+    if (first) {
+        dragRef.current = true;
+        onInteract();
+    }
     
     if (down) {
       const cx = x - size.width / 2;
@@ -174,7 +256,6 @@ function CryptexRingInner({ dragRef }: { dragRef: React.MutableRefObject<boolean
         const oldRotation = rotationRef.current;
         const newRotation = rotationRef.current - angleDelta;
 
-        // --- HAPTIC LOGIC ---
         const SLOT = Math.PI / 6;
         const oldSlot = Math.floor(oldRotation / SLOT);
         const newSlot = Math.floor(newRotation / SLOT);
@@ -198,7 +279,7 @@ function CryptexRingInner({ dragRef }: { dragRef: React.MutableRefObject<boolean
       rotation-z={spring.rotationZ} 
       position={[0, 0, -0.05]} 
       rotation-y={Math.PI} 
-      onClick={(e: any) => e.stopPropagation()}
+      onClick={(e: any) => { e.stopPropagation(); onInteract(); }}
       {...(bind() as any)}
     >
       <mesh>
@@ -214,7 +295,7 @@ function CryptexRingInner({ dragRef }: { dragRef: React.MutableRefObject<boolean
 }
 
 // --- 4. INNERMOST RING (CORE) ---
-function CryptexRingInnermost({ dragRef }: { dragRef: React.MutableRefObject<boolean> }) {
+function CryptexRingInnermost({ dragRef, onInteract }: { dragRef: React.MutableRefObject<boolean>, onInteract: () => void }) {
   const texture = useLoader(THREE.TextureLoader, "/artifacts/cryptex_ring3_test.png");
   const [spring, api] = useSpring(() => ({ rotationZ: 0, config: { friction: 30, tension: 200 } })); 
   const rotationRef = useRef(0);
@@ -222,7 +303,10 @@ function CryptexRingInnermost({ dragRef }: { dragRef: React.MutableRefObject<boo
 
   const bind = useDrag(({ xy: [x, y], delta: [dx, dy], down, event, first }) => {
     event.stopPropagation(); 
-    if (first) dragRef.current = true;
+    if (first) {
+        dragRef.current = true;
+        onInteract();
+    }
     
     if (down) {
       const cx = x - size.width / 2;
@@ -234,7 +318,6 @@ function CryptexRingInnermost({ dragRef }: { dragRef: React.MutableRefObject<boo
         const oldRotation = rotationRef.current;
         const newRotation = rotationRef.current - angleDelta;
 
-        // --- HAPTIC LOGIC ---
         const SLOT = Math.PI / 6;
         const oldSlot = Math.floor(oldRotation / SLOT);
         const newSlot = Math.floor(newRotation / SLOT);
@@ -258,7 +341,7 @@ function CryptexRingInnermost({ dragRef }: { dragRef: React.MutableRefObject<boo
       rotation-z={spring.rotationZ} 
       position={[0, 0, -0.03]} 
       rotation-y={Math.PI} 
-      onClick={(e: any) => e.stopPropagation()}
+      onClick={(e: any) => { e.stopPropagation(); onInteract(); }}
       {...(bind() as any)}
     >
       <mesh>
@@ -305,6 +388,11 @@ function InteractiveArtifact() {
   const groupRef = useRef<THREE.Group>(null);
   const [targetRotation, setTargetRotation] = useState(0);
   const childIsDraggingRef = useRef(false);
+  const [hasInteracted, setHasInteracted] = useState(false); // State to hide the hand
+
+  const onInteract = () => {
+    if (!hasInteracted) setHasInteracted(true);
+  };
 
   useFrame(() => {
     if (groupRef.current) {
@@ -313,6 +401,7 @@ function InteractiveArtifact() {
   });
 
   const handleMainClick = (e: ThreeEvent<MouseEvent>) => {
+    onInteract();
     if (childIsDraggingRef.current) {
       childIsDraggingRef.current = false;
       e.stopPropagation();
@@ -322,17 +411,23 @@ function InteractiveArtifact() {
   };
 
   return (
-    <group 
-      ref={groupRef}
-      onClick={handleMainClick}
-      onPointerOver={() => { document.body.style.cursor = 'pointer'; }}
-      onPointerOut={() => { document.body.style.cursor = 'auto'; }}
-    >
-      <LiquidLayer />
-      <PurpleDisc />
-      <CryptexRingOuter dragRef={childIsDraggingRef} />
-      <CryptexRingInner dragRef={childIsDraggingRef} />
-      <CryptexRingInnermost dragRef={childIsDraggingRef} />
+    <group>
+      {/* The Nudging Hand (only visible if user hasn't interacted) */}
+      <ConstellationHand visible={!hasInteracted} />
+
+      <group 
+        ref={groupRef}
+        onClick={handleMainClick}
+        onPointerOver={() => { document.body.style.cursor = 'pointer'; }}
+        onPointerOut={() => { document.body.style.cursor = 'auto'; }}
+      >
+        <LiquidLayer />
+        <PurpleDisc />
+        
+        <CryptexRingOuter dragRef={childIsDraggingRef} onInteract={onInteract} />
+        <CryptexRingInner dragRef={childIsDraggingRef} onInteract={onInteract} />
+        <CryptexRingInnermost dragRef={childIsDraggingRef} onInteract={onInteract} />
+      </group>
     </group>
   );
 }
@@ -340,7 +435,6 @@ function InteractiveArtifact() {
 // --- MAIN SCENE ---
 export default function TheArtifact() {
   return (
-    // FIX: touchAction: "none" is CRITICAL for mobile drag to work without browser scrolling hijacking the touch
     <div style={{ width: "100vw", height: "100vh", background: "#000", overflow: "hidden", touchAction: "none" }}>
       <Canvas camera={{ position: [0, 0, 6], fov: 40 }}>
         <ResponsiveCamera />
