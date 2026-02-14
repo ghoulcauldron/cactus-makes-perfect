@@ -28,7 +28,6 @@ function ResponsiveCamera() {
 
 // --- PNG IMAGE OVERLAY SYSTEM ---
 function ConstellationImages({ visible, layout }: { visible: boolean, layout: any }) {
-  // Load assets
   const [texStars, texHand, texConstellation, texBurst] = useLoader(THREE.TextureLoader, [
     "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/artifact/handstars.png",
     "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/artifact/hand.png",
@@ -48,7 +47,6 @@ function ConstellationImages({ visible, layout }: { visible: boolean, layout: an
     });
   }, [texStars, texHand, texConstellation, texBurst]);
 
-  // Opacity Ceilings
   const isMobile = layout.isMobile;
   const maxHandOpacity = isMobile ? 0.3 : 0.7; 
   const baseStarOpacity = isMobile ? 0.3 : 0.6;
@@ -56,27 +54,26 @@ function ConstellationImages({ visible, layout }: { visible: boolean, layout: an
   useFrame((state) => {
     if (!visible) return; 
 
-    // Total Cycle: 9 Seconds
+    // --- ANIMATION: 9 SECOND CYCLE ---
+    // 1. Stars Only -> 2. Glow In -> 3. Three Pulses -> 4. Fade Out
     const t = state.clock.elapsedTime % 9.0; 
 
-    // --- TIMING CONFIG ---
     const T_REST_START = 1.0;   // 0s-1s: Just Stars
-    const T_FADE_IN    = 3.0;   // 1s-3s: Hand Glows In (0 to 100%)
-    const T_PULSE      = 6.0;   // 3s-6s: Hand Solid, Burst Pulses x3
-    const T_FADE_OUT   = 8.0;   // 6s-8s: Hand & Burst Fade Out
-    // 8s-9s: End Rest (Buffer)
+    const T_FADE_IN    = 3.0;   // 1s-3s: Hand Glows In
+    const T_PULSE      = 6.0;   // 3s-6s: Burst Pulses x3
+    const T_FADE_OUT   = 8.0;   // 6s-8s: Fade Out
+    // 8s-9s: End Rest
 
     let opHand = 0;
     let opBurst = 0;
 
-    // --- SEQUENCE LOGIC ---
     if (t < T_REST_START) {
-        // Phase 0: Rest (Stars only)
+        // Phase 0: Rest
         opHand = 0;
         opBurst = 0;
     } 
     else if (t < T_FADE_IN) {
-        // Phase 1: Hand Glows from 0 to 100%
+        // Phase 1: Hand Glows In
         opHand = (t - T_REST_START) / (T_FADE_IN - T_REST_START);
         opBurst = 0;
     } 
@@ -85,15 +82,14 @@ function ConstellationImages({ visible, layout }: { visible: boolean, layout: an
         opHand = 1.0;
         
         const burstTime = t - T_FADE_IN;
-        // Frequency logic: 3 pulses in 3 seconds = 1Hz
-        // (1 - cos) / 2 creates a smooth 0 -> 1 -> 0 wave
+        // 3 Pulses in 3 Seconds (1Hz) using Cosine to start/end at 0 smoothly
         opBurst = (1 - Math.cos(burstTime * Math.PI * 2)) / 2;
     } 
     else if (t < T_FADE_OUT) {
-        // Phase 3: Fade Everything Out
+        // Phase 3: Fade Out
         const fadeProgress = (t - T_PULSE) / (T_FADE_OUT - T_PULSE);
         opHand = 1.0 - fadeProgress;
-        opBurst = 0; // Burst ended at 0 in previous phase
+        opBurst = 0; 
     } 
     else {
         // Phase 4: Final Rest
@@ -101,7 +97,6 @@ function ConstellationImages({ visible, layout }: { visible: boolean, layout: an
         opBurst = 0;
     }
 
-    // Apply Opacities
     if (refHand.current) refHand.current.opacity = opHand * maxHandOpacity;
     if (refConstellation.current) refConstellation.current.opacity = opHand * maxHandOpacity; 
     if (refBurst.current) refBurst.current.opacity = opBurst * maxHandOpacity; 
@@ -111,7 +106,6 @@ function ConstellationImages({ visible, layout }: { visible: boolean, layout: an
 
   return (
     <group position={layout.pos} rotation={layout.rot} scale={layout.scale} visible={visible}>
-      {/* LAYER 1: STARS (Persistent) */}
       <mesh position={[0,0,0]}>
         <planeGeometry args={[PLANE_SIZE, PLANE_SIZE]} />
         <meshBasicMaterial 
@@ -123,20 +117,14 @@ function ConstellationImages({ visible, layout }: { visible: boolean, layout: an
             depthWrite={false} 
         />
       </mesh>
-
-      {/* LAYER 2: HAND */}
       <mesh position={[0,0,0.01]}>
         <planeGeometry args={[PLANE_SIZE, PLANE_SIZE]} />
         <meshBasicMaterial ref={refHand} map={texHand} transparent opacity={0} color="#ffffff" toneMapped={false} depthWrite={false} />
       </mesh>
-
-      {/* LAYER 3: CONSTELLATION */}
       <mesh position={[0,0,0.02]}>
         <planeGeometry args={[PLANE_SIZE, PLANE_SIZE]} />
         <meshBasicMaterial ref={refConstellation} map={texConstellation} transparent opacity={0} color="#ffffff" toneMapped={false} depthWrite={false} />
       </mesh>
-
-      {/* LAYER 4: BURST */}
       <mesh position={[0,0,0.03]}>
         <planeGeometry args={[PLANE_SIZE, PLANE_SIZE]} />
         <meshBasicMaterial ref={refBurst} map={texBurst} transparent opacity={0} color="#ffffff" toneMapped={false} depthWrite={false} />
@@ -151,17 +139,13 @@ function ConstellationManager({ hasInteracted }: { hasInteracted: boolean }) {
 
   const layout = useMemo(() => {
     const isMobile = viewport.width < viewport.height;
-    
-    // Base scale
     const baseScale = 0.35;
-
+    
     if (isMobile) {
-      // --- MOBILE CONFIG ---
+      // --- MOBILE ---
       const mobileScale = 0.35 * 2.5; 
-
       return {
         isMobile: true,
-        // Mobile: Fixed position logic (Top Right)
         pos: [
             viewport.width / 2.1, 
             (viewport.height / 2.1) + (viewport.height * 0.1), 
@@ -171,27 +155,20 @@ function ConstellationManager({ hasInteracted }: { hasInteracted: boolean }) {
         scale: [mobileScale, mobileScale, mobileScale]
       };
     } else {
-      // --- DESKTOP CONFIG (FIXED TRACKING) ---
-      const desktopScale = 0.35 * 2.5;
-
-      // 1. Safe Zone Logic:
-      // We want it to try to stick to the right edge: (viewport.width / 2) - 1.5
-      // BUT we strictly clamp it so it never goes below 2.5 (The center/artifact safe zone).
-      // This prevents overlap on resize.
-      const safeX = Math.max( (viewport.width / 2) - 1.5, 2.5 );
-      
+      // --- DESKTOP ---
+      const desktopScale = 0.35 * 2.5; 
+      const rightAnchor = viewport.width / 2.2; 
+      const paddingRight = viewport.width * 0.05; 
       const shiftDownAmount = viewport.height * -0.10; 
-
-      // 2. Parallax Fix:
-      // Moved Z from -2 to 0 (same plane as artifact) so they don't drift relative to each other on zoom
-      const zDepth = 0; 
-
       const rotZ = THREE.MathUtils.degToRad(-20); 
       const rotY = THREE.MathUtils.degToRad(15); 
 
+      // Safe Zone Logic (Prevent overlap)
+      const safeX = Math.max( (viewport.width / 2) - 1.5, 2.5 );
+
       return {
         isMobile: false,
-        pos: [safeX, shiftDownAmount, zDepth],
+        pos: [safeX, shiftDownAmount, 0], // Z=0 for parallax fix
         rot: [0, rotY, rotZ], 
         scale: [desktopScale, desktopScale, desktopScale]
       };
@@ -481,14 +458,48 @@ function InteractiveArtifact({ setHasInteracted }: { setHasInteracted: (val: boo
   const groupRef = useRef<THREE.Group>(null);
   const [targetRotation, setTargetRotation] = useState(0);
   const childIsDraggingRef = useRef(false);
+  
+  // Gyro State
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+
+  // 1. Gyroscope Listener (Subtle Tilt)
+  useEffect(() => {
+    const handleOrientation = (event: DeviceOrientationEvent) => {
+      // Normalize values (Gamma: Left/Right, Beta: Front/Back)
+      // Dividing by 45 limits the tilt range to roughly -1 to 1 for 45 degree tilt
+      const x = event.gamma ? event.gamma / 45 : 0; 
+      const y = event.beta ? (event.beta - 45) / 45 : 0; // Assuming 45deg holding angle
+      setTilt({ x: y, y: x });
+    };
+    
+    // Check if device orientation is supported
+    if (window.DeviceOrientationEvent) {
+      window.addEventListener("deviceorientation", handleOrientation);
+    }
+    return () => {
+      window.removeEventListener("deviceorientation", handleOrientation);
+    };
+  }, []);
 
   const onInteract = () => {
     setHasInteracted(true);
   };
 
-  useFrame(() => {
+  useFrame((state) => {
     if (groupRef.current) {
+      // Base rotation (spinning logic)
       groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, targetRotation, 0.08);
+      
+      // ADD: Tilt Logic
+      // If gyro data exists, use it. If not, use mouse pointer (parallax fallback)
+      // This ensures desktop gets a "feel" and mobile gets gyro if permitted.
+      const targetTiltX = tilt.x !== 0 ? tilt.x : (state.pointer.y * 0.5);
+      const targetTiltZ = tilt.y !== 0 ? -tilt.y : (-state.pointer.x * 0.5);
+
+      // Lerp the Group's X and Z rotation for the tilt effect
+      // 0.1 intensity keeps it "slight"
+      groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, targetTiltX * 0.2, 0.1);
+      groupRef.current.rotation.z = THREE.MathUtils.lerp(groupRef.current.rotation.z, targetTiltZ * 0.2, 0.1);
     }
   });
 
