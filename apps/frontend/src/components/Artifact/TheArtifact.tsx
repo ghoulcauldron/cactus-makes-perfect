@@ -28,11 +28,12 @@ function ResponsiveCamera() {
 
 // --- PNG IMAGE OVERLAY SYSTEM ---
 function ConstellationImages({ visible, layout }: { visible: boolean, layout: any }) {
+  // Load assets from Supabase Storage
   const [texStars, texHand, texConstellation, texBurst] = useLoader(THREE.TextureLoader, [
-    "/artifacts/handstars.png",
-    "/artifacts/hand.png",
-    "/artifacts/constellation.png",
-    "/artifacts/burst.png",
+    "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/artifact/handstars.png",
+    "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/artifact/hand.png",
+    "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/artifact/constellation.png",
+    "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/artifact/burst.png",
   ]);
 
   const refHand = useRef<THREE.MeshBasicMaterial>(null);
@@ -40,6 +41,7 @@ function ConstellationImages({ visible, layout }: { visible: boolean, layout: an
   const refBurst = useRef<THREE.MeshBasicMaterial>(null);
 
   useLayoutEffect(() => {
+    // Ensure crisp or smooth rendering as preferred (Linear = Smooth)
     [texStars, texHand, texConstellation, texBurst].forEach(t => {
       t.minFilter = THREE.LinearFilter; 
       t.magFilter = THREE.LinearFilter;
@@ -132,10 +134,10 @@ function ConstellationManager({ hasInteracted }: { hasInteracted: boolean }) {
         // Pos: Top Right + 10% Higher
         pos: [
             viewport.width / 2.5, 
-            (viewport.height / 2.5) + (viewport.height * 0.1), // Adjusted UP by 10%
+            (viewport.height / 2.5) + (viewport.height * 0.1), 
             -2
         ], 
-        // Rotation: Clockwise 90 degrees from previous (0.75PI - 0.5PI = 0.25PI)
+        // Rotation: Clockwise 90 degrees
         rot: [0, 0, Math.PI * 0.25],
         scale: [baseScale, baseScale, baseScale]
       };
@@ -296,18 +298,22 @@ function CryptexRingInner({ dragRef, onInteract }: { dragRef: React.MutableRefOb
         dragRef.current = true;
         onInteract();
     }
+    
     if (down) {
       const cx = x - size.width / 2;
       const cy = y - size.height / 2;
       const r2 = cx * cx + cy * cy;
+      
       if (r2 > 0) {
         const angleDelta = (cx * dy - cy * dx) / r2;
         const oldRotation = rotationRef.current;
         const newRotation = rotationRef.current - angleDelta;
+
         const SLOT = Math.PI / 6;
         const oldSlot = Math.floor(oldRotation / SLOT);
         const newSlot = Math.floor(newRotation / SLOT);
         if (oldSlot !== newSlot) triggerHaptic();
+
         rotationRef.current = newRotation; 
         api.start({ rotationZ: rotationRef.current, immediate: true });
       }
