@@ -28,6 +28,7 @@ function ResponsiveCamera() {
 
 // --- PNG IMAGE OVERLAY SYSTEM ---
 function ConstellationImages({ visible, layout }: { visible: boolean, layout: any }) {
+  // Load assets
   const [texStars, texHand, texConstellation, texBurst] = useLoader(THREE.TextureLoader, [
     "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/artifact/handstars.png",
     "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/artifact/hand.png",
@@ -39,6 +40,7 @@ function ConstellationImages({ visible, layout }: { visible: boolean, layout: an
   const refConstellation = useRef<THREE.MeshBasicMaterial>(null);
   const refBurst = useRef<THREE.MeshBasicMaterial>(null);
 
+  // OPTIMIZATION: Set texture filters once
   useLayoutEffect(() => {
     [texStars, texHand, texConstellation, texBurst].forEach(t => {
       t.minFilter = THREE.LinearFilter; 
@@ -47,6 +49,7 @@ function ConstellationImages({ visible, layout }: { visible: boolean, layout: an
     });
   }, [texStars, texHand, texConstellation, texBurst]);
 
+  // Opacity Ceilings
   const isMobile = layout.isMobile;
   const maxHandOpacity = isMobile ? 0.3 : 0.7; 
   const baseStarOpacity = isMobile ? 0.3 : 0.6;
@@ -54,13 +57,12 @@ function ConstellationImages({ visible, layout }: { visible: boolean, layout: an
   useFrame((state) => {
     if (!visible) return; 
 
-    // --- ANIMATION: 9 SECOND CYCLE ---
-    // 1. Stars Only -> 2. Glow In -> 3. Three Pulses -> 4. Fade Out
+    // --- ANIMATION: 9 SECOND CYCLE (Glow -> 3 Pulses -> Fade) ---
     const t = state.clock.elapsedTime % 9.0; 
 
     const T_REST_START = 1.0;   // 0s-1s: Just Stars
     const T_FADE_IN    = 3.0;   // 1s-3s: Hand Glows In
-    const T_PULSE      = 6.0;   // 3s-6s: Burst Pulses x3
+    const T_PULSE      = 6.0;   // 3s-6s: Hand Solid, Burst Pulses x3
     const T_FADE_OUT   = 8.0;   // 6s-8s: Fade Out
     // 8s-9s: End Rest
 
@@ -73,7 +75,7 @@ function ConstellationImages({ visible, layout }: { visible: boolean, layout: an
         opBurst = 0;
     } 
     else if (t < T_FADE_IN) {
-        // Phase 1: Hand Glows In
+        // Phase 1: Hand Glows In (0 -> 1)
         opHand = (t - T_REST_START) / (T_FADE_IN - T_REST_START);
         opBurst = 0;
     } 
@@ -82,7 +84,7 @@ function ConstellationImages({ visible, layout }: { visible: boolean, layout: an
         opHand = 1.0;
         
         const burstTime = t - T_FADE_IN;
-        // 3 Pulses in 3 Seconds (1Hz) using Cosine to start/end at 0 smoothly
+        // 3 Pulses in 3 Seconds (1Hz)
         opBurst = (1 - Math.cos(burstTime * Math.PI * 2)) / 2;
     } 
     else if (t < T_FADE_OUT) {
@@ -102,12 +104,14 @@ function ConstellationImages({ visible, layout }: { visible: boolean, layout: an
     if (refBurst.current) refBurst.current.opacity = opBurst * maxHandOpacity; 
   });
 
-  const PLANE_SIZE = 3; 
+  // OPTIMIZATION: Memoize geometry args to avoid recreation
+  const planeArgs = useMemo(() => [3, 3] as [number, number], []); 
 
   return (
     <group position={layout.pos} rotation={layout.rot} scale={layout.scale} visible={visible}>
+      {/* LAYER 1: STARS (Persistent) */}
       <mesh position={[0,0,0]}>
-        <planeGeometry args={[PLANE_SIZE, PLANE_SIZE]} />
+        <planeGeometry args={planeArgs} />
         <meshBasicMaterial 
             map={texStars} 
             transparent 
@@ -117,16 +121,22 @@ function ConstellationImages({ visible, layout }: { visible: boolean, layout: an
             depthWrite={false} 
         />
       </mesh>
+
+      {/* LAYER 2: HAND */}
       <mesh position={[0,0,0.01]}>
-        <planeGeometry args={[PLANE_SIZE, PLANE_SIZE]} />
+        <planeGeometry args={planeArgs} />
         <meshBasicMaterial ref={refHand} map={texHand} transparent opacity={0} color="#ffffff" toneMapped={false} depthWrite={false} />
       </mesh>
+
+      {/* LAYER 3: CONSTELLATION */}
       <mesh position={[0,0,0.02]}>
-        <planeGeometry args={[PLANE_SIZE, PLANE_SIZE]} />
+        <planeGeometry args={planeArgs} />
         <meshBasicMaterial ref={refConstellation} map={texConstellation} transparent opacity={0} color="#ffffff" toneMapped={false} depthWrite={false} />
       </mesh>
+
+      {/* LAYER 4: BURST */}
       <mesh position={[0,0,0.03]}>
-        <planeGeometry args={[PLANE_SIZE, PLANE_SIZE]} />
+        <planeGeometry args={planeArgs} />
         <meshBasicMaterial ref={refBurst} map={texBurst} transparent opacity={0} color="#ffffff" toneMapped={false} depthWrite={false} />
       </mesh>
     </group>
@@ -142,8 +152,10 @@ function ConstellationManager({ hasInteracted }: { hasInteracted: boolean }) {
     const baseScale = 0.35;
     
     if (isMobile) {
-      // --- MOBILE ---
-      const mobileScale = 0.35 * 2.5; 
+      // --- MOBILE CONFIG ---
+      // Scale: 2.1x base
+      const mobileScale = baseScale * 2.1; 
+
       return {
         isMobile: true,
         pos: [
@@ -155,20 +167,18 @@ function ConstellationManager({ hasInteracted }: { hasInteracted: boolean }) {
         scale: [mobileScale, mobileScale, mobileScale]
       };
     } else {
-      // --- DESKTOP ---
-      const desktopScale = 0.35 * 2.5; 
-      const rightAnchor = viewport.width / 2.2; 
-      const paddingRight = viewport.width * 0.05; 
+      // --- DESKTOP CONFIG ---
+      // Scale: 2.5x base
+      const desktopScale = baseScale * 2.5; 
+
+      const safeX = Math.max( (viewport.width / 2) - 1.5, 2.5 );
       const shiftDownAmount = viewport.height * -0.10; 
       const rotZ = THREE.MathUtils.degToRad(-20); 
       const rotY = THREE.MathUtils.degToRad(15); 
 
-      // Safe Zone Logic (Prevent overlap)
-      const safeX = Math.max( (viewport.width / 2) - 1.5, 2.5 );
-
       return {
         isMobile: false,
-        pos: [safeX, shiftDownAmount, 0], // Z=0 for parallax fix
+        pos: [safeX, shiftDownAmount, 0], 
         rot: [0, rotY, rotZ], 
         scale: [desktopScale, desktopScale, desktopScale]
       };
@@ -281,6 +291,10 @@ function CryptexRingOuter({ dragRef, onInteract }: { dragRef: React.MutableRefOb
     }
   }, { preventScroll: true });
 
+  // OPTIMIZATION: Memoize geometry args
+  const ringArgs = useMemo(() => [1.02, 1.55, 64] as [number, number, number], []);
+  const planeArgs = useMemo(() => [3.2, 3.2] as [number, number], []);
+
   return (
     // @ts-ignore
     <animated.group 
@@ -291,11 +305,11 @@ function CryptexRingOuter({ dragRef, onInteract }: { dragRef: React.MutableRefOb
       {...(bind() as any)}
     >
       <mesh>
-        <ringGeometry args={[1.02, 1.55, 64]} />
+        <ringGeometry args={ringArgs} />
         <meshPhysicalMaterial color="#8e59c3" metalness={1.0} roughness={0.1} clearcoat={1.0} side={THREE.DoubleSide} />
       </mesh>
       <mesh position={[0, 0, 0.005]} raycast={() => null}> 
-        <planeGeometry args={[3.2, 3.2]} /> 
+        <planeGeometry args={planeArgs} /> 
         <meshBasicMaterial map={texture} transparent opacity={1} color="#00ffff" toneMapped={false} depthWrite={false} side={THREE.DoubleSide} />
       </mesh>
     </animated.group>
@@ -343,6 +357,10 @@ function CryptexRingInner({ dragRef, onInteract }: { dragRef: React.MutableRefOb
     }
   }, { preventScroll: true });
 
+  // OPTIMIZATION: Memoize geometry args
+  const ringArgs = useMemo(() => [0.65, 1.03, 64] as [number, number, number], []);
+  const planeArgs = useMemo(() => [3.3, 3.3] as [number, number], []);
+
   return (
     // @ts-ignore
     <animated.group 
@@ -353,11 +371,11 @@ function CryptexRingInner({ dragRef, onInteract }: { dragRef: React.MutableRefOb
       {...(bind() as any)}
     >
       <mesh>
-        <ringGeometry args={[0.65, 1.03, 64]} />
+        <ringGeometry args={ringArgs} />
         <meshPhysicalMaterial color="#8e59c3" metalness={1.0} roughness={0.3} clearcoat={0.8} side={THREE.DoubleSide} />
       </mesh>
       <mesh position={[0, 0, 0.005]} raycast={() => null}> 
-        <planeGeometry args={[3.3, 3.3]} /> 
+        <planeGeometry args={planeArgs} /> 
         <meshBasicMaterial map={texture} transparent opacity={1} color="#00ffff" toneMapped={false} depthWrite={false} side={THREE.DoubleSide} />
       </mesh>
     </animated.group>
@@ -405,6 +423,10 @@ function CryptexRingInnermost({ dragRef, onInteract }: { dragRef: React.MutableR
     }
   }, { preventScroll: true });
 
+  // OPTIMIZATION: Memoize geometry args
+  const ringArgs = useMemo(() => [0.25, 0.645, 64] as [number, number, number], []);
+  const planeArgs = useMemo(() => [3.4, 3.4] as [number, number], []);
+
   return (
     // @ts-ignore
     <animated.group 
@@ -415,11 +437,11 @@ function CryptexRingInnermost({ dragRef, onInteract }: { dragRef: React.MutableR
       {...(bind() as any)}
     >
       <mesh>
-        <ringGeometry args={[0.25, 0.645, 64]} />
+        <ringGeometry args={ringArgs} />
         <meshPhysicalMaterial color="#8e59c3" metalness={1.0} roughness={0.1} clearcoat={1.0} side={THREE.DoubleSide} />
       </mesh>
       <mesh position={[0, 0, 0.005]} raycast={() => null}> 
-        <planeGeometry args={[3.4, 3.4]} /> 
+        <planeGeometry args={planeArgs} /> 
         <meshBasicMaterial map={texture} transparent opacity={1} color="#00ffff" toneMapped={false} depthWrite={false} side={THREE.DoubleSide} />
       </mesh>
     </animated.group>
@@ -430,9 +452,13 @@ function CryptexRingInnermost({ dragRef, onInteract }: { dragRef: React.MutableR
 function LiquidLayer() {
   const texture = useLoader(THREE.TextureLoader, "/artifacts/coin_displacement.png");
   useLayoutEffect(() => { texture.minFilter = THREE.LinearFilter; texture.magFilter = THREE.LinearFilter; texture.needsUpdate = true; }, [texture]);
+  
+  // OPTIMIZATION: Memoize geometry args
+  const planeArgs = useMemo(() => [3, 3, 512, 512] as [number, number, number, number], []);
+
   return (
     <mesh position={[0, 0, 0.03]}> 
-      <planeGeometry args={[3, 3, 512, 512]} />
+      <planeGeometry args={planeArgs} />
       <meshPhysicalMaterial 
         color="#e0e0ff" metalness={1.0} roughness={0.6} clearcoat={0.0} envMapIntensity={1.0}    
         iridescence={1.0} iridescenceIOR={1.3} iridescenceThicknessRange={[0, 600]}
@@ -445,9 +471,12 @@ function LiquidLayer() {
 
 // --- 6. THE PURPLE DISC ---
 function PurpleDisc() {
+  // OPTIMIZATION: Memoize geometry args
+  const cylArgs = useMemo(() => [1.6, 1.6, 0.05, 64] as [number, number, number, number], []);
+
   return (
     <mesh rotation={[Math.PI / 2, 0, 0]}>
-      <cylinderGeometry args={[1.6, 1.6, 0.05, 64]} />
+      <cylinderGeometry args={cylArgs} />
       <meshPhysicalMaterial color="#330066" metalness={1.0} roughness={0.15} clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={2.5} />
     </mesh>
   );
@@ -459,20 +488,18 @@ function InteractiveArtifact({ setHasInteracted }: { setHasInteracted: (val: boo
   const [targetRotation, setTargetRotation] = useState(0);
   const childIsDraggingRef = useRef(false);
   
-  // Gyro State
-  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  // OPTIMIZATION: Use Ref instead of State for high-frequency tilt updates
+  // This prevents the entire component tree from re-rendering 60fps on device motion
+  const tiltRef = useRef({ x: 0, y: 0 });
 
-  // 1. Gyroscope Listener (Subtle Tilt)
   useEffect(() => {
     const handleOrientation = (event: DeviceOrientationEvent) => {
-      // Normalize values (Gamma: Left/Right, Beta: Front/Back)
-      // Dividing by 45 limits the tilt range to roughly -1 to 1 for 45 degree tilt
       const x = event.gamma ? event.gamma / 45 : 0; 
-      const y = event.beta ? (event.beta - 45) / 45 : 0; // Assuming 45deg holding angle
-      setTilt({ x: y, y: x });
+      const y = event.beta ? (event.beta - 45) / 45 : 0; 
+      // Update Ref, NOT State
+      tiltRef.current = { x: y, y: x };
     };
     
-    // Check if device orientation is supported
     if (window.DeviceOrientationEvent) {
       window.addEventListener("deviceorientation", handleOrientation);
     }
@@ -487,17 +514,17 @@ function InteractiveArtifact({ setHasInteracted }: { setHasInteracted: (val: boo
 
   useFrame((state) => {
     if (groupRef.current) {
-      // Base rotation (spinning logic)
+      // Base Rotation
       groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, targetRotation, 0.08);
       
-      // ADD: Tilt Logic
-      // If gyro data exists, use it. If not, use mouse pointer (parallax fallback)
-      // This ensures desktop gets a "feel" and mobile gets gyro if permitted.
-      const targetTiltX = tilt.x !== 0 ? tilt.x : (state.pointer.y * 0.5);
-      const targetTiltZ = tilt.y !== 0 ? -tilt.y : (-state.pointer.x * 0.5);
+      // Tilt Logic (Reads from Ref now)
+      const tX = tiltRef.current.x;
+      const tY = tiltRef.current.y;
+      
+      // Fallback to mouse if no gyro
+      const targetTiltX = tX !== 0 ? tX : (state.pointer.y * 0.5);
+      const targetTiltZ = tY !== 0 ? -tY : (-state.pointer.x * 0.5);
 
-      // Lerp the Group's X and Z rotation for the tilt effect
-      // 0.1 intensity keeps it "slight"
       groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, targetTiltX * 0.2, 0.1);
       groupRef.current.rotation.z = THREE.MathUtils.lerp(groupRef.current.rotation.z, targetTiltZ * 0.2, 0.1);
     }
