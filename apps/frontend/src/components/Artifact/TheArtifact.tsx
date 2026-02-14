@@ -28,7 +28,7 @@ function ResponsiveCamera() {
 
 // --- PNG IMAGE OVERLAY SYSTEM ---
 function ConstellationImages({ visible, layout }: { visible: boolean, layout: any }) {
-  // Load assets from Supabase Storage
+  // Load assets
   const [texStars, texHand, texConstellation, texBurst] = useLoader(THREE.TextureLoader, [
     "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/artifact/handstars.png",
     "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/artifact/hand.png",
@@ -41,7 +41,6 @@ function ConstellationImages({ visible, layout }: { visible: boolean, layout: an
   const refBurst = useRef<THREE.MeshBasicMaterial>(null);
 
   useLayoutEffect(() => {
-    // Ensure crisp or smooth rendering as preferred (Linear = Smooth)
     [texStars, texHand, texConstellation, texBurst].forEach(t => {
       t.minFilter = THREE.LinearFilter; 
       t.magFilter = THREE.LinearFilter;
@@ -49,68 +48,96 @@ function ConstellationImages({ visible, layout }: { visible: boolean, layout: an
     });
   }, [texStars, texHand, texConstellation, texBurst]);
 
+  // Opacity Ceilings (Keeping it faint/ethereal as requested)
+  const isMobile = layout.isMobile;
+  const maxHandOpacity = isMobile ? 0.25 : 0.5; 
+  const baseStarOpacity = isMobile ? 0.3 : 0.6;
+
   useFrame((state) => {
     if (!visible) return; 
 
-    const t = state.clock.elapsedTime % 6.0; 
+    // Total Cycle: 9 Seconds
+    const t = state.clock.elapsedTime % 9.0; 
 
-    // --- ANIMATION TIMING VARIABLES ---
-    const PHASE_1_FLICKER_IN = 2.0; 
-    const PHASE_2_SOLID = 2.5;      
-    const PHASE_3_BURST_ENTRY = 3.0;
-    const PHASE_4_ALL_SOLID = 4.5;  
-    const PHASE_5_FADE_OUT = 6.0;   
+    // --- TIMING CONFIG ---
+    const T_REST_START = 1.0;   // 0s-1s: Just Stars
+    const T_FADE_IN    = 3.0;   // 1s-3s: Hand Glows In
+    const T_PULSE      = 6.0;   // 3s-6s: Burst Pulses x3
+    const T_FADE_OUT   = 8.0;   // 6s-8s: Fade Out
+    // 8s-9s: End Rest (Buffer)
 
-    const noise = () => Math.random() > 0.8 ? 0.2 : 1.0; 
-    
-    let opacityHand = 0;
-    let opacityBurst = 0;
+    let opHand = 0;
+    let opBurst = 0;
 
-    // --- LOGIC ---
-    if (t < PHASE_1_FLICKER_IN) {
-        const ramp = t / PHASE_1_FLICKER_IN;
-        opacityHand = ramp * noise();
-        opacityBurst = 0;
-    } else if (t < PHASE_2_SOLID) {
-        opacityHand = 1;
-        opacityBurst = 0;
-    } else if (t < PHASE_3_BURST_ENTRY) {
-        opacityHand = 1;
-        opacityBurst = noise(); 
-    } else if (t < PHASE_4_ALL_SOLID) {
-        opacityHand = 1;
-        opacityBurst = 1;
-    } else {
-        const ramp = 1 - ((t - PHASE_4_ALL_SOLID) / (PHASE_5_FADE_OUT - PHASE_4_ALL_SOLID));
-        opacityHand = ramp * noise();
-        opacityBurst = ramp * noise();
+    // --- SEQUENCE LOGIC ---
+    if (t < T_REST_START) {
+        // Phase 0: Rest
+        opHand = 0;
+        opBurst = 0;
+    } 
+    else if (t < T_FADE_IN) {
+        // Phase 1: Hand Glows from 0 to 100%
+        // Normalize time 0.0 -> 1.0 over duration
+        opHand = (t - T_REST_START) / (T_FADE_IN - T_REST_START);
+        opBurst = 0;
+    } 
+    else if (t < T_PULSE) {
+        // Phase 2: Hand Solid, Burst Pulses 3 Times
+        opHand = 1.0;
+        
+        const burstTime = t - T_FADE_IN;
+        // Frequency logic: We want 3 pulses in 3 seconds (1Hz)
+        // Cosine wave shifted: (1 - cos(2*PI*t)) / 2 starts at 0, goes to 1, back to 0
+        opBurst = (1 - Math.cos(burstTime * Math.PI * 2)) / 2;
+    } 
+    else if (t < T_FADE_OUT) {
+        // Phase 3: Fade Everything Out
+        const fadeProgress = (t - T_PULSE) / (T_FADE_OUT - T_PULSE);
+        opHand = 1.0 - fadeProgress;
+        opBurst = 0; // Burst finishes exactly at 0 from previous phase
+    } 
+    else {
+        // Phase 4: Final Rest
+        opHand = 0;
+        opBurst = 0;
     }
 
-    if (refHand.current) refHand.current.opacity = opacityHand;
-    if (refConstellation.current) refConstellation.current.opacity = opacityHand; 
-    if (refBurst.current) refBurst.current.opacity = opacityBurst;
+    // Apply Opacities (Scaled by 'maxHandOpacity' to keep it faint)
+    if (refHand.current) refHand.current.opacity = opHand * maxHandOpacity;
+    if (refConstellation.current) refConstellation.current.opacity = opHand * maxHandOpacity; 
+    if (refBurst.current) refBurst.current.opacity = opBurst * maxHandOpacity; 
   });
 
   const PLANE_SIZE = 3; 
 
   return (
     <group position={layout.pos} rotation={layout.rot} scale={layout.scale} visible={visible}>
-      {/* LAYER 1: STARS (Frozen, Persistent, White) */}
+      {/* LAYER 1: STARS (Persistent) */}
       <mesh position={[0,0,0]}>
         <planeGeometry args={[PLANE_SIZE, PLANE_SIZE]} />
-        <meshBasicMaterial map={texStars} transparent opacity={1.0} color="#ffffff" toneMapped={false} depthWrite={false} />
+        <meshBasicMaterial 
+            map={texStars} 
+            transparent 
+            opacity={baseStarOpacity}
+            color="#ffffff" 
+            toneMapped={false} 
+            depthWrite={false} 
+        />
       </mesh>
-      {/* LAYER 2: HAND (Flickers, White) */}
+
+      {/* LAYER 2: HAND */}
       <mesh position={[0,0,0.01]}>
         <planeGeometry args={[PLANE_SIZE, PLANE_SIZE]} />
         <meshBasicMaterial ref={refHand} map={texHand} transparent opacity={0} color="#ffffff" toneMapped={false} depthWrite={false} />
       </mesh>
-      {/* LAYER 3: CONSTELLATION LINES (Flickers, White) */}
+
+      {/* LAYER 3: CONSTELLATION */}
       <mesh position={[0,0,0.02]}>
         <planeGeometry args={[PLANE_SIZE, PLANE_SIZE]} />
         <meshBasicMaterial ref={refConstellation} map={texConstellation} transparent opacity={0} color="#ffffff" toneMapped={false} depthWrite={false} />
       </mesh>
-      {/* LAYER 4: BURST (Enters Late, White) */}
+
+      {/* LAYER 4: BURST */}
       <mesh position={[0,0,0.03]}>
         <planeGeometry args={[PLANE_SIZE, PLANE_SIZE]} />
         <meshBasicMaterial ref={refBurst} map={texBurst} transparent opacity={0} color="#ffffff" toneMapped={false} depthWrite={false} />
@@ -119,39 +146,44 @@ function ConstellationImages({ visible, layout }: { visible: boolean, layout: an
   );
 }
 
-// 3. MAIN MANAGER (Handles Responsive Layout)
+// 3. MAIN MANAGER
 function ConstellationManager({ hasInteracted }: { hasInteracted: boolean }) {
   const { viewport } = useThree();
 
   const layout = useMemo(() => {
     const isMobile = viewport.width < viewport.height;
-    
     const baseScale = 0.35;
-
+    
     if (isMobile) {
-      // MOBILE CONFIGURATION
+      // --- MOBILE CONFIG ---
+      // Scale: ~2.1x base (Reduced 30% from 3.0)
+      const mobileScale = baseScale * 2.1; 
+
       return {
+        isMobile: true,
         // Pos: Top Right + 10% Higher
         pos: [
-            viewport.width / 2.5, 
-            (viewport.height / 2.5) + (viewport.height * 0.1), 
+            viewport.width / 2.1, 
+            (viewport.height / 2.1) + (viewport.height * 0.1), 
             -2
         ], 
-        // Rotation: Clockwise 90 degrees
         rot: [0, 0, Math.PI * 0.25],
-        scale: [baseScale, baseScale, baseScale]
+        scale: [mobileScale, mobileScale, mobileScale]
       };
     } else {
-      // DESKTOP CONFIGURATION
-      const desktopScale = baseScale * 1.35; 
+      // --- DESKTOP CONFIG ---
+      // Scale: ~2.45x base (Reduced 30% from 3.5)
+      const desktopScale = baseScale * 2.45; 
+
       const rightAnchor = viewport.width / 2.2; 
       const paddingRight = viewport.width * 0.05; 
-      const shiftUpAmount = viewport.height * 0.20;
+      const shiftDownAmount = viewport.height * -0.10; 
       const rotZ = THREE.MathUtils.degToRad(-20); 
       const rotY = THREE.MathUtils.degToRad(15); 
 
       return {
-        pos: [rightAnchor - paddingRight, shiftUpAmount, -2],
+        isMobile: false,
+        pos: [rightAnchor - paddingRight, shiftDownAmount, -2],
         rot: [0, rotY, rotZ], 
         scale: [desktopScale, desktopScale, desktopScale]
       };
