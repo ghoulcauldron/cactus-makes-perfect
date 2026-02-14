@@ -1,6 +1,6 @@
 import React, { Suspense, useRef, useLayoutEffect, useState, useMemo, useEffect } from "react";
 import { Canvas, useLoader, useFrame, ThreeEvent, useThree } from "@react-three/fiber"; 
-import { Html, Environment, Float, Stars, Line } from "@react-three/drei"; 
+import { Html, Environment, Float, Stars } from "@react-three/drei"; 
 import { EffectComposer, Bloom } from "@react-three/postprocessing"; 
 import { useDrag } from "@use-gesture/react"; 
 import * as THREE from "three";
@@ -26,88 +26,139 @@ function ResponsiveCamera() {
   return null;
 }
 
-// --- CONSTELLATION HAND (The "Nudge") ---
-function ConstellationHand({ visible }: { visible: boolean }) {
-  const groupRef = useRef<THREE.Group>(null);
-  
-  // Hand Geometry Data (Right hand pointing left)
-  const stars = useMemo(() => [
-    new THREE.Vector3(0, 0, 0),       // 0: Index Tip
-    new THREE.Vector3(0.5, 0, 0),     // 1: Index Mid
-    new THREE.Vector3(1.0, 0, 0),     // 2: Index Base
-    new THREE.Vector3(0.8, 0.6, 0),   // 3: Thumb Tip
-    new THREE.Vector3(1.2, 0.3, 0),   // 4: Thumb Base
-    new THREE.Vector3(1.1, -0.3, 0),  // 5: Middle Knuckle
-    new THREE.Vector3(1.15, -0.6, 0), // 6: Ring Knuckle
-    new THREE.Vector3(1.2, -0.9, 0),  // 7: Pinky Knuckle
-    new THREE.Vector3(1.8, -0.1, 0),  // 8: Wrist Top
-    new THREE.Vector3(1.8, -0.8, 0),  // 9: Wrist Bottom
-  ], []);
+// --- PNG IMAGE OVERLAY SYSTEM ---
+function ConstellationImages({ visible, layout }: { visible: boolean, layout: any }) {
+  const [texStars, texHand, texConstellation, texBurst] = useLoader(THREE.TextureLoader, [
+    "/artifacts/handstars.png",
+    "/artifacts/hand.png",
+    "/artifacts/constellation.png",
+    "/artifacts/burst.png",
+  ]);
 
-  // Connections for the "Constellation" lines
-  const lines = useMemo(() => [
-    [stars[0], stars[1]], [stars[1], stars[2]], // Index Finger
-    [stars[3], stars[4]], [stars[4], stars[2]], // Thumb
-    [stars[2], stars[5]], [stars[5], stars[6]], [stars[6], stars[7]], // Knuckles
-    [stars[2], stars[8]], [stars[7], stars[9]], // Hand Back/Palm
-    [stars[8], stars[9]] // Wrist cuff
-  ], [stars]);
+  const refHand = useRef<THREE.MeshBasicMaterial>(null);
+  const refConstellation = useRef<THREE.MeshBasicMaterial>(null);
+  const refBurst = useRef<THREE.MeshBasicMaterial>(null);
+
+  useLayoutEffect(() => {
+    [texStars, texHand, texConstellation, texBurst].forEach(t => {
+      t.minFilter = THREE.LinearFilter; 
+      t.magFilter = THREE.LinearFilter;
+      t.needsUpdate = true;
+    });
+  }, [texStars, texHand, texConstellation, texBurst]);
 
   useFrame((state) => {
-    if (!groupRef.current) return;
-    
-    // Animation Loop: 0 to 1 over roughly 3 seconds
-    const t = state.clock.elapsedTime % 3.5;
-    
-    // 1. Position Animation (Nudge)
-    // Move from right (2.8) to left (2.2) to touch the ring
-    const nudge = Math.sin(t * 2) * 0.2; 
-    // Only nudge during the "visible" phase of the loop
-    const basePos = 2.5;
-    groupRef.current.position.x = basePos + (t < 1.5 ? -t * 0.3 : -0.45); // Poke in
+    if (!visible) return; 
 
-    // 2. Opacity Animation (Fade In -> Hold -> Fade Out)
-    let opacity = 0;
-    if (t < 0.5) opacity = t * 2;       // Fade In
-    else if (t < 2.0) opacity = 1;      // Hold
-    else if (t < 3.0) opacity = 3.0 - t;// Fade Out
-    else opacity = 0;                   // Wait
+    const t = state.clock.elapsedTime % 6.0; 
 
-    // Apply opacity to children
-    groupRef.current.children.forEach((child: any) => {
-        if (child.material) {
-            child.material.opacity = visible ? opacity * 0.6 : 0; // Max opacity 0.6
-            child.visible = visible && opacity > 0.01;
-        }
-    });
+    // --- ANIMATION TIMING VARIABLES ---
+    const PHASE_1_FLICKER_IN = 2.0; 
+    const PHASE_2_SOLID = 2.5;      
+    const PHASE_3_BURST_ENTRY = 3.0;
+    const PHASE_4_ALL_SOLID = 4.5;  
+    const PHASE_5_FADE_OUT = 6.0;   
+
+    const noise = () => Math.random() > 0.8 ? 0.2 : 1.0; 
+    
+    let opacityHand = 0;
+    let opacityBurst = 0;
+
+    // --- LOGIC ---
+    if (t < PHASE_1_FLICKER_IN) {
+        const ramp = t / PHASE_1_FLICKER_IN;
+        opacityHand = ramp * noise();
+        opacityBurst = 0;
+    } else if (t < PHASE_2_SOLID) {
+        opacityHand = 1;
+        opacityBurst = 0;
+    } else if (t < PHASE_3_BURST_ENTRY) {
+        opacityHand = 1;
+        opacityBurst = noise(); 
+    } else if (t < PHASE_4_ALL_SOLID) {
+        opacityHand = 1;
+        opacityBurst = 1;
+    } else {
+        const ramp = 1 - ((t - PHASE_4_ALL_SOLID) / (PHASE_5_FADE_OUT - PHASE_4_ALL_SOLID));
+        opacityHand = ramp * noise();
+        opacityBurst = ramp * noise();
+    }
+
+    if (refHand.current) refHand.current.opacity = opacityHand;
+    if (refConstellation.current) refConstellation.current.opacity = opacityHand; 
+    if (refBurst.current) refBurst.current.opacity = opacityBurst;
   });
 
-  if (!visible) return null;
+  const PLANE_SIZE = 3; 
 
   return (
-    <group ref={groupRef} position={[2.5, -0.5, 0]} rotation={[0, 0, 0.2]}>
-      {/* The Stars (Joints) */}
-      {stars.map((pos, i) => (
-        <mesh key={i} position={pos}>
-          <sphereGeometry args={[0.04, 8, 8]} />
-          <meshBasicMaterial color="#00ffff" transparent opacity={0.6} />
-        </mesh>
-      ))}
-      
-      {/* The Constellation Lines */}
-      {lines.map((points, i) => (
-        <Line 
-          key={`l-${i}`} 
-          points={points} 
-          color="#00ffff" 
-          transparent 
-          opacity={0.3} 
-          lineWidth={1} 
-        />
-      ))}
+    <group position={layout.pos} rotation={layout.rot} scale={layout.scale} visible={visible}>
+      {/* LAYER 1: STARS (Frozen, Persistent, White) */}
+      <mesh position={[0,0,0]}>
+        <planeGeometry args={[PLANE_SIZE, PLANE_SIZE]} />
+        <meshBasicMaterial map={texStars} transparent opacity={1.0} color="#ffffff" toneMapped={false} depthWrite={false} />
+      </mesh>
+      {/* LAYER 2: HAND (Flickers, White) */}
+      <mesh position={[0,0,0.01]}>
+        <planeGeometry args={[PLANE_SIZE, PLANE_SIZE]} />
+        <meshBasicMaterial ref={refHand} map={texHand} transparent opacity={0} color="#ffffff" toneMapped={false} depthWrite={false} />
+      </mesh>
+      {/* LAYER 3: CONSTELLATION LINES (Flickers, White) */}
+      <mesh position={[0,0,0.02]}>
+        <planeGeometry args={[PLANE_SIZE, PLANE_SIZE]} />
+        <meshBasicMaterial ref={refConstellation} map={texConstellation} transparent opacity={0} color="#ffffff" toneMapped={false} depthWrite={false} />
+      </mesh>
+      {/* LAYER 4: BURST (Enters Late, White) */}
+      <mesh position={[0,0,0.03]}>
+        <planeGeometry args={[PLANE_SIZE, PLANE_SIZE]} />
+        <meshBasicMaterial ref={refBurst} map={texBurst} transparent opacity={0} color="#ffffff" toneMapped={false} depthWrite={false} />
+      </mesh>
     </group>
   );
 }
+
+// 3. MAIN MANAGER (Handles Responsive Layout)
+function ConstellationManager({ hasInteracted }: { hasInteracted: boolean }) {
+  const { viewport } = useThree();
+
+  const layout = useMemo(() => {
+    const isMobile = viewport.width < viewport.height;
+    
+    const baseScale = 0.35;
+
+    if (isMobile) {
+      // MOBILE CONFIGURATION
+      return {
+        // Pos: Top Right + 10% Higher
+        pos: [
+            viewport.width / 2.5, 
+            (viewport.height / 2.5) + (viewport.height * 0.1), // Adjusted UP by 10%
+            -2
+        ], 
+        // Rotation: Clockwise 90 degrees from previous (0.75PI - 0.5PI = 0.25PI)
+        rot: [0, 0, Math.PI * 0.25],
+        scale: [baseScale, baseScale, baseScale]
+      };
+    } else {
+      // DESKTOP CONFIGURATION
+      const desktopScale = baseScale * 1.35; 
+      const rightAnchor = viewport.width / 2.2; 
+      const paddingRight = viewport.width * 0.05; 
+      const shiftUpAmount = viewport.height * 0.20;
+      const rotZ = THREE.MathUtils.degToRad(-20); 
+      const rotY = THREE.MathUtils.degToRad(15); 
+
+      return {
+        pos: [rightAnchor - paddingRight, shiftUpAmount, -2],
+        rot: [0, rotY, rotZ], 
+        scale: [desktopScale, desktopScale, desktopScale]
+      };
+    }
+  }, [viewport]);
+
+  return <ConstellationImages visible={!hasInteracted} layout={layout} />;
+}
+
 
 // --- 0. SHOOTING STAR SYSTEM ---
 function ShootingStar() {
@@ -180,7 +231,7 @@ function CryptexRingOuter({ dragRef, onInteract }: { dragRef: React.MutableRefOb
     event.stopPropagation();
     if (first) {
         dragRef.current = true;
-        onInteract(); // Hide hand
+        onInteract(); 
     }
     
     if (down) {
@@ -245,22 +296,18 @@ function CryptexRingInner({ dragRef, onInteract }: { dragRef: React.MutableRefOb
         dragRef.current = true;
         onInteract();
     }
-    
     if (down) {
       const cx = x - size.width / 2;
       const cy = y - size.height / 2;
       const r2 = cx * cx + cy * cy;
-      
       if (r2 > 0) {
         const angleDelta = (cx * dy - cy * dx) / r2;
         const oldRotation = rotationRef.current;
         const newRotation = rotationRef.current - angleDelta;
-
         const SLOT = Math.PI / 6;
         const oldSlot = Math.floor(oldRotation / SLOT);
         const newSlot = Math.floor(newRotation / SLOT);
         if (oldSlot !== newSlot) triggerHaptic();
-
         rotationRef.current = newRotation; 
         api.start({ rotationZ: rotationRef.current, immediate: true });
       }
@@ -384,14 +431,13 @@ function PurpleDisc() {
 }
 
 // --- 7. INTERACTIVE ARTIFACT ---
-function InteractiveArtifact() {
+function InteractiveArtifact({ setHasInteracted }: { setHasInteracted: (val: boolean) => void }) {
   const groupRef = useRef<THREE.Group>(null);
   const [targetRotation, setTargetRotation] = useState(0);
   const childIsDraggingRef = useRef(false);
-  const [hasInteracted, setHasInteracted] = useState(false); // State to hide the hand
 
   const onInteract = () => {
-    if (!hasInteracted) setHasInteracted(true);
+    setHasInteracted(true);
   };
 
   useFrame(() => {
@@ -411,29 +457,26 @@ function InteractiveArtifact() {
   };
 
   return (
-    <group>
-      {/* The Nudging Hand (only visible if user hasn't interacted) */}
-      <ConstellationHand visible={!hasInteracted} />
-
-      <group 
-        ref={groupRef}
-        onClick={handleMainClick}
-        onPointerOver={() => { document.body.style.cursor = 'pointer'; }}
-        onPointerOut={() => { document.body.style.cursor = 'auto'; }}
-      >
-        <LiquidLayer />
-        <PurpleDisc />
-        
-        <CryptexRingOuter dragRef={childIsDraggingRef} onInteract={onInteract} />
-        <CryptexRingInner dragRef={childIsDraggingRef} onInteract={onInteract} />
-        <CryptexRingInnermost dragRef={childIsDraggingRef} onInteract={onInteract} />
-      </group>
+    <group 
+      ref={groupRef}
+      onClick={handleMainClick}
+      onPointerOver={() => { document.body.style.cursor = 'pointer'; }}
+      onPointerOut={() => { document.body.style.cursor = 'auto'; }}
+    >
+      <LiquidLayer />
+      <PurpleDisc />
+      
+      <CryptexRingOuter dragRef={childIsDraggingRef} onInteract={onInteract} />
+      <CryptexRingInner dragRef={childIsDraggingRef} onInteract={onInteract} />
+      <CryptexRingInnermost dragRef={childIsDraggingRef} onInteract={onInteract} />
     </group>
   );
 }
 
 // --- MAIN SCENE ---
 export default function TheArtifact() {
+  const [hasInteracted, setHasInteracted] = useState(false);
+
   return (
     <div style={{ width: "100vw", height: "100vh", background: "#000", overflow: "hidden", touchAction: "none" }}>
       <Canvas camera={{ position: [0, 0, 6], fov: 40 }}>
@@ -445,9 +488,15 @@ export default function TheArtifact() {
         
         <Suspense fallback={<Html center><div style={{color:'#aa00ff'}}>DECRYPTING...</div></Html>}>
           <CosmicBackground />
+          
+          {/* STATIC OVERLAY: Constellation Images */}
+          <ConstellationManager hasInteracted={hasInteracted} />
+
+          {/* FLOATING ARTIFACT */}
           <Float speed={2} rotationIntensity={0.1} floatIntensity={0.2} floatingRange={[-0.1, 0.1]}>
-            <InteractiveArtifact />
+            <InteractiveArtifact setHasInteracted={setHasInteracted} />
           </Float>
+
           <EffectComposer>
             <Bloom luminanceThreshold={0.5} mipmapBlur intensity={1.5} radius={0.6} />
           </EffectComposer>
