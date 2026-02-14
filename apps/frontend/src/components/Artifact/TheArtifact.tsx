@@ -7,11 +7,9 @@ import * as THREE from "three";
 import { animated, useSpring } from "@react-spring/three"; 
 
 // --- UTILS ---
-// Helper to trigger haptic feedback on mobile
 const triggerHaptic = () => {
   if (typeof navigator !== 'undefined' && navigator.vibrate) {
-    // 15ms is a crisp, mechanical "tick"
-    navigator.vibrate(15);
+    navigator.vibrate(40);
   }
 };
 
@@ -22,12 +20,9 @@ function ResponsiveCamera() {
   useEffect(() => {
     const aspect = size.width / size.height;
     let targetZ = 6; 
-    
-    // Mobile adjustment
     if (aspect < 1.2) { 
        targetZ = 5.5 / aspect; 
     }
-
     camera.position.z = targetZ;
     camera.updateProjectionMatrix();
   }, [size, camera]);
@@ -113,21 +108,22 @@ function CryptexRingOuter({ dragRef }: { dragRef: React.MutableRefObject<boolean
       
       if (r2 > 0) {
         const angleDelta = (cx * dy - cy * dx) / r2;
+        const oldRotation = rotationRef.current;
         const newRotation = rotationRef.current - angleDelta;
 
-        // --- HAPTIC LOGIC ---
-        const SLOT = Math.PI / 6; // 30 degrees
-        const currentSlot = Math.round(rotationRef.current / SLOT);
-        const nextSlot = Math.round(newRotation / SLOT);
+        // --- HAPTIC LOGIC (DELAYED TO SNAP POINT) ---
+        const SLOT = Math.PI / 6; 
+        // Math.floor detects crossing the integer boundary (0, 30, 60...) 
+        // rather than the rounding boundary (15, 45, 75...)
+        const oldSlot = Math.floor(oldRotation / SLOT);
+        const newSlot = Math.floor(newRotation / SLOT);
         
-        // If we crossed a 30-degree threshold, CLICK!
-        if (currentSlot !== nextSlot) triggerHaptic();
-        // --------------------
+        if (oldSlot !== newSlot) triggerHaptic();
+        // --------------------------------------------
 
         rotationRef.current = newRotation; 
         api.start({ rotationZ: rotationRef.current, immediate: true });
       }
-
     } else {
       const snapAngle = Math.PI / 6; 
       const remainder = rotationRef.current % snapAngle;
@@ -148,7 +144,7 @@ function CryptexRingOuter({ dragRef }: { dragRef: React.MutableRefObject<boolean
     >
       <mesh>
         <ringGeometry args={[1.02, 1.55, 64]} />
-        <meshPhysicalMaterial color="#8e59c3" metalness={1.0} roughness={0.1} clearcoat={1.0} side={THREE.DoubleSide} />
+        <meshPhysicalMaterial color="#c0b0d0" metalness={1.0} roughness={0.1} clearcoat={1.0} side={THREE.DoubleSide} />
       </mesh>
       <mesh position={[0, 0, 0.005]} raycast={() => null}> 
         <planeGeometry args={[3.2, 3.2]} /> 
@@ -176,13 +172,14 @@ function CryptexRingInner({ dragRef }: { dragRef: React.MutableRefObject<boolean
       
       if (r2 > 0) {
         const angleDelta = (cx * dy - cy * dx) / r2;
+        const oldRotation = rotationRef.current;
         const newRotation = rotationRef.current - angleDelta;
 
         // --- HAPTIC LOGIC ---
         const SLOT = Math.PI / 6;
-        const currentSlot = Math.round(rotationRef.current / SLOT);
-        const nextSlot = Math.round(newRotation / SLOT);
-        if (currentSlot !== nextSlot) triggerHaptic();
+        const oldSlot = Math.floor(oldRotation / SLOT);
+        const newSlot = Math.floor(newRotation / SLOT);
+        if (oldSlot !== newSlot) triggerHaptic();
         // --------------------
 
         rotationRef.current = newRotation; 
@@ -208,7 +205,7 @@ function CryptexRingInner({ dragRef }: { dragRef: React.MutableRefObject<boolean
     >
       <mesh>
         <ringGeometry args={[0.65, 1.03, 64]} />
-        <meshPhysicalMaterial color="#8e59c3" metalness={1.0} roughness={0.3} clearcoat={0.8} side={THREE.DoubleSide} />
+        <meshPhysicalMaterial color="#9080a0" metalness={1.0} roughness={0.25} clearcoat={0.8} side={THREE.DoubleSide} />
       </mesh>
       <mesh position={[0, 0, 0.005]} raycast={() => null}> 
         <planeGeometry args={[3.3, 3.3]} /> 
@@ -236,13 +233,14 @@ function CryptexRingInnermost({ dragRef }: { dragRef: React.MutableRefObject<boo
       
       if (r2 > 0) {
         const angleDelta = (cx * dy - cy * dx) / r2;
+        const oldRotation = rotationRef.current;
         const newRotation = rotationRef.current - angleDelta;
 
         // --- HAPTIC LOGIC ---
         const SLOT = Math.PI / 6;
-        const currentSlot = Math.round(rotationRef.current / SLOT);
-        const nextSlot = Math.round(newRotation / SLOT);
-        if (currentSlot !== nextSlot) triggerHaptic();
+        const oldSlot = Math.floor(oldRotation / SLOT);
+        const newSlot = Math.floor(newRotation / SLOT);
+        if (oldSlot !== newSlot) triggerHaptic();
         // --------------------
 
         rotationRef.current = newRotation; 
@@ -268,7 +266,7 @@ function CryptexRingInnermost({ dragRef }: { dragRef: React.MutableRefObject<boo
     >
       <mesh>
         <ringGeometry args={[0.25, 0.645, 64]} />
-        <meshPhysicalMaterial color="#8e59c3" metalness={1.0} roughness={0.1} clearcoat={1.0} side={THREE.DoubleSide} />
+        <meshPhysicalMaterial color="#3a2a4a" metalness={1.0} roughness={0.2} clearcoat={0.9} side={THREE.DoubleSide} />
       </mesh>
       <mesh position={[0, 0, 0.005]} raycast={() => null}> 
         <planeGeometry args={[3.4, 3.4]} /> 
@@ -345,7 +343,6 @@ function InteractiveArtifact() {
 // --- MAIN SCENE ---
 export default function TheArtifact() {
   return (
-    // FIX: touchAction: "none" is CRITICAL for mobile drag to work without browser scrolling hijacking the touch
     <div style={{ width: "100vw", height: "100vh", background: "#000", overflow: "hidden", touchAction: "none" }}>
       <Canvas camera={{ position: [0, 0, 6], fov: 40 }}>
         <ResponsiveCamera />
