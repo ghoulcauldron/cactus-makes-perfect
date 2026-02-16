@@ -13,6 +13,20 @@ const triggerHaptic = () => {
   }
 };
 
+// Fisher-Yates Shuffle with Seed (Keeps icons random but stable per session)
+function shuffleArray(array: any[], seed: number) {
+  const shuffled = [...array];
+  let m = shuffled.length, t, i;
+  while (m) {
+    const random = Math.abs(Math.sin(seed + m)); 
+    i = Math.floor(random * m--);
+    t = shuffled[m];
+    shuffled[m] = shuffled[i];
+    shuffled[i] = t;
+  }
+  return shuffled;
+}
+
 // --- RESPONSIVE CAMERA RIG ---
 function ResponsiveCamera() {
   const { camera, size } = useThree();
@@ -27,11 +41,10 @@ function ResponsiveCamera() {
 }
 
 // =========================================================
-// --- PHASE 3: THE CAROUSEL ENGINE (Dynamic Rings) ---
+// --- PHASE 3: THE CAROUSEL ENGINE ---
 // =========================================================
 
 // 1. ASSET LOADER HOOK
-// dynamically fetches 1 base ring + 12 icons
 function useRingAssets(ringIndex: number) {
   const base = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/artifact/";
   
@@ -67,9 +80,8 @@ function CarouselIcon({ texture, index, activeIndex, radius }: { texture: THREE.
   // 30 degrees (PI/6) per slot
   const angle = index * (Math.PI / 6); 
   
-  // Trig to place them in a circle
-  // Note: We rotate -angle to keep the icon upright relative to the ring center if needed, 
-  // or we can just place them. Let's place them radially.
+  // Placement: Clockwise distribution (0 at Top, 1 at 1 o'clock)
+  // x = sin(a), y = cos(a) puts 0 at (0, 1) -> 12 o'clock
   const x = Math.sin(angle) * radius;
   const y = Math.cos(angle) * radius;
 
@@ -79,11 +91,11 @@ function CarouselIcon({ texture, index, activeIndex, radius }: { texture: THREE.
   // Visual Feedback
   const targetOpacity = isActive ? 1.0 : 0.5;
   const targetScale = isActive ? 1.15 : 1.0;
-  const targetColor = isActive ? "#ffffff" : "#00ffff"; // White for active, Cyan for inactive
+  const targetColor = isActive ? "#ffffff" : "#00ffff"; 
 
   return (
     <mesh position={[x, y, 0.002]} rotation={[0, 0, -angle]} scale={[targetScale, targetScale, 1]}>
-      <planeGeometry args={[0.22, 0.22]} /> {/* Icon Size */}
+      <planeGeometry args={[0.22, 0.22]} />
       <meshBasicMaterial 
         map={texture} 
         transparent 
@@ -97,7 +109,6 @@ function CarouselIcon({ texture, index, activeIndex, radius }: { texture: THREE.
 }
 
 // 3. THE SMART RING COMPONENT
-// Replaces the old static rings with a dynamic container
 function CryptexRing({ 
   ringIndex, 
   radiusInner, 
@@ -116,14 +127,19 @@ function CryptexRing({
   onInteract: () => void 
 }) {
   const { baseTexture, iconTextures } = useRingAssets(ringIndex);
+  
+  // RANDOMIZATION: Shuffle icons on mount (Stable Seed)
+  const shuffledIcons = useMemo(() => {
+    return shuffleArray(iconTextures, ringIndex * 1234);
+  }, [iconTextures, ringIndex]);
+
   const [spring, api] = useSpring(() => ({ rotationZ: 0, config: { friction: 30, tension: 200 } }));
   const rotationRef = useRef(0);
-  const [activeIndex, setActiveIndex] = useState(0); // Tracks which icon is at 12 o'clock
+  const [activeIndex, setActiveIndex] = useState(0); 
   const { size } = useThree();
 
   // Optimizations
   const ringArgs = useMemo(() => [radiusInner, radiusOuter, 64] as [number, number, number], [radiusInner, radiusOuter]);
-  // Base texture plane is slightly larger than the ring to cover seams
   const planeSize = radiusOuter * 2.05;
   const planeArgs = useMemo(() => [planeSize, planeSize] as [number, number], [planeSize]);
 
@@ -151,11 +167,13 @@ function CryptexRing({
 
         rotationRef.current = newRotation; 
         
-        // Calculate Active Index (Combination Logic)
-        // We normalize the rotation to find which slot is currently at Angle 0 (Top)
-        // Since we are rotating the ring Z, the item at -Rotation is at the top.
-        const currentSlotIndex = Math.round(-newRotation / SLOT);
-        // Modulo 12 to get 0-11 index, handling negative numbers correctly
+        // --- LOGIC FIX: Positive Rotation Indexing ---
+        // Rotating CCW (+Rotation) brings Index 1 to top.
+        // Rotating CW (-Rotation) brings Index 11 to top.
+        // Therefore: activeIndex = round(Rotation / 30deg)
+        const currentSlotIndex = Math.round(newRotation / SLOT);
+        
+        // Normalize 0-11
         const normalizedIndex = ((currentSlotIndex % 12) + 12) % 12;
         
         if (normalizedIndex !== activeIndex) {
@@ -172,8 +190,7 @@ function CryptexRing({
       
       rotationRef.current = snapAngle;
       
-      // Final index update on snap
-      const currentSlotIndex = Math.round(-snapAngle / SLOT);
+      const currentSlotIndex = Math.round(snapAngle / SLOT);
       const normalizedIndex = ((currentSlotIndex % 12) + 12) % 12;
       setActiveIndex(normalizedIndex);
 
@@ -186,24 +203,22 @@ function CryptexRing({
     <animated.group 
       rotation-z={spring.rotationZ} 
       position={[0, 0, zPos]} 
-      rotation-y={Math.PI} // Flip Y so texture maps correctly if needed, or consistent with old model
+      rotation-y={Math.PI} 
       onClick={(e: any) => { e.stopPropagation(); onInteract(); }}
       {...(bind() as any)}
     >
-      {/* Physical Metal Ring */}
       <mesh>
         <ringGeometry args={ringArgs} />
         <meshPhysicalMaterial color="#8e59c3" metalness={1.0} roughness={0.1} clearcoat={1.0} side={THREE.DoubleSide} />
       </mesh>
 
-      {/* Base Texture (The ring artwork without icons) */}
       <mesh position={[0, 0, 0.001]} raycast={() => null}> 
         <planeGeometry args={planeArgs} /> 
         <meshBasicMaterial map={baseTexture} transparent opacity={1} color="#00ffff" toneMapped={false} depthWrite={false} side={THREE.DoubleSide} />
       </mesh>
 
-      {/* The 12 Dynamic Icons */}
-      {iconTextures.map((tex, i) => (
+      {/* Render Shuffled Icons */}
+      {shuffledIcons.map((tex, i) => (
         <CarouselIcon 
             key={i} 
             texture={tex} 
@@ -217,7 +232,7 @@ function CryptexRing({
 }
 
 // =========================================================
-// --- CONSTELLATION OVERLAY (LOCKED & OPTIMIZED) ---
+// --- CONSTELLATION OVERLAY ---
 // =========================================================
 function ConstellationImages({ visible, layout }: { visible: boolean, layout: any }) {
   const [texStars, texHand, texConstellation, texBurst] = useLoader(THREE.TextureLoader, [
@@ -270,14 +285,14 @@ function ConstellationImages({ visible, layout }: { visible: boolean, layout: an
     if (refBurst.current) refBurst.current.opacity = opBurst * maxHandOpacity; 
   });
 
-  const planeArgs = useMemo(() => [3, 3] as [number, number], []); 
+  const PLANE_SIZE = 3; 
 
   return (
     <group position={layout.pos} rotation={layout.rot} scale={layout.scale} visible={visible}>
-      <mesh position={[0,0,0]}><planeGeometry args={planeArgs} /><meshBasicMaterial map={texStars} transparent opacity={baseStarOpacity} color="#ffffff" toneMapped={false} depthWrite={false} /></mesh>
-      <mesh position={[0,0,0.01]}><planeGeometry args={planeArgs} /><meshBasicMaterial ref={refHand} map={texHand} transparent opacity={0} color="#ffffff" toneMapped={false} depthWrite={false} /></mesh>
-      <mesh position={[0,0,0.02]}><planeGeometry args={planeArgs} /><meshBasicMaterial ref={refConstellation} map={texConstellation} transparent opacity={0} color="#ffffff" toneMapped={false} depthWrite={false} /></mesh>
-      <mesh position={[0,0,0.03]}><planeGeometry args={planeArgs} /><meshBasicMaterial ref={refBurst} map={texBurst} transparent opacity={0} color="#ffffff" toneMapped={false} depthWrite={false} /></mesh>
+      <mesh position={[0,0,0]}><planeGeometry args={[PLANE_SIZE, PLANE_SIZE]} /><meshBasicMaterial map={texStars} transparent opacity={baseStarOpacity} color="#ffffff" toneMapped={false} depthWrite={false} /></mesh>
+      <mesh position={[0,0,0.01]}><planeGeometry args={[PLANE_SIZE, PLANE_SIZE]} /><meshBasicMaterial ref={refHand} map={texHand} transparent opacity={0} color="#ffffff" toneMapped={false} depthWrite={false} /></mesh>
+      <mesh position={[0,0,0.02]}><planeGeometry args={[PLANE_SIZE, PLANE_SIZE]} /><meshBasicMaterial ref={refConstellation} map={texConstellation} transparent opacity={0} color="#ffffff" toneMapped={false} depthWrite={false} /></mesh>
+      <mesh position={[0,0,0.03]}><planeGeometry args={[PLANE_SIZE, PLANE_SIZE]} /><meshBasicMaterial ref={refBurst} map={texBurst} transparent opacity={0} color="#ffffff" toneMapped={false} depthWrite={false} /></mesh>
     </group>
   );
 }
@@ -364,7 +379,7 @@ function PurpleDisc() {
   );
 }
 
-// --- INTERACTIVE ARTIFACT (MAIN) ---
+// --- INTERACTIVE ARTIFACT ---
 function InteractiveArtifact({ setHasInteracted }: { setHasInteracted: (val: boolean) => void }) {
   const groupRef = useRef<THREE.Group>(null);
   const [targetRotation, setTargetRotation] = useState(0);
@@ -406,17 +421,20 @@ function InteractiveArtifact({ setHasInteracted }: { setHasInteracted: (val: boo
       <LiquidLayer />
       <PurpleDisc />
       
-      {/* PHASE 3 CAROUSEL RINGS: Dynamically Loaded & Interactive */}
+      {/* 3 DYNAMIC RINGS */}
+      {/* Ring 1 (Outer): Moved Inward (1.18) */}
       <CryptexRing 
-        ringIndex={1} radiusInner={1.02} radiusOuter={1.55} iconRadius={1.28} zPos={-0.07} 
+        ringIndex={1} radiusInner={1.02} radiusOuter={1.55} iconRadius={1.22} zPos={-0.07} 
         dragRef={childIsDraggingRef} onInteract={onInteract} 
       />
+      {/* Ring 2 (Middle): Perfect Alignment (0.84) */}
       <CryptexRing 
         ringIndex={2} radiusInner={0.65} radiusOuter={1.03} iconRadius={0.84} zPos={-0.05} 
         dragRef={childIsDraggingRef} onInteract={onInteract} 
       />
+      {/* Ring 3 (Inner): Moved Outward (0.52) */}
       <CryptexRing 
-        ringIndex={3} radiusInner={0.25} radiusOuter={0.645} iconRadius={0.45} zPos={-0.03} 
+        ringIndex={3} radiusInner={0.25} radiusOuter={0.645} iconRadius={0.55} zPos={-0.03} 
         dragRef={childIsDraggingRef} onInteract={onInteract} 
       />
     </group>
