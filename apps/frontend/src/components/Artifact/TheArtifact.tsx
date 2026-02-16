@@ -33,7 +33,7 @@ function ResponsiveCamera() {
 // 1. ASSET LOADER HOOK
 // dynamically fetches 1 base ring + 12 icons
 function useRingAssets(ringIndex: number) {
-  const base = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/artifact/icons/";
+  const base = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/artifact/";
   
   const urls = useMemo(() => {
     // 1. Base Ring Texture
