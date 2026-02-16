@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { fetchAdminGuests, createAdminGuest, sendAdminInvite, updateGuestGroup } from "./api/client";
+import { fetchAdminGuests, createAdminGuest, sendAdminInvite } from "./api/client";
 import GuestSidebar from "./GuestSidebar";
 import BulkActions from "./BulkActions";
 import { useSelection } from "./hooks/useSelection";
@@ -103,11 +103,26 @@ function inferActivityDisplay(g: any) {
 type SortField = "name" | "group" | "rsvp" | "activity";
 type SortDirection = "asc" | "desc";
 
+// New Filter Types for dropdown
+type FilterState = 
+  | "all" 
+  | "group"
+  // Responded
+  | "responded_all" 
+  | "responded_yes" 
+  | "responded_no" 
+  | "responded_pending"
+  // Not Responded
+  | "not_responded_all" 
+  | "not_responded_invited" 
+  | "not_responded_not_invited";
+
 export default function AdminDashboard() {
   const [guests, setGuests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedGuest, setSelectedGuest] = useState<any | null>(null);
-  const [filter, setFilter] = useState<"all" | "not_responded" | "responded" | "group">("all");
+  
+  const [filter, setFilter] = useState<FilterState>("all");
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   
   const [showAddGuestModal, setShowAddGuestModal] = useState(false);
@@ -170,12 +185,44 @@ export default function AdminDashboard() {
     setShowAddSuccessModal(true);
   }
 
+  // --- STATS CALCULATION ---
+  const stats = useMemo(() => {
+    let yes = 0, no = 0, pending = 0, invited = 0;
+    guests.forEach(g => {
+      if (g.invited_at) invited++;
+      const status = g.rsvps?.status?.toLowerCase();
+      if (status === 'attending' || status === 'accepted' || status === 'yes') yes++;
+      else if (status === 'declined' || status === 'no') no++;
+      else if (status === 'pending') pending++;
+    });
+    return { yes, no, pending, invited, total: guests.length };
+  }, [guests]);
+
   const filteredGuests = useMemo(() => {
     return guests.filter((g) => {
-      if (filter === "responded") return g.rsvps?.status;
-      if (filter === "not_responded") return !g.rsvps?.status;
+      // 1. Group Filter (Mutual Exclusive Mode)
       if (filter === "group") return canonicalizeGroupLabel(g.group_label) === selectedGroup;
-      return true;
+
+      // 2. Status Filters
+      const hasResponse = !!g.rsvps?.status;
+      const status = g.rsvps?.status?.toLowerCase(); 
+
+      switch (filter) {
+        case "all": return true;
+        
+        // Responded Categories
+        case "responded_all": return hasResponse;
+        case "responded_yes": return status === 'attending' || status === 'accepted' || status === 'yes';
+        case "responded_no": return status === 'declined' || status === 'no';
+        case "responded_pending": return status === 'pending';
+
+        // Not Responded Categories
+        case "not_responded_all": return !hasResponse;
+        case "not_responded_invited": return !hasResponse && g.invited_at;
+        case "not_responded_not_invited": return !hasResponse && !g.invited_at;
+        
+        default: return true;
+      }
     });
   }, [guests, filter, selectedGroup]);
 
@@ -267,6 +314,22 @@ export default function AdminDashboard() {
     return raw.filter(g => g !== "—").sort();
   }, [guests]);
 
+  // --- Display Label Helper for Status Dropdown ---
+  const getFilterLabel = () => {
+    switch (filter) {
+      case "all": return "ALL GUESTS";
+      case "responded_all": return "RESPONDED: ALL";
+      case "responded_yes": return "RESPONDED: YES";
+      case "responded_no": return "RESPONDED: NO";
+      case "responded_pending": return "RESPONDED: PENDING";
+      case "not_responded_all": return "NOT RESPONDED: ALL";
+      case "not_responded_invited": return "NOT RESPONDED: INVITED";
+      case "not_responded_not_invited": return "NOT RESPONDED: NOT INVITED";
+      case "group": return "GROUP FILTER"; 
+      default: return "FILTER";
+    }
+  };
+
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       const target = e.target as HTMLElement | null;
@@ -287,6 +350,18 @@ export default function AdminDashboard() {
   }, [sortedGuests, selection]);
 
   if (loading) return <div className="p-8 text-primary font-mono">Loading…</div>;
+
+  const getStatusColorClass = (status: string, isSelected: boolean) => {
+    const s = status.toLowerCase();
+    if (s === 'attending' || s === 'accepted' || s === 'yes') {
+      return isSelected 
+        ? 'bg-black text-[#45CC2D] border border-black' 
+        : 'bg-[#45CC2D] text-black';
+    }
+    return isSelected 
+      ? 'bg-black/20 text-black border border-black' 
+      : 'bg-neutral-800 text-gray-300 border border-gray-700';
+  };
 
   return (
     <>
@@ -310,25 +385,38 @@ export default function AdminDashboard() {
             <div className="shrink-0 p-3 sm:p-4 border-b border-primary bg-surface z-20 shadow-sm">
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full lg:w-auto">
-                  <div className="flex flex-wrap gap-2">
-                    {["all", "responded", "not_responded"].map((f) => (
-                      <button
-                        key={f}
-                        className={`px-2 py-1 border border-primary text-xs sm:text-sm hover:bg-[#9ae68c] hover:text-surface transition-colors ${
-                          filter === f ? "bg-[#45CC2D] text-black" : ""
-                        }`}
-                        onClick={() => setFilter(f as any)}
-                      >
-                        {f.replace('_', ' ').toUpperCase()}
-                      </button>
-                    ))}
-                  </div>
+                  
+                  {/* STATUS FILTER DROPDOWN */}
                   <div className="relative w-full sm:w-64 z-40">
+                    <Listbox value={filter} onChange={(val) => { setFilter(val as FilterState); setSelectedGroup(null); }}>
+                      <ListboxButton className="relative w-full cursor-default border py-1 pl-3 pr-10 text-left text-sm uppercase tracking-tighter transition-all bg-black text-[#45CC2D] border-[#45CC2D] focus:ring-1 focus:ring-[#45CC2D] focus:outline-none hover:bg-[#9ae68c] hover:text-black">
+                        <span className="block truncate font-bold">{getFilterLabel()}</span>
+                        <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                          <ChevronUpDownIcon className="h-4 w-4 text-[#45CC2D]" aria-hidden="true" />
+                        </span>
+                      </ListboxButton>
+                      <ListboxOptions className="absolute z-50 mt-1 max-h-80 w-full overflow-auto rounded-md bg-[#0a0a0a] border border-[#45CC2D] py-1 shadow-2xl focus:outline-none">
+                        <ListboxOption value="all" className={({ active }) => `relative cursor-default select-none py-2 pl-4 pr-4 text-[10px] uppercase transition-colors font-bold ${active ? "bg-[#45CC2D] text-black" : "text-white"}`}>Show All</ListboxOption>
+                        <div className="px-4 py-1 text-[10px] text-gray-500 uppercase tracking-widest font-bold border-t border-gray-800 mt-1">Responded</div>
+                        <ListboxOption value="responded_all" className={({ active }) => `relative cursor-default select-none py-2 pl-8 pr-4 text-[10px] uppercase transition-colors ${active ? "bg-[#45CC2D] text-black" : "text-gray-300"}`}>All Responded</ListboxOption>
+                        <ListboxOption value="responded_yes" className={({ active }) => `relative cursor-default select-none py-2 pl-8 pr-4 text-[10px] uppercase transition-colors ${active ? "bg-[#45CC2D] text-black" : "text-gray-300"}`}>Yes (Attending)</ListboxOption>
+                        <ListboxOption value="responded_no" className={({ active }) => `relative cursor-default select-none py-2 pl-8 pr-4 text-[10px] uppercase transition-colors ${active ? "bg-[#45CC2D] text-black" : "text-gray-300"}`}>No (Declined)</ListboxOption>
+                        <ListboxOption value="responded_pending" className={({ active }) => `relative cursor-default select-none py-2 pl-8 pr-4 text-[10px] uppercase transition-colors ${active ? "bg-[#45CC2D] text-black" : "text-gray-300"}`}>Pending</ListboxOption>
+                        <div className="px-4 py-1 text-[10px] text-gray-500 uppercase tracking-widest font-bold border-t border-gray-800 mt-1">Not Responded</div>
+                        <ListboxOption value="not_responded_all" className={({ active }) => `relative cursor-default select-none py-2 pl-8 pr-4 text-[10px] uppercase transition-colors ${active ? "bg-[#45CC2D] text-black" : "text-gray-300"}`}>All Not Responded</ListboxOption>
+                        <ListboxOption value="not_responded_invited" className={({ active }) => `relative cursor-default select-none py-2 pl-8 pr-4 text-[10px] uppercase transition-colors ${active ? "bg-[#45CC2D] text-black" : "text-gray-300"}`}>Invited</ListboxOption>
+                        <ListboxOption value="not_responded_not_invited" className={({ active }) => `relative cursor-default select-none py-2 pl-8 pr-4 text-[10px] uppercase transition-colors ${active ? "bg-[#45CC2D] text-black" : "text-gray-300"}`}>Not Yet Invited</ListboxOption>
+                      </ListboxOptions>
+                    </Listbox>
+                  </div>
+
+                  {/* GROUP FILTER DROPDOWN */}
+                  <div className="relative w-full sm:w-64 z-30">
                     <Listbox value={selectedGroup ?? undefined} onChange={(val) => {
                       if (!val) { setFilter("all"); setSelectedGroup(null); } 
                       else { setFilter("group"); setSelectedGroup(val); }
                     }}>
-                      <ListboxButton className="relative w-full cursor-default border py-1 pl-3 pr-10 text-left text-sm uppercase tracking-tighter transition-all bg-black text-[#45CC2D] border-[#45CC2D] focus:ring-1 focus:ring-[#45CC2D] focus:outline-none hover:bg-[#9ae68c]">
+                      <ListboxButton className="relative w-full cursor-default border py-1 pl-3 pr-10 text-left text-sm uppercase tracking-tighter transition-all bg-black text-[#45CC2D] border-[#45CC2D] focus:ring-1 focus:ring-[#45CC2D] focus:outline-none hover:bg-[#9ae68c] hover:text-black">
                         <span className="block truncate">{filter === "group" && selectedGroup ? selectedGroup : "All Groups"}</span>
                         <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
                           <ChevronUpDownIcon className="h-4 w-4 text-[#45CC2D]" aria-hidden="true" />
@@ -347,7 +435,17 @@ export default function AdminDashboard() {
                     </Listbox>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+
+                {/* Right Side Stats & Actions */}
+                <div className="flex items-center gap-4">
+                  {/* --- STAT COUNTER --- */}
+                  <div className="hidden xl:flex items-center gap-3 text-[10px] uppercase tracking-wider text-gray-400 border-r border-gray-800 pr-4 mr-2">
+                    <span className="font-bold text-[#45CC2D]">{stats.invited}/{stats.total} INVITED</span>
+                    {stats.yes > 0 && <span>YES: <span className="text-[#45CC2D]">{stats.yes}</span></span>}
+                    {stats.no > 0 && <span>NO: <span className="text-[#45CC2D]">{stats.no}</span></span>}
+                    {stats.pending > 0 && <span>PENDING: <span className="text-[#45CC2D]">{stats.pending}</span></span>}
+                  </div>
+
                   {selection.selectedIds.length > 0 && (
                     <div className="flex items-center gap-2 mr-2">
                       <div className="relative w-40">
@@ -377,7 +475,6 @@ export default function AdminDashboard() {
               <div className="w-full border border-primary">
                 <table className="w-full border-collapse">
                   <thead>
-                    {/* UPDATED: Removed sticky top-0, z-10, shadow-sm, bg-surface */}
                     <tr className="text-left border-b border-primary uppercase text-sm">
                       <th className="p-2 w-10 bg-surface">
                         {sortedGuests.length > 0 && (
@@ -425,7 +522,6 @@ export default function AdminDashboard() {
                           <td className="p-2 align-top sm:align-middle">
                             <div className="flex items-center gap-2">
                               <div className="font-bold sm:font-normal">{g.first_name} {g.last_name}</div>
-                              {/* Small Paper Airplane if Invited */}
                               {g.invited_at && (
                                 <div title={`Invite sent: ${new Date(g.invited_at).toLocaleDateString()}`}>
                                   <PaperAirplaneIcon className={`h-3 w-3 ${selection.isSelected(g.id) ? "text-black" : "text-[#45CC2D]"}`} />
@@ -441,14 +537,13 @@ export default function AdminDashboard() {
                           <td className="p-2 hidden md:table-cell whitespace-nowrap">{canonicalizeGroupLabel(g.group_label)}</td>
                           <td className="p-2 align-top sm:align-middle whitespace-nowrap">
                             {g.rsvps?.status ? (
-                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium uppercase ${g.rsvps.status === 'attending' ? (selection.isSelected(g.id) ? 'bg-black text-[#45CC2D] border border-black' : 'bg-[#45CC2D] text-black') : (selection.isSelected(g.id) ? 'bg-black/20 text-black border border-black' : 'bg-neutral-800 text-gray-300 border border-gray-700')}`}>
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium uppercase ${getStatusColorClass(g.rsvps.status, selection.isSelected(g.id))}`}>
                                 {g.rsvps.status}
                               </span>
                             ) : (<span className="text-gray-500 text-xs">—</span>)}
                           </td>
                           <td className="p-2 hidden lg:table-cell whitespace-nowrap text-xs">
                             <div className="flex items-center gap-2">
-                              {/* Strict color enforcement: text-[#9ae68c] */}
                               <Icon className="h-5 w-5 text-[#9ae68c]" />
                               <div className="flex flex-col">
                                 <span className="font-bold">{label}</span>
