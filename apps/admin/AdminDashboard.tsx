@@ -24,7 +24,7 @@ import AddGuestModal from "./components/AddGuestModal";
 import AddGuestSuccessModal from "./components/AddGuestSuccessModal";
 import GroupCreateModal from "./components/GroupCreateModal";
 
-// --- 1. NEW: Reusable Confirmation Modal ---
+// --- 1. Reusable Confirmation Modal ---
 function ConfirmationModal({ 
   isOpen, 
   title, 
@@ -127,7 +127,11 @@ type FilterState = "all" | "group" | "responded_all" | "responded_yes" | "respon
 
 export default function AdminDashboard() {
   const [guests, setGuests] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  
+  // SEPARATE LOADING STATES
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   const [selectedGuest, setSelectedGuest] = useState<any | null>(null);
   
   const [filter, setFilter] = useState<FilterState>("all");
@@ -137,23 +141,29 @@ export default function AdminDashboard() {
   const [showAddGuestModal, setShowAddGuestModal] = useState(false);
   const [showAddSuccessModal, setShowAddSuccessModal] = useState(false);
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
+  
   const [addSummary, setAddSummary] = useState<{ created: number; existing: number; invitesAttempted: boolean; } | null>(null);
-
-  // Bulk Assign Confirmation State
   const [pendingBulkAssign, setPendingBulkAssign] = useState<{ groupLabel: string } | null>(null);
 
   const [sortField, setSortField] = useState<SortField>("rsvp");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(null);
 
-  async function refreshGuests() {
-    setLoading(true);
-    const data = await fetchAdminGuests();
-    setGuests(data.guests);
-    setLoading(false);
+  // FETCH FUNCTION
+  async function refreshGuests(silent = false) {
+    if (!silent) setIsRefreshing(true);
+    try {
+      const data = await fetchAdminGuests();
+      setGuests(data.guests);
+    } catch (e) {
+      console.error("Failed to load guests", e);
+    } finally {
+      setIsRefreshing(false);
+      setInitialLoading(false);
+    }
   }
 
-  useEffect(() => { refreshGuests(); }, []);
+  useEffect(() => { refreshGuests(false); }, []);
 
   async function handleAddGuests(guestsToAdd: any[], options: { sendInvite: boolean; inviteTemplate: "default" | "friendly"; subscribed: boolean; }) {
     let createdCount = 0; let existingCount = 0;
@@ -166,13 +176,12 @@ export default function AdminDashboard() {
         if (options.sendInvite) await sendAdminInvite(created.id, options.inviteTemplate);
       } catch (err: any) { if (err?.message?.includes("409")) { existingCount++; continue; } console.error(err); }
     }
-    await refreshGuests();
+    await refreshGuests(true);
     setShowAddGuestModal(false);
     setAddSummary({ created: createdCount, existing: existingCount, invitesAttempted: options.sendInvite });
     setShowAddSuccessModal(true);
   }
 
-  // --- STATS CALCULATION ---
   const stats = useMemo(() => {
     let yes = 0, no = 0, pending = 0, invited = 0;
     guests.forEach(g => {
@@ -233,9 +242,6 @@ export default function AdminDashboard() {
   };
 
   // --- BULK ASSIGN LOGIC ---
-  // Step 1: User selects a group from dropdown. 
-  // If it's "___CREATE_NEW___", we open the create modal.
-  // Otherwise, we open the confirmation modal for the selected group.
   const initiateBulkAssign = (groupLabel: string) => {
     if (groupLabel === "___CREATE_NEW___") {
       setShowCreateGroupModal(true);
@@ -244,40 +250,37 @@ export default function AdminDashboard() {
     }
   };
 
-  // Step 2: Confirmation modal executes this function.
   const executeBulkAssign = async () => {
     if (!pendingBulkAssign || selection.selectedIds.length === 0) return;
     const { groupLabel } = pendingBulkAssign;
-    
     try {
       await fetch('/api/v1/admin/group/bulk', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` },
         body: JSON.stringify({ guest_ids: selection.selectedIds, group_label: groupLabel })
       });
-      await refreshGuests();
+      await refreshGuests(true);
       selection.clear();
     } catch (e) { console.error(e); alert("Failed to update groups"); }
     finally { setPendingBulkAssign(null); }
   };
 
-  // Step 3: Handle Creating a Group from Modal
+  // --- NEW: Handle Creating a Group from Modal ---
+  // Fix: Directly executes logic, DOES NOT trigger another confirmation modal.
   const handleCreateGroupAndAssign = async (newLabel: string) => {
     setShowCreateGroupModal(false);
     if (selection.selectedIds.length > 0) {
-      // Bypasses confirmation since they just typed it in the modal
-      setPendingBulkAssign({ groupLabel: newLabel });
-      // We manually call execute here because state updates might be async/batched 
-      // but simpler to reuse logic or just duplicate for speed:
       try {
         await fetch('/api/v1/admin/group/bulk', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` },
           body: JSON.stringify({ guest_ids: selection.selectedIds, group_label: newLabel })
         });
-        await refreshGuests();
+        await refreshGuests(true); // Silent refresh to keep UI stable
         selection.clear();
       } catch (e) { console.error(e); alert("Failed to create/assign group"); }
+    } else {
+      alert("Please select at least one guest to assign to this new group.");
     }
   };
 
@@ -319,7 +322,7 @@ export default function AdminDashboard() {
     window.addEventListener("keydown", handleKeyDown); return () => { window.removeEventListener("keydown", handleKeyDown); };
   }, [sortedGuests, selection]);
 
-  if (loading) return <div className="p-8 text-primary font-mono">Loading…</div>;
+  if (initialLoading) return <div className="p-8 text-primary font-mono">Loading…</div>;
 
   return (
     <>
@@ -359,7 +362,7 @@ export default function AdminDashboard() {
                     </Listbox>
                   </div>
 
-                  {/* GROUP FILTER (Pure Filter) */}
+                  {/* GROUP FILTER */}
                   <div className="relative w-full sm:w-64 z-30">
                     <Listbox value={selectedGroup ?? undefined} onChange={(val) => {
                       if (!val) { setFilter("all"); setSelectedGroup(null); } 
@@ -392,7 +395,7 @@ export default function AdminDashboard() {
                     {stats.pending > 0 && <span>PENDING: <span className="text-white">{stats.pending}</span></span>}
                   </div>
 
-                  {/* BULK ACTIONS (With Create New) */}
+                  {/* BULK ACTIONS */}
                   {selection.selectedIds.length > 0 && (
                     <div className="flex items-center gap-2 mr-2">
                       <div className="relative w-40">
@@ -421,7 +424,12 @@ export default function AdminDashboard() {
             </div>
 
             {/* Table Area */}
-            <div className="flex-1 overflow-auto p-3 sm:p-6 z-10">
+            <div className="flex-1 overflow-auto p-3 sm:p-6 z-10 relative">
+              {isRefreshing && (
+                <div className="absolute inset-0 z-50 bg-black/50 backdrop-blur-[1px] flex items-center justify-center">
+                  <div className="text-[#45CC2D] text-xs font-bold uppercase tracking-widest animate-pulse">Updating...</div>
+                </div>
+              )}
               <div className="w-full border border-primary">
                 <table className="w-full border-collapse">
                   <thead>
