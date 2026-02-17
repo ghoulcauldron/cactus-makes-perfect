@@ -133,32 +133,44 @@ function CryptexRing({
   const rotationRef = useRef(0);
   const [activeIndex, setActiveIndex] = useState(0); 
   const [hovered, setHovered] = useState(false);
+  const [isDragging, setIsDragging] = useState(false); // NEW: Track local focus
   const { size } = useThree();
 
   const bind = useDrag(({ xy: [x, y], delta: [dx, dy], down, event, first }) => {
     event.stopPropagation();
+
     if (first) { 
       dragRef.current = true; 
       onInteract(); 
-      setHovered(true); // Solidify hover state on first touch for mobile
+      setHovered(true);
+      setIsDragging(true);
+      // Capture the pointer so movement stays locked to this ring even "out of bounds"
+      (event.target as HTMLElement).setPointerCapture((event as any).pointerId);
     }
     
     if (down) {
       const cx = x - size.width / 2;
       const cy = y - size.height / 2;
       const r2 = cx * cx + cy * cy;
+      
       if (r2 > 0) {
+        // Rotational logic remains agnostic of pointer distance due to setPointerCapture
         const angleDelta = (cx * dy - cy * dx) / r2;
         const newRotation = rotationRef.current - angleDelta;
         const SLOT = Math.PI / 6;
+        
         if (Math.round(rotationRef.current / SLOT) !== Math.round(newRotation / SLOT)) triggerHaptic();
+        
         rotationRef.current = newRotation; 
         const idx = ((Math.round(newRotation / SLOT) % 12) + 12) % 12;
         if (idx !== activeIndex) setActiveIndex(idx);
         api.start({ rotationZ: rotationRef.current, immediate: true });
       }
     } else {
-      setHovered(false); // Clear hover state on release
+      // Release focus
+      setHovered(false);
+      setIsDragging(false);
+      dragRef.current = false;
       const SLOT = Math.PI / 6;
       const snapAngle = Math.round(rotationRef.current / SLOT) * SLOT;
       rotationRef.current = snapAngle;
@@ -174,8 +186,19 @@ function CryptexRing({
       position={[0, 0, zPos]} 
       rotation-y={Math.PI} 
       {...(bind() as any)}
-      onPointerOver={(e) => { e.stopPropagation(); setHovered(true); }}
-      onPointerOut={(e) => { e.stopPropagation(); setHovered(false); }}
+      // Only trigger hover highlights if NO ring is currently being dragged
+      onPointerOver={(e) => { 
+        if (!dragRef.current) {
+          e.stopPropagation(); 
+          setHovered(true); 
+        }
+      }}
+      onPointerOut={(e) => { 
+        if (!isDragging) {
+          e.stopPropagation(); 
+          setHovered(false); 
+        }
+      }}
     >
       {/* 1. PHYSICAL METAL RING - Glow Target */}
       <mesh>
@@ -185,12 +208,13 @@ function CryptexRing({
           metalness={0.9} 
           roughness={0.2}
           emissive="#8e59c3"
-          emissiveIntensity={hovered ? 1.8 : 0}
+          // Keep highlighted if either hovered OR actively being rotated
+          emissiveIntensity={hovered || isDragging ? 1.8 : 0}
           side={THREE.DoubleSide} 
         />
       </mesh>
 
-      {/* 2. INVISIBLE HIT AREA - Ensures the entire ring surface captures the hover */}
+      {/* 2. INVISIBLE HIT AREA */}
       <mesh position={[0,0,0.01]}>
         <ringGeometry args={[hitInner ?? radiusInner, hitOuter ?? radiusOuter, 64]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} side={THREE.DoubleSide} />
@@ -206,7 +230,7 @@ function CryptexRing({
         <meshBasicMaterial color={color} toneMapped={false} side={THREE.DoubleSide} />
       </mesh>
 
-      {/* 4. ICONS - raycast={()=>null} prevents icon meshes from interrupting the hover state */}
+      {/* 4. ICONS */}
       <group raycast={() => null}>
         {shuffledIcons.map((tex, i) => (
           <CarouselIcon 
