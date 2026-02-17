@@ -399,22 +399,35 @@ function InteractiveArtifact({ setHasInteracted }: { setHasInteracted: (val: boo
   });
 
   const handleMainClick = (e: ThreeEvent<MouseEvent>) => {
-    if (childIsDraggingRef.current) { childIsDraggingRef.current = false; e.stopPropagation(); return; }
+    // If a ring is being dragged, stop propagation so we don't trigger the flip logic
+    if (childIsDraggingRef.current) { 
+      childIsDraggingRef.current = false; 
+      e.stopPropagation(); 
+      return; 
+    }
     
-    // RESTORED: Trigger constellation fade immediately on flip
-    setHasInteracted(true);
-    setTargetRotation(targetRotation + Math.PI);
+    // ONLY flip if we are currently at 0 rotation (the Logo side)
+    // This prevents any clicks on the Cryptex side from flipping it back
+    if (targetRotation === 0) {
+      setHasInteracted(true);
+      setTargetRotation(Math.PI);
+    }
   };
 
   return (
-    <group ref={groupRef} onClick={handleMainClick} onPointerOver={() => { document.body.style.cursor = 'pointer'; }} onPointerOut={() => { document.body.style.cursor = 'auto'; }}>
+    <group 
+      ref={groupRef} 
+      onClick={handleMainClick} 
+      onPointerOver={() => { document.body.style.cursor = 'pointer'; }} 
+      onPointerOut={() => { document.body.style.cursor = 'auto'; }}
+    >
       <LiquidLayer />
       <PurpleDisc />
       
-      {/* Locked/Pulsing Center Button on Cryptex Side */}
+      {/* Center Button only responds to clicks when all rings are touched */}
       <CenterButton isReady={allRingsTouched} onClick={() => { triggerHaptic(); }} />
       
-      {/* Rings kept Cyan (#00ffff) */}
+      {/* Rings kept Cyan (#00ffff) with Sticky Focus logic */}
       <CryptexRing ringIndex={1} radiusInner={1.18} radiusOuter={1.55} iconRadius={1.37} zPos={-0.07} dragRef={childIsDraggingRef} onInteract={() => handleRingInteract(1)} color="#00ffff" hitInner={1.15} hitOuter={1.55} />
       <CryptexRing ringIndex={2} radiusInner={0.80} radiusOuter={1.20} iconRadius={0.99} zPos={-0.05} dragRef={childIsDraggingRef} onInteract={() => handleRingInteract(2)} color="#00ffff" hitInner={0.78} hitOuter={1.17} />
       <CryptexRing ringIndex={3} radiusInner={0.40} radiusOuter={0.82} iconRadius={0.60} zPos={-0.03} dragRef={childIsDraggingRef} onInteract={() => handleRingInteract(3)} color="#00ffff" hitInner={0.40} hitOuter={0.805} />
