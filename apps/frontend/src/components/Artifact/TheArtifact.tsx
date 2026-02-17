@@ -13,7 +13,7 @@ const triggerHaptic = () => {
   }
 };
 
-// Fisher-Yates Shuffle with Seed (Keeps icons random but stable per session)
+// Fisher-Yates Shuffle with Seed
 function shuffleArray(array: any[], seed: number) {
   const shuffled = [...array];
   let m = shuffled.length, t, i;
@@ -44,14 +44,13 @@ function ResponsiveCamera() {
 // --- PHASE 3: THE CAROUSEL ENGINE ---
 // =========================================================
 
-// 1. ASSET LOADER HOOK
-function useRingAssets(ringIndex: number) {
+// 1. ASSET LOADER HOOK (ICONS ONLY)
+function useIconAssets(ringIndex: number) {
   const base = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/artifact/";
   
   const urls = useMemo(() => {
-    // 1. Base Ring Texture
-    const arr = [`${base}cryptex_ring${ringIndex}.png`];
-    // 2. Icon Textures (00-11)
+    const arr = [];
+    // Only load the 12 icons, we generate the ring borders natively now
     for (let i = 0; i < 12; i++) {
       const idx = i.toString().padStart(2, '0');
       arr.push(`${base}r${ringIndex}_${idx}.png`);
@@ -69,32 +68,39 @@ function useRingAssets(ringIndex: number) {
     });
   }, [textures]);
 
-  return {
-    baseTexture: textures[0],
-    iconTextures: textures.slice(1)
-  };
+  return textures;
 }
 
 // 2. SINGLE ICON COMPONENT
-function CarouselIcon({ texture, index, activeIndex, radius }: { texture: THREE.Texture, index: number, activeIndex: number, radius: number }) {
-  // 30 degrees (PI/6) per slot
+function CarouselIcon({ 
+  texture, 
+  index, 
+  activeIndex, 
+  radius,
+  baseColor 
+}: { 
+  texture: THREE.Texture, 
+  index: number, 
+  activeIndex: number, 
+  radius: number,
+  baseColor: string 
+}) {
   const angle = index * (Math.PI / 6); 
   
-  // Placement: Clockwise distribution (0 at Top, 1 at 1 o'clock)
-  // x = sin(a), y = cos(a) puts 0 at (0, 1) -> 12 o'clock
+  // Placement: Clockwise distribution
   const x = Math.sin(angle) * radius;
   const y = Math.cos(angle) * radius;
 
-  // Active State Logic
+  // Active State
   const isActive = index === activeIndex;
   
-  // Visual Feedback
-  const targetOpacity = isActive ? 1.0 : 0.5;
+  // Visuals
+  const targetOpacity = isActive ? 1.0 : 0.6;
   const targetScale = isActive ? 1.15 : 1.0;
-  const targetColor = isActive ? "#ffffff" : "#00ffff"; 
+  const targetColor = isActive ? "#ffffff" : baseColor; 
 
   return (
-    <mesh position={[x, y, 0.002]} rotation={[0, 0, -angle]} scale={[targetScale, targetScale, 1]}>
+    <mesh position={[x, y, 0.005]} rotation={[0, 0, -angle]} scale={[targetScale, targetScale, 1]}>
       <planeGeometry args={[0.22, 0.22]} />
       <meshBasicMaterial 
         map={texture} 
@@ -116,7 +122,10 @@ function CryptexRing({
   iconRadius, 
   zPos, 
   dragRef, 
-  onInteract 
+  onInteract,
+  color,
+  hitInner, 
+  hitOuter
 }: { 
   ringIndex: number, 
   radiusInner: number, 
@@ -124,11 +133,14 @@ function CryptexRing({
   iconRadius: number,
   zPos: number,
   dragRef: React.MutableRefObject<boolean>, 
-  onInteract: () => void 
+  onInteract: () => void,
+  color: string,
+  hitInner?: number,
+  hitOuter?: number
 }) {
-  const { baseTexture, iconTextures } = useRingAssets(ringIndex);
+  const iconTextures = useIconAssets(ringIndex);
   
-  // RANDOMIZATION: Shuffle icons on mount (Stable Seed)
+  // Shuffle icons
   const shuffledIcons = useMemo(() => {
     return shuffleArray(iconTextures, ringIndex * 1234);
   }, [iconTextures, ringIndex]);
@@ -138,17 +150,20 @@ function CryptexRing({
   const [activeIndex, setActiveIndex] = useState(0); 
   const { size } = useThree();
 
-  // Optimizations
+  // --- GEOMETRY MEMOIZATION ---
   const ringArgs = useMemo(() => [radiusInner, radiusOuter, 64] as [number, number, number], [radiusInner, radiusOuter]);
-  const planeSize = radiusOuter * 2.05;
-  const planeArgs = useMemo(() => [planeSize, planeSize] as [number, number], [planeSize]);
+  
+  // Native Glowing Strokes (Visual Width)
+  const STROKE_WIDTH = 0.02;
+  const innerStrokeArgs = useMemo(() => [radiusInner, radiusInner + STROKE_WIDTH, 64] as [number, number, number], [radiusInner]);
+  const outerStrokeArgs = useMemo(() => [radiusOuter - STROKE_WIDTH, radiusOuter, 64] as [number, number, number], [radiusOuter]);
+
+  // Clickable Area (Physical Width) - Defaults to exact visual ring size if not provided
+  const hitArgs = useMemo(() => [hitInner ?? radiusInner, hitOuter ?? radiusOuter, 64] as [number, number, number], [hitInner, hitOuter, radiusInner, radiusOuter]);
 
   const bind = useDrag(({ xy: [x, y], delta: [dx, dy], down, event, first }) => {
     event.stopPropagation();
-    if (first) {
-        dragRef.current = true;
-        onInteract();
-    }
+    if (first) { dragRef.current = true; onInteract(); }
     
     if (down) {
       const cx = x - size.width / 2;
@@ -159,7 +174,6 @@ function CryptexRing({
         const angleDelta = (cx * dy - cy * dx) / r2;
         const newRotation = rotationRef.current - angleDelta;
         
-        // Haptics
         const SLOT = Math.PI / 6;
         const oldSlot = Math.round(rotationRef.current / SLOT);
         const newSlot = Math.round(newRotation / SLOT);
@@ -167,23 +181,14 @@ function CryptexRing({
 
         rotationRef.current = newRotation; 
         
-        // --- LOGIC FIX: Positive Rotation Indexing ---
-        // Rotating CCW (+Rotation) brings Index 1 to top.
-        // Rotating CW (-Rotation) brings Index 11 to top.
-        // Therefore: activeIndex = round(Rotation / 30deg)
         const currentSlotIndex = Math.round(newRotation / SLOT);
-        
-        // Normalize 0-11
         const normalizedIndex = ((currentSlotIndex % 12) + 12) % 12;
         
-        if (normalizedIndex !== activeIndex) {
-            setActiveIndex(normalizedIndex);
-        }
+        if (normalizedIndex !== activeIndex) setActiveIndex(normalizedIndex);
 
         api.start({ rotationZ: rotationRef.current, immediate: true });
       }
     } else {
-      // Snap Logic
       const SLOT = Math.PI / 6;
       const snapSlot = Math.round(rotationRef.current / SLOT);
       const snapAngle = snapSlot * SLOT;
@@ -207,24 +212,39 @@ function CryptexRing({
       onClick={(e: any) => { e.stopPropagation(); onInteract(); }}
       {...(bind() as any)}
     >
+      {/* 1. PHYSICAL METAL RING (Background) */}
       <mesh>
         <ringGeometry args={ringArgs} />
         <meshPhysicalMaterial color="#8e59c3" metalness={1.0} roughness={0.1} clearcoat={1.0} side={THREE.DoubleSide} />
       </mesh>
 
-      <mesh position={[0, 0, 0.001]} raycast={() => null}> 
-        <planeGeometry args={planeArgs} /> 
-        <meshBasicMaterial map={baseTexture} transparent opacity={1} color="#00ffff" toneMapped={false} depthWrite={false} side={THREE.DoubleSide} />
+      {/* 2. INVISIBLE HIT AREA (Click Target) */}
+      <mesh position={[0,0,0.005]}> 
+        <ringGeometry args={hitArgs} />
+        <meshBasicMaterial color="#ff0000" transparent opacity={0} depthWrite={false} side={THREE.DoubleSide} />
       </mesh>
 
-      {/* Render Shuffled Icons */}
+      {/* 3. NATIVE GLOWING BORDERS (Replaces PNG) */}
+      {/* Inner Stroke */}
+      <mesh position={[0, 0, 0.002]}>
+        <ringGeometry args={innerStrokeArgs} />
+        <meshBasicMaterial color={color} toneMapped={false} side={THREE.DoubleSide} />
+      </mesh>
+      {/* Outer Stroke */}
+      <mesh position={[0, 0, 0.002]}>
+        <ringGeometry args={outerStrokeArgs} />
+        <meshBasicMaterial color={color} toneMapped={false} side={THREE.DoubleSide} />
+      </mesh>
+
+      {/* 4. ICONS */}
       {shuffledIcons.map((tex, i) => (
         <CarouselIcon 
             key={i} 
             texture={tex} 
             index={i} 
             activeIndex={activeIndex} 
-            radius={iconRadius} 
+            radius={iconRadius}
+            baseColor={color} 
         />
       ))}
     </animated.group>
@@ -261,7 +281,6 @@ function ConstellationImages({ visible, layout }: { visible: boolean, layout: an
   useFrame((state) => {
     if (!visible) return; 
 
-    // 9 SECOND CYCLE: Rest(1) -> Glow(2) -> Pulse(3) -> Fade(2) -> Rest(1)
     const t = state.clock.elapsedTime % 9.0; 
     const T_REST_START = 1.0; const T_FADE_IN = 3.0; const T_PULSE = 6.0; const T_FADE_OUT = 8.0;
 
@@ -272,7 +291,7 @@ function ConstellationImages({ visible, layout }: { visible: boolean, layout: an
     else if (t < T_PULSE) { 
         opHand = 1.0; 
         const burstTime = t - T_FADE_IN; 
-        opBurst = (1 - Math.cos(burstTime * Math.PI * 2)) / 2; // 3 Pulses
+        opBurst = (1 - Math.cos(burstTime * Math.PI * 2)) / 2; 
     } 
     else if (t < T_FADE_OUT) { 
         const fadeProgress = (t - T_PULSE) / (T_FADE_OUT - T_PULSE); 
@@ -421,21 +440,26 @@ function InteractiveArtifact({ setHasInteracted }: { setHasInteracted: (val: boo
       <LiquidLayer />
       <PurpleDisc />
       
-      {/* 3 DYNAMIC RINGS */}
-      {/* Ring 1 (Outer): Moved Inward (1.18) */}
+      {/* 3 COLORED RINGS: Geometry aligned with Icons */}
+      {/* Ring 1 (Cyan) */}
       <CryptexRing 
-        ringIndex={1} radiusInner={1.02} radiusOuter={1.55} iconRadius={1.22} zPos={-0.07} 
-        dragRef={childIsDraggingRef} onInteract={onInteract} 
+        ringIndex={1} radiusInner={1.18} radiusOuter={1.55} iconRadius={1.37} zPos={-0.07} 
+        dragRef={childIsDraggingRef} onInteract={onInteract} color="#00ffff"
+        hitInner={1.15} hitOuter={1.55} 
       />
-      {/* Ring 2 (Middle): Perfect Alignment (0.84) */}
+
+      {/* Ring 2 (Red) */}
       <CryptexRing 
-        ringIndex={2} radiusInner={0.65} radiusOuter={1.03} iconRadius={0.84} zPos={-0.05} 
-        dragRef={childIsDraggingRef} onInteract={onInteract} 
+        ringIndex={2} radiusInner={0.80} radiusOuter={1.20} iconRadius={0.99} zPos={-0.05} 
+        dragRef={childIsDraggingRef} onInteract={onInteract} color="#00ffff"
+        hitInner={0.78} hitOuter={1.17}
       />
-      {/* Ring 3 (Inner): Moved Outward (0.52) */}
+
+      {/* Ring 3 (Green) */}
       <CryptexRing 
-        ringIndex={3} radiusInner={0.25} radiusOuter={0.645} iconRadius={0.55} zPos={-0.03} 
-        dragRef={childIsDraggingRef} onInteract={onInteract} 
+        ringIndex={3} radiusInner={0.40} radiusOuter={0.82} iconRadius={0.60} zPos={-0.03} 
+        dragRef={childIsDraggingRef} onInteract={onInteract} color="#00ffff"
+        hitInner={0.40} hitOuter={0.805} 
       />
     </group>
   );
