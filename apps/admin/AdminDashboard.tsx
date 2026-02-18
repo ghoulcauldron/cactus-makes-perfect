@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { fetchAdminGuests, createAdminGuest, sendAdminInvite } from "./api/client";
+import { fetchAdminGuests, createAdminGuest, sendAdminInvite, bulkUpdateGroup } from "./api/client";
 import GuestSidebar from "./GuestSidebar";
 import BulkActions from "./BulkActions";
 import { useSelection } from "./hooks/useSelection";
@@ -253,34 +253,34 @@ export default function AdminDashboard() {
   const executeBulkAssign = async () => {
     if (!pendingBulkAssign || selection.selectedIds.length === 0) return;
     const { groupLabel } = pendingBulkAssign;
+    
     try {
-      await fetch('/api/v1/admin/group/bulk', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` },
-        body: JSON.stringify({ guest_ids: selection.selectedIds, group_label: groupLabel })
-      });
+      // Use the client utility instead of manual fetch
+      await bulkUpdateGroup(groupLabel, selection.selectedIds);
+      
       await refreshGuests(true);
       selection.clear();
-    } catch (e) { console.error(e); alert("Failed to update groups"); }
-    finally { setPendingBulkAssign(null); }
+    } catch (e) { 
+      // apiFetch already logs the details, we just alert the user
+      alert("Failed to update groups. Check console for details."); 
+    } finally { 
+      setPendingBulkAssign(null); 
+    }
   };
 
   // --- NEW: Handle Creating a Group from Modal ---
   // Fix: Directly executes logic, DOES NOT trigger another confirmation modal.
   const handleCreateGroupAndAssign = async (newLabel: string) => {
     setShowCreateGroupModal(false);
-    if (selection.selectedIds.length > 0) {
-      try {
-        await fetch('/api/v1/admin/group/bulk', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` },
-          body: JSON.stringify({ guest_ids: selection.selectedIds, group_label: newLabel })
-        });
-        await refreshGuests(true); // Silent refresh to keep UI stable
-        selection.clear();
-      } catch (e) { console.error(e); alert("Failed to create/assign group"); }
-    } else {
-      alert("Please select at least one guest to assign to this new group.");
+    if (selection.selectedIds.length === 0) return;
+
+    try {
+      await bulkUpdateGroup(newLabel, selection.selectedIds);
+      await refreshGuests(true);
+      selection.clear();
+    } catch (e) { 
+      console.error("Group Creation/Assignment Error:", e);
+      alert("Failed to create and assign group."); 
     }
   };
 
