@@ -18,7 +18,8 @@ import {
   CheckCircleIcon,
   PencilSquareIcon,
   ChatBubbleLeftRightIcon,
-  PlusIcon
+  PlusIcon,
+  XMarkIcon
 } from '@heroicons/react/20/solid';
 import AddGuestModal from "./components/AddGuestModal";
 import AddGuestSuccessModal from "./components/AddGuestSuccessModal";
@@ -123,12 +124,11 @@ function inferActivityDisplay(g: any) {
 
 type SortField = "name" | "group" | "rsvp" | "activity";
 type SortDirection = "asc" | "desc";
-type FilterState = "all" | "group" | "responded_all" | "responded_yes" | "responded_no" | "responded_pending" | "not_responded_all" | "not_responded_invited" | "not_responded_not_invited";
+type FilterState = "all" | "responded_all" | "responded_yes" | "responded_no" | "responded_pending" | "not_responded_all" | "not_responded_invited" | "not_responded_not_invited";
 
 export default function AdminDashboard() {
   const [guests, setGuests] = useState<any[]>([]);
   
-  // SEPARATE LOADING STATES
   const [initialLoading, setInitialLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -137,7 +137,6 @@ export default function AdminDashboard() {
   const [filter, setFilter] = useState<FilterState>("all");
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   
-  // Modals
   const [showAddGuestModal, setShowAddGuestModal] = useState(false);
   const [showAddSuccessModal, setShowAddSuccessModal] = useState(false);
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
@@ -149,7 +148,6 @@ export default function AdminDashboard() {
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(null);
 
-  // FETCH FUNCTION
   async function refreshGuests(silent = false) {
     if (!silent) setIsRefreshing(true);
     try {
@@ -196,7 +194,7 @@ export default function AdminDashboard() {
 
   const filteredGuests = useMemo(() => {
     return guests.filter((g) => {
-      if (filter === "group") return canonicalizeGroupLabel(g.group_label) === selectedGroup;
+      if (selectedGroup && canonicalizeGroupLabel(g.group_label) !== selectedGroup) return false;
       const hasResponse = !!g.rsvps?.status;
       const status = g.rsvps?.status?.toLowerCase(); 
       switch (filter) {
@@ -228,12 +226,16 @@ export default function AdminDashboard() {
   }, [filteredGuests, sortField, sortDirection]);
 
   const selection = useSelection({ items: sortedGuests, getGroupId: (g) => canonicalizeGroupLabel(g.group_label) });
-  const currentGroup = filter === "group" ? selectedGroup : null;
+  const currentGroup = selectedGroup;
 
   const handleSort = (field: SortField) => { if (sortField === field) { setSortDirection(prev => prev === "asc" ? "desc" : "asc"); } else { setSortField(field); setSortDirection("asc"); } };
   
+  // PATCH: Mutual exclusivity logic in handleRowClick
   const handleRowClick = (e: React.MouseEvent, guestId: string, index: number) => {
     e.stopPropagation();
+    // 1. Prevent selecting rows if sidebar is open
+    if (selectedGuest) return;
+
     if (e.shiftKey && lastSelectedIndex !== null) {
       const start = Math.min(lastSelectedIndex, index); const end = Math.max(lastSelectedIndex, index);
       const idsToSelect = sortedGuests.slice(start, end + 1).map(g => g.id); selection.selectMany(idsToSelect);
@@ -241,7 +243,6 @@ export default function AdminDashboard() {
     setLastSelectedIndex(index);
   };
 
-  // --- BULK ASSIGN LOGIC ---
   const initiateBulkAssign = (groupLabel: string) => {
     if (groupLabel === "___CREATE_NEW___") {
       setShowCreateGroupModal(true);
@@ -253,35 +254,22 @@ export default function AdminDashboard() {
   const executeBulkAssign = async () => {
     if (!pendingBulkAssign || selection.selectedIds.length === 0) return;
     const { groupLabel } = pendingBulkAssign;
-    
     try {
-      // Use the client utility instead of manual fetch
       await bulkUpdateGroup(groupLabel, selection.selectedIds);
-      
       await refreshGuests(true);
       selection.clear();
-    } catch (e) { 
-      // apiFetch already logs the details, we just alert the user
-      alert("Failed to update groups. Check console for details."); 
-    } finally { 
-      setPendingBulkAssign(null); 
-    }
+    } catch (e) { console.error(e); alert("Failed to update groups"); }
+    finally { setPendingBulkAssign(null); }
   };
 
-  // --- NEW: Handle Creating a Group from Modal ---
-  // Fix: Directly executes logic, DOES NOT trigger another confirmation modal.
   const handleCreateGroupAndAssign = async (newLabel: string) => {
     setShowCreateGroupModal(false);
     if (selection.selectedIds.length === 0) return;
-
     try {
       await bulkUpdateGroup(newLabel, selection.selectedIds);
       await refreshGuests(true);
       selection.clear();
-    } catch (e) { 
-      console.error("Group Creation/Assignment Error:", e);
-      alert("Failed to create and assign group."); 
-    }
+    } catch (e) { console.error(e); alert("Failed to create/assign group"); }
   };
 
   const SortIcon = ({ field }: { field: SortField }) => { if (sortField !== field) return <ChevronUpDownIcon className="h-4 w-4 opacity-30" />; return sortDirection === "asc" ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />; };
@@ -290,6 +278,11 @@ export default function AdminDashboard() {
     const raw = Array.from(new Set(guests.map(g => canonicalizeGroupLabel(g.group_label))));
     return raw.filter(g => g !== "—").sort();
   }, [guests]);
+
+  const visibleGroups = useMemo(() => {
+    const raw = Array.from(new Set(sortedGuests.map(g => canonicalizeGroupLabel(g.group_label))));
+    return raw.filter(g => g !== "—").sort();
+  }, [sortedGuests]);
 
   const getFilterLabel = () => {
     switch (filter) {
@@ -301,7 +294,6 @@ export default function AdminDashboard() {
       case "not_responded_all": return "NOT RESPONDED: ALL";
       case "not_responded_invited": return "NOT RESPONDED: INVITED";
       case "not_responded_not_invited": return "NOT RESPONDED: NOT INVITED";
-      case "group": return "GROUP FILTER"; 
       default: return "FILTER";
     }
   };
@@ -316,18 +308,24 @@ export default function AdminDashboard() {
     function handleKeyDown(e: KeyboardEvent) {
       const target = e.target as HTMLElement | null;
       if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) return;
-      if (e.key === "a" || e.key === "A") { e.preventDefault(); const ids = sortedGuests.map((g) => g.id); if (selection.isAllSelected(ids)) selection.deselectMany(ids); else selection.selectMany(ids); }
-      if (e.key === "Escape") { e.preventDefault(); selection.clear(); }
+      if (e.key === "a" || e.key === "A") { 
+        e.preventDefault(); 
+        // PATCH: Prevent Select All shortcut if sidebar is open
+        if (selectedGuest) return;
+        const ids = sortedGuests.map((g) => g.id); 
+        if (selection.isAllSelected(ids)) selection.deselectMany(ids); else selection.selectMany(ids); 
+      }
+      if (e.key === "Escape") { e.preventDefault(); selection.clear(); setSelectedGuest(null); }
     }
     window.addEventListener("keydown", handleKeyDown); return () => { window.removeEventListener("keydown", handleKeyDown); };
-  }, [sortedGuests, selection]);
+  }, [sortedGuests, selection, selectedGuest]);
 
-  if (initialLoading) return <div className="p-8 text-primary font-mono">Loading…</div>;
+  if (initialLoading) return <div className="p-8 text-primary font-mono bg-black h-screen">Loading…</div>;
 
   return (
     <>
-      <div className="flex flex-col h-screen sm:h-dvh bg-surface text-primary font-mono border-4 border-primary">
-        <div className="shrink-0 px-3 py-1 border-b border-primary bg-surface uppercase tracking-widest text-sm w-full z-30">
+      <div className="flex flex-col h-screen sm:h-dvh bg-surface text-primary font-mono border-4 border-primary overflow-hidden">
+        <div className="shrink-0 px-3 py-1 border-b border-primary bg-surface uppercase tracking-widest text-sm w-full z-40">
           <div className="flex items-center justify-between w-full">
             <span className="truncate mr-2">CACTUS MAKES PERFECT - AREA 51</span>
             <button className="shrink-0 px-2 py-0.5 border border-primary text-primary hover:bg-[#9ae68c] hover:text-surface transition-colors text-xs" onClick={() => { localStorage.removeItem("admin_token"); window.location.href = "/login"; }}>LOGOUT</button>
@@ -335,59 +333,96 @@ export default function AdminDashboard() {
         </div>
 
         <div className="flex flex-1 overflow-hidden relative">
-          <div className={`flex flex-col flex-1 h-full bg-surface ${selectedGuest ? "hidden lg:flex" : "flex"}`}>
+          <div className={`flex flex-col flex-1 h-full bg-surface min-w-0 transition-all duration-300 ${selectedGuest ? "hidden lg:flex" : "flex"}`}>
             <div className="shrink-0 p-3 sm:p-4 border-b border-primary bg-surface z-20 shadow-sm">
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full lg:w-auto">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full lg:w-auto">
                   
                   {/* STATUS FILTER */}
                   <div className="relative w-full sm:w-64 z-40">
-                    <Listbox value={filter} onChange={(val) => { setFilter(val as FilterState); setSelectedGroup(null); }}>
-                      <ListboxButton className="relative w-full cursor-default border py-1 pl-3 pr-10 text-left text-sm uppercase tracking-tighter transition-all bg-black text-[#45CC2D] border-[#45CC2D] focus:ring-1 focus:ring-[#45CC2D] focus:outline-none hover:bg-[#9ae68c] hover:text-black">
+                    <Listbox value={filter} onChange={(val) => setFilter(val as FilterState)}>
+                      <ListboxButton className="relative w-full cursor-default border py-1 pl-3 pr-10 text-left text-[10px] uppercase tracking-tighter transition-all bg-black text-[#45CC2D] border-[#45CC2D] focus:ring-1 focus:ring-[#45CC2D] focus:outline-none hover:bg-[#9ae68c] hover:text-black">
                         <span className="block truncate font-bold">{getFilterLabel()}</span>
                         <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2"><ChevronUpDownIcon className="h-4 w-4 text-[#45CC2D]" /></span>
                       </ListboxButton>
                       <ListboxOptions className="absolute z-50 mt-1 max-h-80 w-full overflow-auto rounded-md bg-[#0a0a0a] border border-[#45CC2D] py-1 shadow-2xl focus:outline-none">
-                        <ListboxOption value="all" className={({ active }) => `relative cursor-default select-none py-2 pl-4 pr-4 text-[10px] uppercase transition-colors font-bold ${active ? "bg-[#45CC2D] text-black" : "text-white"}`}>Show All</ListboxOption>
+                        <ListboxOption value="all" className={({ active }) => `relative cursor-default select-none py-2 pl-8 pr-4 text-[10px] uppercase transition-colors font-bold ${active ? "bg-[#45CC2D] text-black" : "text-white"}`}>
+                          {({ selected }) => <><span className="block truncate">Show All</span>{selected && <span className="absolute inset-y-0 left-0 flex items-center pl-2"><CheckIcon className="h-4 w-4" /></span>}</>}
+                        </ListboxOption>
                         <div className="px-4 py-1 text-[10px] text-gray-500 uppercase tracking-widest font-bold border-t border-gray-800 mt-1">Responded</div>
-                        <ListboxOption value="responded_all" className={({ active }) => `relative cursor-default select-none py-2 pl-8 pr-4 text-[10px] uppercase transition-colors ${active ? "bg-[#45CC2D] text-black" : "text-gray-300"}`}>All Responded</ListboxOption>
-                        <ListboxOption value="responded_yes" className={({ active }) => `relative cursor-default select-none py-2 pl-8 pr-4 text-[10px] uppercase transition-colors ${active ? "bg-[#45CC2D] text-black" : "text-gray-300"}`}>Yes (Attending)</ListboxOption>
-                        <ListboxOption value="responded_no" className={({ active }) => `relative cursor-default select-none py-2 pl-8 pr-4 text-[10px] uppercase transition-colors ${active ? "bg-[#45CC2D] text-black" : "text-gray-300"}`}>No (Declined)</ListboxOption>
-                        <ListboxOption value="responded_pending" className={({ active }) => `relative cursor-default select-none py-2 pl-8 pr-4 text-[10px] uppercase transition-colors ${active ? "bg-[#45CC2D] text-black" : "text-gray-300"}`}>Pending</ListboxOption>
+                        {["responded_all", "responded_yes", "responded_no", "responded_pending"].map(f => (
+                          <ListboxOption key={f} value={f} className={({ active }) => `relative cursor-default select-none py-2 pl-8 pr-4 text-[10px] uppercase transition-colors ${active ? "bg-[#45CC2D] text-black" : "text-gray-300"}`}>
+                            {({ selected }) => <><span className="block truncate">{f.replace(/_/g, ' ')}</span>{selected && <span className="absolute inset-y-0 left-0 flex items-center pl-2"><CheckIcon className="h-4 w-4" /></span>}</>}
+                          </ListboxOption>
+                        ))}
                         <div className="px-4 py-1 text-[10px] text-gray-500 uppercase tracking-widest font-bold border-t border-gray-800 mt-1">Not Responded</div>
-                        <ListboxOption value="not_responded_all" className={({ active }) => `relative cursor-default select-none py-2 pl-8 pr-4 text-[10px] uppercase transition-colors ${active ? "bg-[#45CC2D] text-black" : "text-gray-300"}`}>All Not Responded</ListboxOption>
-                        <ListboxOption value="not_responded_invited" className={({ active }) => `relative cursor-default select-none py-2 pl-8 pr-4 text-[10px] uppercase transition-colors ${active ? "bg-[#45CC2D] text-black" : "text-gray-300"}`}>Invited</ListboxOption>
-                        <ListboxOption value="not_responded_not_invited" className={({ active }) => `relative cursor-default select-none py-2 pl-8 pr-4 text-[10px] uppercase transition-colors ${active ? "bg-[#45CC2D] text-black" : "text-gray-300"}`}>Not Yet Invited</ListboxOption>
+                        {["not_responded_all", "not_responded_invited", "not_responded_not_invited"].map(f => (
+                          <ListboxOption key={f} value={f} className={({ active }) => `relative cursor-default select-none py-2 pl-8 pr-4 text-[10px] uppercase transition-colors ${active ? "bg-[#45CC2D] text-black" : "text-gray-300"}`}>
+                            {({ selected }) => <><span className="block truncate">{f.replace(/_/g, ' ')}</span>{selected && <span className="absolute inset-y-0 left-0 flex items-center pl-2"><CheckIcon className="h-4 w-4" /></span>}</>}
+                          </ListboxOption>
+                        ))}
                       </ListboxOptions>
                     </Listbox>
                   </div>
 
                   {/* GROUP FILTER */}
                   <div className="relative w-full sm:w-64 z-30">
-                    <Listbox value={selectedGroup ?? undefined} onChange={(val) => {
-                      if (!val) { setFilter("all"); setSelectedGroup(null); } 
-                      else { setFilter("group"); setSelectedGroup(val); }
-                    }}>
-                      <ListboxButton className="relative w-full cursor-default border py-1 pl-3 pr-10 text-left text-sm uppercase tracking-tighter transition-all bg-black text-[#45CC2D] border-[#45CC2D] focus:ring-1 focus:ring-[#45CC2D] focus:outline-none hover:bg-[#9ae68c] hover:text-black">
-                        <span className="block truncate">{filter === "group" && selectedGroup ? selectedGroup : "All Groups"}</span>
+                    <Listbox value={selectedGroup} onChange={setSelectedGroup}>
+                      <ListboxButton className="relative w-full cursor-default border py-1 pl-3 pr-10 text-left text-[10px] uppercase tracking-tighter transition-all bg-black text-[#45CC2D] border-[#45CC2D] focus:ring-1 focus:ring-[#45CC2D] focus:outline-none hover:bg-[#9ae68c] hover:text-black">
+                        <span className="block truncate">{selectedGroup ? selectedGroup : "All Groups"}</span>
                         <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2"><ChevronUpDownIcon className="h-4 w-4 text-[#45CC2D]" /></span>
                       </ListboxButton>
                       <ListboxOptions className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md bg-[#0a0a0a] border border-[#45CC2D] py-1 shadow-2xl focus:outline-none">
-                        <ListboxOption value="" className={({ active }) => `relative cursor-default select-none py-2 pl-10 pr-4 text-[10px] font-bold uppercase transition-colors ${active ? "bg-[#45CC2D] text-black" : "text-gray-300"}`}>All Groups</ListboxOption>
+                        <ListboxOption value={null} className={({ active }) => `relative cursor-default select-none py-2 pl-8 pr-4 text-[10px] font-bold uppercase transition-colors ${active ? "bg-[#45CC2D] text-black" : "text-gray-300"}`}>
+                          {({ selected }) => <><span className="block truncate">All Groups</span>{selected && <span className="absolute inset-y-0 left-0 flex items-center pl-2"><CheckIcon className="h-4 w-4" /></span>}</>}
+                        </ListboxOption>
                         {availableGroups.map((g) => (
-                          <ListboxOption key={g} value={g} className={({ active }) => `relative cursor-default select-none py-2 pl-10 pr-4 text-[10px] uppercase transition-colors ${active ? "bg-[#45CC2D] text-black" : "text-gray-300"}`}>
+                          <ListboxOption key={g} value={g} className={({ active }) => `relative cursor-default select-none py-2 pl-8 pr-4 text-[10px] uppercase transition-colors ${active ? "bg-[#45CC2D] text-black" : "text-gray-300"}`}>
                             {({ selected }) => (
-                              <><span className={`block truncate ${selected ? "font-bold" : "font-normal"}`}>{g}</span>{selected && <span className="absolute inset-y-0 left-0 flex items-center pl-3"><CheckIcon className="h-4 w-4" /></span>}</>
+                              <><span className={`block truncate ${selected ? "font-bold" : "font-normal"}`}>{g}</span>{selected && <span className="absolute inset-y-0 left-0 flex items-center pl-2"><CheckIcon className="h-4 w-4" /></span>}</>
                             )}
                           </ListboxOption>
                         ))}
                       </ListboxOptions>
                     </Listbox>
                   </div>
+
+                  {/* SELECT ACTION DROPDOWN */}
+                  <div className="relative w-full sm:w-48 z-20">
+                    <Listbox value={null} onChange={(val: any) => {
+                      // PATCH: Prevent selecting via dropdown if sidebar is open
+                      if (selectedGuest) return;
+                      if (val === "CLEAR") selection.clear();
+                      else if (val === "VISIBLE") selection.selectMany(sortedGuests.map(g => g.id));
+                      else if (val === "NOT_INVITED") selection.selectMany(sortedGuests.filter(g => !g.invited_at).map(g => g.id));
+                      else if (val.startsWith("G:")) selection.selectMany(sortedGuests.filter(g => canonicalizeGroupLabel(g.group_label) === val.split(":")[1]).map(g => g.id));
+                    }}>
+                      <ListboxButton className="relative w-full cursor-default border py-1 pl-3 pr-10 text-left text-[10px] uppercase tracking-tighter transition-all bg-[#45CC2D] text-black border-[#45CC2D] focus:ring-1 focus:ring-[#45CC2D] focus:outline-none hover:bg-[#9ae68c]">
+                        <span className="block truncate font-bold">
+                          {selection.selectedIds.length > 0 ? `(${selection.selectedIds.length}) SELECTED` : "SELECT..."}
+                        </span>
+                        <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2"><ChevronDownIcon className="h-4 w-4" /></span>
+                      </ListboxButton>
+                      <ListboxOptions className="absolute z-50 mt-1 max-h-80 w-64 overflow-auto rounded-md bg-[#0a0a0a] border border-[#45CC2D] py-1 shadow-2xl focus:outline-none">
+                        <ListboxOption value="VISIBLE" className={({ active }) => `relative cursor-pointer select-none py-2 px-4 text-[10px] uppercase font-bold ${active ? "bg-[#45CC2D] text-black" : "text-white"}`}>Select All Visible ({sortedGuests.length})</ListboxOption>
+                        <ListboxOption value="NOT_INVITED" className={({ active }) => `relative cursor-pointer select-none py-2 px-4 text-[10px] uppercase font-bold ${active ? "bg-[#45CC2D] text-black" : "text-[#45CC2D]"}`}>Select Not Invited (Visible)</ListboxOption>
+                        <ListboxOption value="CLEAR" className={({ active }) => `relative cursor-pointer select-none py-2 px-4 text-[10px] uppercase font-bold border-b border-gray-800 ${active ? "bg-red-500 text-white" : "text-red-500"}`}>Deselect All</ListboxOption>
+                        <div className="px-4 py-1 text-[10px] text-gray-500 uppercase tracking-widest font-bold mt-2">Visible Groups</div>
+                        {visibleGroups.map(g => (
+                          <ListboxOption key={g} value={`G:${g}`} className={({ active }) => `relative cursor-pointer select-none py-2 pl-6 pr-4 text-[10px] uppercase ${active ? "bg-[#45CC2D] text-black" : "text-gray-300"}`}>Group: {g}</ListboxOption>
+                        ))}
+                      </ListboxOptions>
+                    </Listbox>
+                  </div>
+
+                  {(filter !== "all" || selectedGroup) && (
+                    <button onClick={() => { setFilter("all"); setSelectedGroup(null); }} className="flex items-center gap-1 px-2 py-1 text-[10px] uppercase font-bold text-gray-500 hover:text-white transition-colors">
+                      <XMarkIcon className="h-3 w-3" /> Clear Filters
+                    </button>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-4">
-                  {/* --- STATS --- */}
                   <div className="hidden xl:flex items-center gap-3 text-[10px] uppercase tracking-wider text-gray-400 border-r border-gray-800 pr-4 mr-2">
                     <span className="font-bold text-[#45CC2D]">{stats.invited}/{stats.total} INVITED</span>
                     {stats.yes > 0 && <span>YES: <span className="text-white">{stats.yes}</span></span>}
@@ -395,12 +430,11 @@ export default function AdminDashboard() {
                     {stats.pending > 0 && <span>PENDING: <span className="text-white">{stats.pending}</span></span>}
                   </div>
 
-                  {/* BULK ACTIONS */}
                   {selection.selectedIds.length > 0 && (
                     <div className="flex items-center gap-2 mr-2">
                       <div className="relative w-40">
                         <Listbox onChange={initiateBulkAssign}>
-                          <ListboxButton className="relative w-full cursor-default border border-[#45CC2D] bg-black py-1 pl-2 pr-8 text-left text-xs uppercase text-[#45CC2D] hover:bg-[#9ae68c] hover:text-black">
+                          <ListboxButton className="relative w-full cursor-default border border-[#45CC2D] bg-black py-1 pl-2 pr-8 text-left text-[10px] uppercase text-[#45CC2D] hover:bg-[#9ae68c] hover:text-black">
                             <span className="block truncate">Assign Group...</span>
                             <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-1"><ChevronUpDownIcon className="h-3 w-3" /></span>
                           </ListboxButton>
@@ -415,7 +449,7 @@ export default function AdminDashboard() {
                           </ListboxOptions>
                         </Listbox>
                       </div>
-                      <BulkActions selectedIds={selection.selectedIds} clearSelection={selection.clear} currentGroup={currentGroup} />
+                      <BulkActions selectedIds={selection.selectedIds} selectedGuests={guests.filter(g => selection.isSelected(g.id))} clearSelection={selection.clear} currentGroup={currentGroup} />
                     </div>
                   )}
                   <button className="px-2 py-1 border border-primary text-xs hover:bg-[#45CC2D] hover:text-black transition-colors whitespace-nowrap" onClick={() => setShowAddGuestModal(true)}>+ ADD GUESTS</button>
@@ -426,8 +460,11 @@ export default function AdminDashboard() {
             {/* Table Area */}
             <div className="flex-1 overflow-auto p-3 sm:p-6 z-10 relative">
               {isRefreshing && (
-                <div className="absolute inset-0 z-50 bg-black/50 backdrop-blur-[1px] flex items-center justify-center">
-                  <div className="text-[#45CC2D] text-xs font-bold uppercase tracking-widest animate-pulse">Updating...</div>
+                <div className="absolute inset-0 z-[60] bg-black/40 backdrop-blur-[2px] flex items-center justify-center cursor-wait">
+                  <div className="bg-black border border-[#45CC2D] px-6 py-3 flex items-center gap-3 shadow-2xl">
+                    <div className="h-4 w-4 border-2 border-[#45CC2D] border-t-transparent animate-spin rounded-full" />
+                    <span className="text-[#45CC2D] text-xs font-bold uppercase tracking-[0.2em]">Synchronizing...</span>
+                  </div>
                 </div>
               )}
               <div className="w-full border border-primary">
@@ -436,7 +473,15 @@ export default function AdminDashboard() {
                     <tr className="text-left border-b border-primary uppercase text-sm">
                       <th className="p-2 w-10 bg-surface">
                         {sortedGuests.length > 0 && (
-                          <input type="checkbox" className="h-5 w-5 rounded bg-black border-[#45CC2D] text-[#45CC2D] focus:ring-[#45CC2D] focus:ring-offset-black" checked={sortedGuests.length > 0 && sortedGuests.every(g => selection.isSelected(g.id))} onChange={() => { const ids = sortedGuests.map((g) => g.id); if (selection.isAllSelected(ids)) selection.deselectMany(ids); else selection.selectMany(ids); }} ref={el => { if (el) { const selectedCount = sortedGuests.filter(g => selection.isSelected(g.id)).length; el.indeterminate = selectedCount > 0 && selectedCount < sortedGuests.length; } }} />
+                          <input 
+                            type="checkbox" 
+                            // PATCH: Disable header checkbox if sidebar is open
+                            disabled={!!selectedGuest}
+                            className={`h-5 w-5 rounded bg-black border-[#45CC2D] text-[#45CC2D] focus:ring-[#45CC2D] focus:ring-offset-black ${selectedGuest ? "opacity-30 cursor-not-allowed" : ""}`} 
+                            checked={sortedGuests.length > 0 && sortedGuests.every(g => selection.isSelected(g.id))} 
+                            onChange={() => { const ids = sortedGuests.map((g) => g.id); if (selection.isAllSelected(ids)) selection.deselectMany(ids); else selection.selectMany(ids); }} 
+                            ref={el => { if (el) { const selectedCount = sortedGuests.filter(g => selection.isSelected(g.id)).length; el.indeterminate = selectedCount > 0 && selectedCount < sortedGuests.length; } }} 
+                          />
                         )}
                       </th>
                       <th className="p-2 cursor-pointer hover:bg-primary/20 select-none group bg-surface" onClick={() => handleSort("name")}><div className="flex items-center gap-1">Name <SortIcon field="name" /></div></th>
@@ -450,8 +495,23 @@ export default function AdminDashboard() {
                     {sortedGuests.map((g, index) => {
                       const { Icon, label } = inferActivityDisplay(g); 
                       return (
-                        <tr key={g.id} className={`border-b border-primary cursor-pointer hover:bg-neutral-800 ${selection.isSelected(g.id) ? "bg-primary text-surface" : ""}`} onClick={() => setSelectedGuest(g)}>
-                          <td onClick={(e) => handleRowClick(e, g.id, index)} className="p-2 align-top sm:align-middle"><input type="checkbox" className="h-5 w-5 rounded bg-black border-[#45CC2D] text-[#45CC2D] focus:ring-[#45CC2D] focus:ring-offset-black" checked={selection.isSelected(g.id)} onChange={() => {}} /></td>
+                        <tr key={g.id} className={`border-b border-primary cursor-pointer hover:bg-neutral-800 ${selection.isSelected(g.id) ? "bg-primary text-surface" : ""} ${selectedGuest?.id === g.id ? "bg-neutral-700" : ""}`} 
+                            onClick={(e) => {
+                              // PATCH: Block opening sidebar if multiple guests are already selected
+                              if (selection.selectedIds.length > 0) return;
+                              setSelectedGuest(g);
+                            }}
+                        >
+                          <td onClick={(e) => handleRowClick(e, g.id, index)} className="p-2 align-top sm:align-middle">
+                            <input 
+                              type="checkbox" 
+                              // PATCH: Disable row checkbox if sidebar is open
+                              disabled={!!selectedGuest}
+                              className={`h-5 w-5 rounded bg-black border-[#45CC2D] text-[#45CC2D] focus:ring-[#45CC2D] focus:ring-offset-black ${selectedGuest ? "opacity-30 cursor-not-allowed" : ""}`} 
+                              checked={selection.isSelected(g.id)} 
+                              onChange={() => {}} 
+                            />
+                          </td>
                           <td className="p-2 align-top sm:align-middle">
                             <div className="flex items-center gap-2"><div className="font-bold sm:font-normal">{g.first_name} {g.last_name}</div>{g.invited_at && (<div title={`Invite sent: ${new Date(g.invited_at).toLocaleDateString()}`}><PaperAirplaneIcon className={`h-3 w-3 ${selection.isSelected(g.id) ? "text-black" : "text-[#45CC2D]"}`} /></div>)}</div>
                             <div className="md:hidden flex flex-col gap-0.5 mt-1"><span className={`text-xs truncate max-w-[150px] ${selection.isSelected(g.id) ? "text-black/70" : "text-gray-400"}`}>{g.email}</span><span className={`text-[10px] uppercase tracking-wider ${selection.isSelected(g.id) ? "text-black/60" : "text-[#45CC2D]"}`}>{canonicalizeGroupLabel(g.group_label)}</span></div>
@@ -468,7 +528,20 @@ export default function AdminDashboard() {
               </div>
             </div>
           </div>
-          {selectedGuest && <div className="absolute inset-0 z-50 w-full h-full bg-surface overflow-auto lg:static lg:w-auto lg:border-l lg:border-primary lg:z-auto"><GuestSidebar guest={selectedGuest} onClose={() => setSelectedGuest(null)} /></div>}
+          
+          {/* Sidebar - Solid Black Background Added */}
+          {selectedGuest && (
+            <div className="absolute inset-y-0 right-0 z-50 flex justify-end w-full lg:static lg:w-auto lg:h-full lg:z-auto bg-black/40 lg:bg-black transition-all duration-300">
+              <div className="absolute inset-0 lg:hidden" onClick={() => setSelectedGuest(null)} />
+              <div className="relative w-full max-w-[420px] h-full bg-black shadow-2xl lg:shadow-none lg:border-l lg:border-[#45CC2D] overflow-hidden">
+                <GuestSidebar 
+                  guest={selectedGuest} 
+                  onClose={() => setSelectedGuest(null)} 
+                  onUpdate={() => refreshGuests(true)} 
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
       

@@ -12,7 +12,8 @@ import {
   UserGroupIcon, 
   EnvelopeOpenIcon, 
   CursorArrowRaysIcon,
-  UserPlusIcon
+  UserPlusIcon,
+  UserIcon
 } from "@heroicons/react/20/solid";
 
 // --- Types ---
@@ -83,15 +84,22 @@ type GuestSidebarProps = {
     email: string;
     group_label?: string | null;
     invited_at?: string | null;
+    avatar_url?: string | null;
   };
   onClose: () => void;
+  onUpdate?: () => void;
 };
 
-export default function GuestSidebar({ guest, onClose }: GuestSidebarProps) {
+export default function GuestSidebar({ guest, onClose, onUpdate }: GuestSidebarProps) {
   const [activity, setActivity] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
   const [showSendModal, setShowSendModal] = useState(false);
+
+  const handleGroupSuccess = () => {
+    if (onUpdate) onUpdate();
+    setIsGroupModalOpen(false);
+  };
 
   useEffect(() => {
     let alive = true;
@@ -167,11 +175,36 @@ export default function GuestSidebar({ guest, onClose }: GuestSidebarProps) {
       
       {/* Header */}
       <div className="p-4 flex justify-between items-start border-b border-[#45CC2D]">
-        <div>
-          <h2 className="font-bold text-lg uppercase tracking-wider leading-none">
-            {guest.first_name} {guest.last_name}
-          </h2>
-          <p className="text-xs text-[#45CC2D]/70 mt-1">{guest.email}</p>
+        <div className="flex items-center gap-4">
+           {/* Profile Photo Block */}
+           <div className="relative shrink-0">
+            <div className="absolute -top-1 -left-1 w-2 h-2 border-t border-l border-[#45CC2D]"></div>
+            <div className="absolute -bottom-1 -right-1 w-2 h-2 border-b border-r border-[#45CC2D]"></div>
+            
+            <div className="w-16 h-16 bg-neutral-900 border border-[#45CC2D]/30 overflow-hidden flex items-center justify-center relative">
+              {guest.avatar_url ? (
+                <img 
+                  src={guest.avatar_url} 
+                  alt={guest.first_name} 
+                  className="w-full h-full object-cover filter grayscale contrast-125"
+                />
+              ) : (
+                <div className="flex flex-col items-center opacity-40">
+                  <UserIcon className="h-6 w-6 mb-0.5" />
+                  <span className="text-[8px] tracking-tighter">NO_IMG</span>
+                </div>
+              )}
+              {/* Scanline FX */}
+              <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent via-[#45CC2D]/10 to-transparent h-1/2 w-full animate-scan"></div>
+            </div>
+          </div>
+
+          <div>
+            <h2 className="font-bold text-lg uppercase tracking-wider leading-none">
+              {guest.first_name} {guest.last_name}
+            </h2>
+            <p className="text-xs text-[#45CC2D]/70 mt-1">{guest.email}</p>
+          </div>
         </div>
         <button 
           className="text-[#45CC2D] hover:bg-[#45CC2D] hover:text-black px-2 py-0.5 border border-transparent hover:border-[#45CC2D] transition-colors" 
@@ -220,7 +253,7 @@ export default function GuestSidebar({ guest, onClose }: GuestSidebarProps) {
           <GroupEditModal
             guestId={guest.id}
             currentGroup={guest.group_label ?? null}
-            onClose={() => setIsGroupModalOpen(false)}
+            onClose={handleGroupSuccess}
           />
         )}
 
@@ -246,7 +279,6 @@ export default function GuestSidebar({ guest, onClose }: GuestSidebarProps) {
                   </div>
                   
                   <div className="flex flex-col gap-2 pl-4">
-                    {/* Telemetry Summary */}
                     {(summary.email_opened > 0 || summary.email_clicked > 0) && (
                       <div className="border border-dashed border-[#45CC2D]/40 p-2 text-xs text-[#45CC2D]/70 bg-black/50 flex gap-4">
                         {summary.email_opened > 0 && <div><EnvelopeOpenIcon className="h-3 w-3 inline mr-1"/> {summary.email_opened} opened</div>}
