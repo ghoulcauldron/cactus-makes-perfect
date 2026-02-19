@@ -109,13 +109,22 @@ export default function GuestSidebar({ guest, onClose, onUpdate }: GuestSidebarP
 
   const currentRSVP = useMemo(() => {
     const latestRsvp = activity.find(a => a.kind === "rsvp_created" || a.kind === "rsvp_submitted");
-    return latestRsvp?.meta?.response?.toLowerCase() || "pending";
+    const rawStatus = latestRsvp?.meta?.response?.toLowerCase();
+    // Map existing DB values to normalized UI labels
+    if (['attending', 'accepted', 'yes'].includes(rawStatus)) return 'yes';
+    if (['declined', 'no'].includes(rawStatus)) return 'no';
+    if (['pending', 'maybe'].includes(rawStatus)) return 'maybe';
+    return "pending";
   }, [activity]);
 
   const handleOverride = async (status: string) => {
     setIsUpdatingRSVP(true);
     try {
-      await overrideGuestRSVP(guest.id, status);
+      // Send normalized status to backend
+      await apiFetch(`/admin/guest/${guest.id}/rsvp-override`, {
+        method: "POST",
+        body: JSON.stringify({ status }), // status is now "yes", "no", or "maybe"
+      });
       const data = await fetchGuestActivity(guest.id);
       setActivity(data.activity || []);
       if (onUpdate) onUpdate();
@@ -225,7 +234,7 @@ export default function GuestSidebar({ guest, onClose, onUpdate }: GuestSidebarP
           <div className="flex flex-col gap-2">
             <span className="text-[10px] uppercase opacity-50 tracking-tighter">Manual Override RSVP:</span>
             <div className="grid grid-cols-3 gap-1">
-              {['attending', 'declined', 'pending'].map((status) => (
+              {['yes', 'no', 'maybe'].map((status) => (
                 <button
                   key={status}
                   disabled={isUpdatingRSVP}
@@ -236,7 +245,7 @@ export default function GuestSidebar({ guest, onClose, onUpdate }: GuestSidebarP
                       : 'border-[#45CC2D]/40 text-[#45CC2D] hover:border-[#45CC2D]'
                   } ${isUpdatingRSVP ? 'opacity-30 cursor-wait' : ''}`}
                 >
-                  {status === 'attending' ? 'YES' : status === 'declined' ? 'NO' : 'MAYBE'}
+                  {status}
                 </button>
               ))}
             </div>

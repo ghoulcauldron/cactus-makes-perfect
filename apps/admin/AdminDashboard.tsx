@@ -195,17 +195,15 @@ export default function AdminDashboard() {
   const filteredGuests = useMemo(() => {
     return guests.filter((g) => {
       if (selectedGroup && canonicalizeGroupLabel(g.group_label) !== selectedGroup) return false;
-      const hasResponse = !!g.rsvps?.status;
       const status = g.rsvps?.status?.toLowerCase(); 
       switch (filter) {
         case "all": return true;
-        case "responded_all": return hasResponse;
-        case "responded_yes": return status === 'attending' || status === 'accepted' || status === 'yes';
-        case "responded_no": return status === 'declined' || status === 'no';
-        case "responded_pending": return status === 'pending';
-        case "not_responded_all": return !hasResponse;
-        case "not_responded_invited": return !hasResponse && g.invited_at;
-        case "not_responded_not_invited": return !hasResponse && !g.invited_at;
+        case "responded_yes": return ['attending', 'accepted', 'yes'].includes(status);
+        case "responded_no": return ['declined', 'no'].includes(status);
+        case "responded_pending": return ['pending', 'maybe'].includes(status);
+        case "not_responded_all": return !status;
+        case "not_responded_invited": return !status && g.invited_at;
+        case "not_responded_not_invited": return !status && !g.invited_at;
         default: return true;
       }
     });
@@ -300,7 +298,13 @@ export default function AdminDashboard() {
 
   const getStatusColorClass = (status: string, isSelected: boolean) => {
     const s = status.toLowerCase();
-    if (s === 'attending' || s === 'accepted' || s === 'yes') { return isSelected ? 'bg-black text-[#45CC2D] border border-black' : 'bg-[#45CC2D] text-black'; }
+    if (['yes', 'attending', 'accepted'].includes(s)) { 
+      return isSelected ? 'bg-black text-[#45CC2D] border border-black' : 'bg-[#45CC2D] text-black'; 
+    }
+    if (['no', 'declined'].includes(s)) {
+      return isSelected ? 'bg-red-900 text-white' : 'bg-red-600 text-white';
+    }
+    // Default for 'Maybe' or others
     return isSelected ? 'bg-black/20 text-black border border-black' : 'bg-neutral-800 text-gray-300 border border-gray-700';
   };
 
