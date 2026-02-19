@@ -193,3 +193,14 @@ export async function sendGroupNudge(
     body: JSON.stringify({ subject, html, text }),
   });
 }
+
+// ------------------------------
+// OVERRIDES
+// ------------------------------
+
+export async function overrideGuestRSVP(guestId: string, status: string) {
+  return apiFetch(`/admin/guest/${guestId}/rsvp-override`, {
+    method: "POST",
+    body: JSON.stringify({ status }),
+  });
+}

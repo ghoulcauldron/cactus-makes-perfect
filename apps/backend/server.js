@@ -1294,3 +1294,45 @@ async function issueJWT(payload) {
     .sign(new TextEncoder().encode(JWT_SECRET));
   return token;
 }
+
+// ---- Admin: Manual RSVP Override ----
+app.post("/api/v1/admin/guest/:id/rsvp-override", requireAdminAuth, async (req, res) => {
+  try {
+    const guest_id = req.params.id;
+    const { status } = req.body;
+
+    if (!status) return res.status(400).json({ error: "Missing status" });
+
+    // Upsert the RSVP status
+    const { data, error } = await supabase
+      .from("rsvps")
+      .upsert(
+        [{ 
+          guest_id, 
+          status, 
+          submitted_at: new Date().toISOString() 
+        }],
+        { onConflict: "guest_id" }
+      )
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Log the override in user_activity
+    await supabase.from("user_activity").insert([{
+      guest_id,
+      kind: "rsvp_submitted", // Matches timeline mapping for "RSVP Created"
+      meta: { 
+        response: status, 
+        source: "admin_override",
+        admin_id: req.admin?.id 
+      }
+    }]);
+
+    return res.json({ ok: true, rsvp: data });
+  } catch (e) {
+    console.error("[AdminRSVPOverride] Error:", e);
+    return res.status(500).json({ error: "Override failed" });
+  }
+});

@@ -2,6 +2,16 @@ import React, { useEffect, useState, useMemo } from "react";
 import { fetchGuestActivity } from "./api/client";
 import GroupEditModal from "./components/GroupEditModal";
 import SendCommunicationModal from "./components/SendCommunicationModal";
+
+async function overrideGuestRSVP(guestId: string, status: string) {
+  const response = await fetch(`/api/guests/${guestId}/rsvp`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ rsvp_status: status }),
+  });
+  if (!response.ok) throw new Error("Failed to override RSVP");
+  return response.json();
+}
 import { 
   CheckCircleIcon, 
   PencilSquareIcon, 
@@ -95,10 +105,31 @@ export default function GuestSidebar({ guest, onClose, onUpdate }: GuestSidebarP
   const [loading, setLoading] = useState(true);
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
   const [showSendModal, setShowSendModal] = useState(false);
+  const [isUpdatingRSVP, setIsUpdatingRSVP] = useState(false); // New state for RSVP update processing
 
   const handleGroupSuccess = () => {
     if (onUpdate) onUpdate();
     setIsGroupModalOpen(false);
+  };
+
+  // Extract current RSVP status from activity log
+  const currentRSVP = useMemo(() => {
+    const latestRsvp = activity.find(a => a.kind === "rsvp_created" || a.kind === "rsvp_submitted");
+    return latestRsvp?.meta?.response?.toLowerCase() || "pending";
+  }, [activity]);
+
+  const handleOverride = async (status: string) => {
+    setIsUpdatingRSVP(true);
+    try {
+      await overrideGuestRSVP(guest.id, status);
+      const data = await fetchGuestActivity(guest.id); // Refresh local activity
+      setActivity(data.activity || []);
+      if (onUpdate) onUpdate(); // Refresh main table
+    } catch (err) {
+      alert("OVERRIDE ERROR: System failed to update manual RSVP.");
+    } finally {
+      setIsUpdatingRSVP(false);
+    }
   };
 
   useEffect(() => {
@@ -235,6 +266,27 @@ export default function GuestSidebar({ guest, onClose, onUpdate }: GuestSidebarP
             )}
           </div>
 
+          {/* NEW: Manual RSVP Override Buttons */}
+            <div className="flex flex-col gap-2">
+              <span className="text-[10px] uppercase opacity-50 tracking-tighter">Manual Override RSVP:</span>
+              <div className="grid grid-cols-3 gap-1">
+                {['attending', 'declined', 'pending'].map((status) => (
+                  <button
+                    key={status}
+                    disabled={isUpdatingRSVP}
+                    onClick={() => handleOverride(status)}
+                    className={`text-[9px] py-1 border uppercase transition-all ${
+                      currentRSVP === status 
+                        ? 'bg-[#45CC2D] text-black border-[#45CC2D]' 
+                        : 'border-[#45CC2D]/40 text-[#45CC2D] hover:border-[#45CC2D]'
+                    } ${isUpdatingRSVP ? 'opacity-30 cursor-wait' : ''}`}
+                  >
+                    {status === 'attending' ? 'YES' : status === 'declined' ? 'NO' : 'MAYBE'}
+                  </button>
+                ))}
+              
+          </div>
+
           <div>
             <h3 className="text-xs font-bold uppercase tracking-widest mb-2 border-b border-[#45CC2D]/30 pb-1">Household Group</h3>
             <div className="flex items-center justify-between">
@@ -247,6 +299,7 @@ export default function GuestSidebar({ guest, onClose, onUpdate }: GuestSidebarP
               </button>
             </div>
           </div>
+        </div>
         </div>
 
         {isGroupModalOpen && (
@@ -324,6 +377,7 @@ export default function GuestSidebar({ guest, onClose, onUpdate }: GuestSidebarP
           )}
         </div>
       </div>
+
       {showSendModal && (
         <SendCommunicationModal
           mode="invite"
