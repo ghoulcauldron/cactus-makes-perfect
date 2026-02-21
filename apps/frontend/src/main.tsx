@@ -3,8 +3,9 @@ import ReactDOM from 'react-dom/client'
 import { createBrowserRouter, RouterProvider, redirect } from 'react-router-dom'
 import Welcome from './routes/guest/welcome/Welcome'
 import ProtectedRoute from './routes/ProtectedRoute'
-import './index.css'
 import PhotoCalculatorAuth from './routes/guest/login/PhotoCalculatorAuth'
+import AccessDenied from './pages/AccessDenied'
+import './index.css'
 import './fonts.css';
 
 // --- ARTIFACT IMPORT ---
@@ -60,6 +61,10 @@ const router = createBrowserRouter([
   {
     path: '/invite',
     element: <PhotoCalculatorAuth />
+  },
+  {
+    path: '/denied',
+    element: <AccessDenied />
   },
   { 
     path: '/guest/welcome',
