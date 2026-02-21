@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { apiFetch } from "../api/client";
-import { PlusIcon, MapPinIcon, HomeIcon, UserPlusIcon, MapIcon, BuildingOfficeIcon } from '@heroicons/react/20/solid';
+import { PlusIcon, MapPinIcon, HomeIcon, UserPlusIcon, MapIcon, BuildingOfficeIcon, XMarkIcon, PencilSquareIcon } from '@heroicons/react/20/solid';
 import HydrateLocationModal from "./HydrateLocationModal";
 import AddUnitModal from "./AddUnitModal";
 import DeployGuestModal from "./DeployGuestModal";
@@ -54,15 +54,59 @@ export default function LodgingManager() {
               <div className="flex justify-between items-start">
                 <div className="flex gap-3">
                   <MapPinIcon className="h-5 w-5 text-[#45CC2D]" />
-                  <div>
-                    <h3 className="font-bold text-[#45CC2D] uppercase leading-none">{loc.name}</h3>
-                    <p className="text-[10px] text-[#45CC2D]/60 mt-1">{loc.address}</p>
+                  <div className="min-w-0">
+                    <h3 className="font-bold text-[#45CC2D] uppercase leading-tight truncate text-lg tracking-tight">{loc.name}</h3>
+                    <p className="text-[10px] text-[#45CC2D]/50 mt-1 truncate uppercase font-mono">{loc.address}</p>
                   </div>
                 </div>
+
+                <div className="flex flex-col items-end gap-2">
+                  <div className="flex gap-2">
+                    {/* EDIT BUTTON */}
+                        <button 
+                          onClick={async () => {
+                            const newName = window.prompt("RENAME LOCATION:", loc.name);
+                            if (newName && newName !== loc.name) {
+                              try {
+                                await apiFetch(`/admin/lodging/locations/${loc.id}`, {
+                                  method: 'PATCH',
+                                  body: JSON.stringify({ name: newName })
+                                });
+                                await refreshLodging();
+                              } catch (err) {
+                                alert("Rename failed. Check server logs.");
+                              }
+                            }
+                          }}
+                          className="text-[#45CC2D] hover:bg-[#45CC2D] hover:text-black border border-[#45CC2D]/30 p-1 transition-all"
+                          title="Rename Location"
+                        >
+                          <PencilSquareIcon className="h-3 w-3" />
+                        </button>
+
+                    {/* DELETE LOCATION */}
+                    <button 
+                      onClick={async () => {
+                        if (window.confirm("DANGER: This will delete this location and all assigned units. Proceed?")) {
+                          try {
+                            await apiFetch(`/admin/lodging/locations/${loc.id}`, { method: 'DELETE' });
+                            await refreshLodging(); // Sync the UI
+                          } catch (err) {
+                            console.error("Delete failed:", err);
+                            alert("Delete failed. Check server logs.");
+                          }
+                        }
+                      }}
+                      className="text-red-500 hover:bg-red-500 hover:text-black border border-red-500/30 p-1 transition-all"
+                    >
+                      <XMarkIcon className="h-3 w-3" />
+                    </button>
                 <button onClick={() => setActiveLocationId(loc.id)} className="text-[9px] font-bold uppercase text-[#45CC2D] border border-[#45CC2D]/30 px-2 py-1 hover:bg-[#45CC2D] hover:text-black transition-all">
                   + Add Unit
                 </button>
               </div>
+              </div>
+            </div>
 
               {/* UNIT LIST */}
               <div className="space-y-2 pt-4">

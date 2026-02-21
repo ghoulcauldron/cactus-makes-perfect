@@ -80,13 +80,15 @@ const app = express();
 app.use(
   cors({
     origin: [
-      "http://localhost:5174",        // local admin SPA
-      "http://localhost:3000",        // local backend (for same-origin cases)
-      "https://area51.cactusmakesperfect.org", // production admin domain
-      "https://www.cactusmakesperfect.org"     // main domain
+      "http://localhost:5174",        
+      "http://localhost:3000",        
+      "https://area51.cactusmakesperfect.org", 
+      "https://www.cactusmakesperfect.org"     
     ],
-    credentials: false,
-    methods: ["GET", "POST", "PATCH", "OPTIONS"],
+    // Change to true to allow Authorization headers/cookies across origins
+    credentials: true, 
+    // Add "DELETE" and "PUT" to ensure all admin actions are permitted
+    methods: ["GET", "POST", "PATCH", "DELETE", "PUT", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"]
   })
 );
@@ -1363,52 +1365,46 @@ app.patch("/api/v1/admin/lodging/assign", requireAdminAuth, async (req, res) => 
 // ---- Admin: Hydrate Location from Google Maps URL ----
 app.post("/api/v1/admin/lodging/hydrate", requireAdminAuth, async (req, res) => {
   try {
-    let { url } = req.body;
+    const { url: sourceUrl } = req.body;
+    const isPreview = req.query.preview === 'true'; // Check if this is just a preview scan
     const API_KEY = process.env.MAPS_API_KEY;
 
-    if (!url) return res.status(400).json({ error: "URL is required" });
+    if (!sourceUrl) return res.status(400).json({ error: "URL is required" });
 
-    console.log("[LodgingHydrate] Incoming Source:", url);
+    let url = sourceUrl;
+    console.log(`[LodgingHydrate] ${isPreview ? 'PREVIEW' : 'EXECUTE'} - Source:`, url);
 
-    // 1. Resolve Shortened / Redirect URLs (Generic)
-    // This follows the link to get the final "long" browser URL
-    if (url.includes("goo.gl") || url.includes("maps.app.goo.gl") || url.includes("maps.app.goo.gl")) {
+    // 1. Resolve Shortened / Redirect URLs
+    if (url.includes("goo.gl") || url.includes("maps.app.goo.gl") || url.includes("googleusercontent.com/maps.google.com")) {
       console.log("[LodgingHydrate] Resolving shortened link...");
       const headResp = await fetch(url, { method: 'GET', redirect: 'follow' });
       url = headResp.url;
       console.log("[LodgingHydrate] Resolved to:", url);
     }
 
-    // 2. Intelligence Gathering: Extract Search Terms from the URL
-    // Browser URLs usually look like: .../place/Location+Name/@lat,lng,zoom/data=...
-    // We want that 'Location+Name' segment.
+    // 2. Intelligence Gathering: Extract Search Terms
     const nameMatch = url.match(/\/place\/([^/]+)\//);
     const placeIdMatch = url.match(/place_id=([^&/]+)/);
     
-    // Priority 1: Explicit Place ID in URL
-    // Priority 2: Name Slug in path
-    // Priority 3: The raw URL (Google search fallback)
     const query = placeIdMatch 
       ? placeIdMatch[1] 
       : (nameMatch ? decodeURIComponent(nameMatch[1]).replace(/\+/g, ' ') : url);
 
-    console.log("[LodgingHydrate] Attempting search with query:", query);
+    console.log("[LodgingHydrate] Searching for:", query);
 
-    // 3. Convert Query/Slug into a valid Alphanumeric Place ID
+    // 3. Convert Query/Slug into Alphanumeric Place ID
     const findUrl = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(query)}&inputtype=textquery&fields=place_id&key=${API_KEY}`;
-    
     const findResp = await fetch(findUrl);
     const findData = await findResp.json();
 
     if (findData.status !== "OK" || !findData.candidates?.[0]?.place_id) {
-      console.error("[LodgingHydrate] Search Failure:", findData);
+      console.error("[LodgingHydrate] FindPlace Failed:", findData);
       return res.status(400).json({ 
-        error: `Could not resolve coordinates. Google Status: ${findData.status}. Ensure you are sharing a specific business or point of interest.` 
+        error: `Google Status: ${findData.status}. Ensure you share a specific point of interest.` 
       });
     }
 
     const placeId = findData.candidates[0].place_id;
-    console.log("[LodgingHydrate] Successfully mapped to Place ID:", placeId);
 
     // 4. Query Official Metadata
     const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=name,formatted_address,url&key=${API_KEY}`;
@@ -1421,15 +1417,23 @@ app.post("/api/v1/admin/lodging/hydrate", requireAdminAuth, async (req, res) => 
 
     const { name, formatted_address, url: official_url } = detailsData.result;
 
-    // 5. Save to Supabase
+    const locationData = {
+      name,
+      address: formatted_address,
+      google_maps_url: official_url,
+      place_id: placeId
+    };
+
+    // --- NEW PREVIEW LOGIC ---
+    if (isPreview) {
+      console.log("[LodgingHydrate] Returning preview data for validation");
+      return res.json({ ok: true, location: locationData });
+    }
+
+    // 5. Final Execution: Save to Supabase
     const { data: location, error } = await supabase
       .from("lodging_locations")
-      .insert([{
-        name,
-        address: formatted_address,
-        google_maps_url: official_url,
-        place_id: placeId
-      }])
+      .insert([locationData])
       .select()
       .single();
 
@@ -1437,8 +1441,57 @@ app.post("/api/v1/admin/lodging/hydrate", requireAdminAuth, async (req, res) => 
 
     return res.json({ ok: true, location });
   } catch (e) {
-    console.error("[LodgingHydrate] Error:", e.message);
+    console.error("[LodgingHydrate] Failed:", e.message);
     return res.status(500).json({ error: e.message || "Hydration failed" });
+  }
+});
+
+// NEW DELETE ROUTE (for manual correction)
+app.delete("/api/v1/admin/lodging/locations/:id", requireAdminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Perform the deletion in Supabase
+    const { error } = await supabase
+      .from("lodging_locations")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      console.error("[LodgingDelete] Supabase error:", error);
+      return res.status(422).json({ error: "Could not delete location", details: error });
+    }
+
+    console.log(`[LodgingDelete] Success: Location ${id} removed.`);
+    return res.json({ ok: true });
+  } catch (e) {
+    console.error("[LodgingDelete] Unexpected error:", e);
+    return res.status(500).json({ error: "Internal server error during deletion" });
+  }
+});
+
+// NEW: Admin PATCH location (for renaming or correcting addresses)
+app.patch("/api/v1/admin/lodging/locations/:id", requireAdminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, address } = req.body;
+
+    const { data, error } = await supabase
+      .from("lodging_locations")
+      .update({ name, address })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("[LodgingUpdate] Supabase error:", error);
+      return res.status(422).json({ error: "Update failed", details: error });
+    }
+
+    return res.json({ ok: true, location: data });
+  } catch (e) {
+    console.error("[LodgingUpdate] Unexpected error:", e);
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 
