@@ -787,37 +787,34 @@ app.use("/api/v1/admin", requireAdminAuth);
 // ---- Admin: GET full guest list with filters ----
 app.get("/api/v1/admin/guests", requireAdminAuth, async (req, res) => {
   try {
-    const { rsvp, invited, responded, search } = req.query;
+    const { rsvp, invited, search } = req.query;
 
+    // Use the newly created view
     let query = supabase.from("admin_guests_view").select("*");
 
-    // invited=yes/no
     if (invited === "yes") query = query.not("invited_at", "is", null);
     if (invited === "no") query = query.is("invited_at", null);
 
-    // responded=yes/no
-    if (responded === "yes") query = query.not("responded_at", "is", null);
-    if (responded === "no") query = query.is("responded_at", null);
+    // Use the alias 'rsvp_status' from the view
+    if (rsvp) query = query.eq("rsvp_status", rsvp);
 
-    // rsvp status
-    if (rsvp) query = query.eq("rsvps->>status", rsvp);
-
-    // search by name or email
     if (search) {
       query = query.or(
         `email.ilike.%${search}%,first_name.ilike.%${search}%,last_name.ilike.%${search}%`
       );
     }
 
-    const { data, error } = await query.order("last_activity_at", { ascending: false });
+    // Sort by the new alias name or invited_at
+    const { data, error } = await query.order("invited_at", { ascending: false });
+    
     if (error) {
-      console.error("[AdminGuests] View query failed", error);
-      return res.status(422).json({ error: "Supabase view query failed", details: error });
+      console.error("[AdminGuests] Query failed:", error);
+      return res.status(422).json({ error: "Query failed", details: error });
     }
 
     return res.json({ guests: data || [] });
   } catch (e) {
-    console.error("[AdminGuests] Unexpected error", e);
+    console.error("[AdminGuests] Server error:", e);
     return res.status(500).json({ error: "Internal error" });
   }
 });
@@ -1306,6 +1303,184 @@ app.post("/api/v1/admin/guest/:id/rsvp-override", requireAdminAuth, async (req, 
   } catch (e) {
     console.error("[AdminRSVPOverride] Error:", e);
     return res.status(500).json({ error: "Override failed" });
+  }
+});
+
+// ---- Admin: GET all lodging locations with units and assigned guests ----
+app.get("/api/v1/admin/lodging", requireAdminAuth, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("lodging_locations")
+      .select(`
+        *,
+        units:lodging_units(
+          *,
+          guests:guests(id, first_name, last_name, email, rsvps(status))
+        )
+      `);
+
+    if (error) throw error;
+    return res.json({ locations: data || [] });
+  } catch (e) {
+    console.error("[AdminLodgingFetch] Error:", e);
+    return res.status(500).json({ error: "Failed to fetch lodging data" });
+  }
+});
+
+// ---- Admin: POST create location (Hydrate logic placeholder) ----
+app.post("/api/v1/admin/lodging/locations", requireAdminAuth, async (req, res) => {
+  try {
+    const { name, address, google_maps_url } = req.body;
+    const { data, error } = await supabase
+      .from("lodging_locations")
+      .insert([{ name, address, google_maps_url }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return res.json({ ok: true, location: data });
+  } catch (e) {
+    return res.status(500).json({ error: "Failed to create location" });
+  }
+});
+
+// ---- Admin: PATCH assign guests to unit (DEPLOY) ----
+app.patch("/api/v1/admin/lodging/assign", requireAdminAuth, async (req, res) => {
+  try {
+    const { guest_ids, unit_id } = req.body; // unit_id can be null to unassign
+    const { error } = await supabase
+      .from("guests")
+      .update({ lodging_unit_id: unit_id })
+      .in("id", guest_ids);
+
+    if (error) throw error;
+    return res.json({ ok: true });
+  } catch (e) {
+    return res.status(500).json({ error: "Deployment failed" });
+  }
+});
+
+// ---- Admin: Hydrate Location from Google Maps URL ----
+app.post("/api/v1/admin/lodging/hydrate", requireAdminAuth, async (req, res) => {
+  try {
+    let { url } = req.body;
+    const API_KEY = process.env.MAPS_API_KEY;
+
+    if (!url) return res.status(400).json({ error: "URL is required" });
+
+    console.log("[LodgingHydrate] Incoming Source:", url);
+
+    // 1. Resolve Shortened / Redirect URLs (Generic)
+    // This follows the link to get the final "long" browser URL
+    if (url.includes("goo.gl") || url.includes("maps.app.goo.gl") || url.includes("maps.app.goo.gl")) {
+      console.log("[LodgingHydrate] Resolving shortened link...");
+      const headResp = await fetch(url, { method: 'GET', redirect: 'follow' });
+      url = headResp.url;
+      console.log("[LodgingHydrate] Resolved to:", url);
+    }
+
+    // 2. Intelligence Gathering: Extract Search Terms from the URL
+    // Browser URLs usually look like: .../place/Location+Name/@lat,lng,zoom/data=...
+    // We want that 'Location+Name' segment.
+    const nameMatch = url.match(/\/place\/([^/]+)\//);
+    const placeIdMatch = url.match(/place_id=([^&/]+)/);
+    
+    // Priority 1: Explicit Place ID in URL
+    // Priority 2: Name Slug in path
+    // Priority 3: The raw URL (Google search fallback)
+    const query = placeIdMatch 
+      ? placeIdMatch[1] 
+      : (nameMatch ? decodeURIComponent(nameMatch[1]).replace(/\+/g, ' ') : url);
+
+    console.log("[LodgingHydrate] Attempting search with query:", query);
+
+    // 3. Convert Query/Slug into a valid Alphanumeric Place ID
+    const findUrl = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(query)}&inputtype=textquery&fields=place_id&key=${API_KEY}`;
+    
+    const findResp = await fetch(findUrl);
+    const findData = await findResp.json();
+
+    if (findData.status !== "OK" || !findData.candidates?.[0]?.place_id) {
+      console.error("[LodgingHydrate] Search Failure:", findData);
+      return res.status(400).json({ 
+        error: `Could not resolve coordinates. Google Status: ${findData.status}. Ensure you are sharing a specific business or point of interest.` 
+      });
+    }
+
+    const placeId = findData.candidates[0].place_id;
+    console.log("[LodgingHydrate] Successfully mapped to Place ID:", placeId);
+
+    // 4. Query Official Metadata
+    const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=name,formatted_address,url&key=${API_KEY}`;
+    const detailsResp = await fetch(detailsUrl);
+    const detailsData = await detailsResp.json();
+
+    if (detailsData.status !== "OK") {
+      throw new Error(`Google API Detail Error: ${detailsData.status}`);
+    }
+
+    const { name, formatted_address, url: official_url } = detailsData.result;
+
+    // 5. Save to Supabase
+    const { data: location, error } = await supabase
+      .from("lodging_locations")
+      .insert([{
+        name,
+        address: formatted_address,
+        google_maps_url: official_url,
+        place_id: placeId
+      }])
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return res.json({ ok: true, location });
+  } catch (e) {
+    console.error("[LodgingHydrate] Error:", e.message);
+    return res.status(500).json({ error: e.message || "Hydration failed" });
+  }
+});
+
+// ---- Admin: POST create unit in a location ----
+app.post("/api/v1/admin/lodging/units", requireAdminAuth, async (req, res) => {
+  try {
+    const { location_id, label, capacity } = req.body;
+    if (!location_id || !label) return res.status(400).json({ error: "Missing fields" });
+
+    const { data, error } = await supabase
+      .from("lodging_units")
+      .insert([{ location_id, label, capacity: capacity || 2 }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return res.json({ ok: true, unit: data });
+  } catch (e) {
+    return res.status(500).json({ error: "Failed to create unit" });
+  }
+});
+
+// ---- Admin: GET unassigned guests (eligible for lodging) ----
+app.get("/api/v1/admin/lodging/eligible-guests", requireAdminAuth, async (req, res) => {
+  try {
+    // 1. Filter for guests with no lodging_unit_id assigned
+    // 2. Look for positive RSVPs in the 'rsvp_status' field from our view
+    const { data, error } = await supabase
+      .from("admin_guests_view")
+      .select("id, first_name, last_name, email, rsvp_status")
+      .is("lodging_unit_id", null)
+      .or('rsvp_status.ilike.yes,rsvp_status.ilike.maybe,rsvp_status.ilike.attending,rsvp_status.ilike.accepted');
+
+    if (error) {
+      console.error("[AdminEligibleGuests] Supabase query error:", error);
+      return res.status(422).json({ error: "Query failed", details: error });
+    }
+
+    return res.json({ guests: data || [] });
+  } catch (e) {
+    console.error("[AdminEligibleGuests] Unexpected server error:", e);
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 

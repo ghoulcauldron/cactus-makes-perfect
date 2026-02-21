@@ -76,13 +76,21 @@ function formatActivityDate(dateStr: string | null) {
   });
 }
 
+// Inside GuestList.tsx
 function inferActivityDisplay(g: any) {
-  if (g.rsvps?.status) {
-    const statusLabel = g.rsvps.status.charAt(0).toUpperCase() + g.rsvps.status.slice(1);
+  // 1. Check for RSVP status first (Highest Priority)
+  if (g.rsvp_status) {
+    const statusLabel = g.rsvp_status.charAt(0).toUpperCase() + g.rsvp_status.slice(1);
     return { Icon: CheckCircleIcon, label: `RSVP: ${statusLabel}` };
   }
-  if (g.last_activity_kind && kindMap[g.last_activity_kind]) return kindMap[g.last_activity_kind];
-  return { Icon: CursorArrowRaysIcon, label: g.last_activity_kind?.replace(/_/g, ' ') || "Activity" };
+  
+  // 2. Map the 'kind' from our new SQL view (Matches 'guest_created', 'invite_sent', etc.)
+  if (g.last_activity_kind && kindMap[g.last_activity_kind]) {
+    return kindMap[g.last_activity_kind];
+  }
+  
+  // 3. Ultimate fallback if no activity is recorded yet
+  return { Icon: CursorArrowRaysIcon, label: "No Activity" };
 }
 
 type SortField = "name" | "group" | "rsvp" | "activity";
@@ -138,11 +146,13 @@ export default function GuestList() {
     setShowAddSuccessModal(true);
   }
 
+  // --- Updated Stats Memo ---
   const stats = useMemo(() => {
     let yes = 0, no = 0, pending = 0, invited = 0;
     guests.forEach(g => {
       if (g.invited_at) invited++;
-      const status = g.rsvps?.status?.toLowerCase();
+      // Use rsvp_status directly instead of rsvps.status
+      const status = g.rsvp_status?.toLowerCase();
       if (['attending', 'accepted', 'yes'].includes(status)) yes++;
       else if (['declined', 'no'].includes(status)) no++;
       else if (['pending', 'maybe'].includes(status)) pending++;
@@ -150,10 +160,12 @@ export default function GuestList() {
     return { yes, no, pending, invited, total: guests.length };
   }, [guests]);
 
+  // --- Updated Filter Memo ---
   const filteredGuests = useMemo(() => {
     return guests.filter((g) => {
       if (selectedGroup && canonicalizeGroupLabel(g.group_label) !== selectedGroup) return false;
-      const status = g.rsvps?.status?.toLowerCase(); 
+      // Use rsvp_status directly
+      const status = g.rsvp_status?.toLowerCase(); 
       switch (filter) {
         case "all": return true;
         case "responded_yes": return ['attending', 'accepted', 'yes'].includes(status);
@@ -167,20 +179,21 @@ export default function GuestList() {
     });
   }, [guests, filter, selectedGroup]);
 
-  const sortedGuests = useMemo(() => {
-    return [...filteredGuests].sort((a, b) => {
-      let valA: any = ""; let valB: any = "";
-      switch (sortField) {
-        case "name": valA = `${a.last_name} ${a.first_name}`.toLowerCase(); valB = `${b.last_name} ${b.first_name}`.toLowerCase(); break;
-        case "group": valA = (a.group_label || "").toLowerCase(); valB = (b.group_label || "").toLowerCase(); break;
-        case "rsvp": valA = (a.rsvps?.status || "").toLowerCase(); valB = (b.rsvps?.status || "").toLowerCase(); break;
-        case "activity": valA = a.last_activity_at ? new Date(a.last_activity_at).getTime() : 0; valB = b.last_activity_at ? new Date(b.last_activity_at).getTime() : 0; break;
-      }
-      if (valA < valB) return sortDirection === "asc" ? -1 : 1;
-      if (valA > valB) return sortDirection === "asc" ? 1 : -1;
-      return 0;
-    });
-  }, [filteredGuests, sortField, sortDirection]);
+  // --- Update the Sort Memo ---
+const sortedGuests = useMemo(() => {
+  return [...filteredGuests].sort((a, b) => {
+    let valA: any = ""; let valB: any = "";
+    switch (sortField) {
+      case "name": valA = `${a.last_name} ${a.first_name}`.toLowerCase(); valB = `${b.last_name} ${b.first_name}`.toLowerCase(); break;
+      case "group": valA = (a.group_label || "").toLowerCase(); valB = (b.group_label || "").toLowerCase(); break;
+      case "rsvp": valA = (a.rsvp_status || "").toLowerCase(); valB = (b.rsvp_status || "").toLowerCase(); break; // FIX
+      case "activity": valA = a.last_activity_at ? new Date(a.last_activity_at).getTime() : 0; valB = b.last_activity_at ? new Date(b.last_activity_at).getTime() : 0; break;
+    }
+    if (valA < valB) return sortDirection === "asc" ? -1 : 1;
+    if (valA > valB) return sortDirection === "asc" ? 1 : -1;
+    return 0;
+  });
+}, [filteredGuests, sortField, sortDirection]);
 
   const selection = useSelection({ items: sortedGuests, getGroupId: (g) => canonicalizeGroupLabel(g.group_label) });
 
@@ -411,16 +424,61 @@ export default function GuestList() {
                   {sortedGuests.map((g, index) => {
                     const { Icon, label } = inferActivityDisplay(g); 
                     return (
-                      <tr key={g.id} className={`border-b border-primary cursor-pointer hover:bg-neutral-800 ${selection.isSelected(g.id) ? "bg-primary text-surface" : ""} ${selectedGuest?.id === g.id ? "bg-neutral-700" : ""}`} onClick={() => { if (selection.selectedIds.length > 0) return; setSelectedGuest(g); }}>
-                        <td onClick={(e) => handleRowClick(e, g.id, index)} className="p-2 align-top sm:align-middle"><input type="checkbox" disabled={!!selectedGuest} className={`h-5 w-5 rounded bg-black border-[#45CC2D] text-[#45CC2D] ${selectedGuest ? "opacity-30 cursor-not-allowed" : ""}`} checked={selection.isSelected(g.id)} readOnly /></td>
+                      <tr 
+                        key={g.id} 
+                        className={`border-b border-primary cursor-pointer hover:bg-neutral-800 ${selection.isSelected(g.id) ? "bg-primary text-surface" : ""} ${selectedGuest?.id === g.id ? "bg-neutral-700" : ""}`} 
+                        onClick={() => { if (selection.selectedIds.length > 0) return; setSelectedGuest(g); }}
+                      >
+                        <td onClick={(e) => handleRowClick(e, g.id, index)} className="p-2 align-top sm:align-middle">
+                          <input 
+                            type="checkbox" 
+                            disabled={!!selectedGuest} 
+                            className={`h-5 w-5 rounded bg-black border-[#45CC2D] text-[#45CC2D] ${selectedGuest ? "opacity-30 cursor-not-allowed" : ""}`} 
+                            checked={selection.isSelected(g.id)} 
+                            readOnly 
+                          />
+                        </td>
                         <td className="p-2 align-top sm:align-middle">
-                          <div className="flex items-center gap-2"><div className="font-bold sm:font-normal">{g.first_name} {g.last_name}</div>{g.invited_at && (<div title={`Invite sent: ${new Date(g.invited_at).toLocaleDateString()}`}><PaperAirplaneIcon className={`h-3 w-3 ${selection.isSelected(g.id) ? "text-black" : "text-[#45CC2D]"}`} /></div>)}</div>
-                          <div className="md:hidden flex flex-col gap-0.5 mt-1"><span className={`text-xs truncate max-w-[150px] ${selection.isSelected(g.id) ? "text-black/70" : "text-gray-400"}`}>{g.email}</span><span className={`text-[10px] uppercase tracking-wider ${selection.isSelected(g.id) ? "text-black/60" : "text-[#45CC2D]"}`}>{canonicalizeGroupLabel(g.group_label)}</span></div>
+                          <div className="flex items-center gap-2">
+                            <div className="font-bold sm:font-normal">{g.first_name} {g.last_name}</div>
+                            {g.invited_at && (
+                              <div title={`Invite sent: ${new Date(g.invited_at).toLocaleDateString()}`}>
+                                <PaperAirplaneIcon className={`h-3 w-3 ${selection.isSelected(g.id) ? "text-black" : "text-[#45CC2D]"}`} />
+                              </div>
+                            )}
+                          </div>
+                          <div className="md:hidden flex flex-col gap-0.5 mt-1">
+                            <span className={`text-xs truncate max-w-[150px] ${selection.isSelected(g.id) ? "text-black/70" : "text-gray-400"}`}>{g.email}</span>
+                            <span className={`text-[10px] uppercase tracking-wider ${selection.isSelected(g.id) ? "text-black/60" : "text-[#45CC2D]"}`}>
+                              {canonicalizeGroupLabel(g.group_label)}
+                            </span>
+                          </div>
                         </td>
                         <td className="p-2 hidden md:table-cell whitespace-nowrap">{g.email}</td>
                         <td className="p-2 hidden md:table-cell whitespace-nowrap">{canonicalizeGroupLabel(g.group_label)}</td>
-                        <td className="p-2 align-top sm:align-middle whitespace-nowrap">{g.rsvps?.status ? (<span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium uppercase ${getStatusColorClass(g.rsvps.status, selection.isSelected(g.id))}`}>{g.rsvps.status}</span>) : (<span className="text-gray-500 text-xs">—</span>)}</td>
-                        <td className="p-2 hidden lg:table-cell whitespace-nowrap text-xs"><div className="flex items-center gap-2"><Icon className="h-5 w-5 text-[#9ae68c]" /><div className="flex flex-col"><span className="font-bold">{label}</span><span className={selection.isSelected(g.id) ? "text-black/60" : "text-gray-500"}>{formatActivityDate(g.last_activity_at)}</span></div></div></td>
+                        
+                        {/* UPDATED RSVP CELL: Accessing g.rsvp_status directly from the view */}
+                        <td className="p-2 align-top sm:align-middle whitespace-nowrap">
+                          {g.rsvp_status ? (
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium uppercase ${getStatusColorClass(g.rsvp_status, selection.isSelected(g.id))}`}>
+                              {g.rsvp_status}
+                            </span>
+                          ) : (
+                            <span className="text-gray-500 text-xs">—</span>
+                          )}
+                        </td>
+
+                        <td className="p-2 hidden lg:table-cell whitespace-nowrap text-xs">
+                          <div className="flex items-center gap-2">
+                            <Icon className="h-5 w-5 text-[#9ae68c]" />
+                            <div className="flex flex-col">
+                              <span className="font-bold">{label}</span>
+                              <span className={selection.isSelected(g.id) ? "text-black/60" : "text-gray-500"}>
+                                {/* Use rsvp_actual_submitted_at if activity date is missing */}
+                                        {formatActivityDate(g.last_activity_at || g.rsvp_actual_submitted_at || g.invited_at)}                              </span>
+                            </div>
+                          </div>
+                        </td>
                       </tr>
                     );
                   })}
