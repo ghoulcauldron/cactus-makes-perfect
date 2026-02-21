@@ -36,22 +36,39 @@ function canonicalizeGroupLabel(label) {
 
 // ---- Helper: get or create valid invite token (Phase 1.5) ----
 async function getOrCreateInviteToken(guest) {
-  // Look for most recent valid, unused token
+  // Look for most recent UNUSED token (ignore expiry for now)
   const { data: existing } = await supabase
     .from("invite_tokens")
     .select("*")
     .eq("guest_id", guest.id)
-    .is("used_at", null)
-    .gt("expires_at", new Date().toISOString())
+    .is("used_at", null) // STRUCTURAL LOCK: Only unused tokens can be reused
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
 
   if (existing) {
-    return { tokenRow: existing, reused: true };
+    const now = new Date();
+    const expiry = new Date(existing.expires_at);
+
+    // If it's expired, structurally "revive" it by updating the timestamp
+    // This keeps the URL in their inbox the same.
+    if (expiry <= now) {
+      const newExpiresAt = new Date(Date.now() + RSVP_WINDOW_MS).toISOString();
+      const { data: updated } = await supabase
+        .from("invite_tokens")
+        .update({ expires_at: newExpiresAt })
+        .eq("id", existing.id)
+        .select()
+        .single();
+      
+      return { tokenRow: updated, reused: true, revived: true };
+    }
+
+    // Otherwise, just reuse the existing valid token
+    return { tokenRow: existing, reused: true, revived: false };
   }
 
-  // Otherwise create a new token
+  // Create new if none exist OR if all previous are already "used"
   const code = genCode(6);
   const token = uuidv4();
   const expires_at = new Date(Date.now() + RSVP_WINDOW_MS).toISOString();
@@ -69,7 +86,7 @@ async function getOrCreateInviteToken(guest) {
     .select()
     .single();
 
-  return { tokenRow: inserted, reused: false };
+  return { tokenRow: inserted, reused: false, revived: false };
 }
 
 const __filename = fileURLToPath(import.meta.url);
@@ -584,19 +601,37 @@ app.post("/api/v1/auth/verify", async (req, res) => {
       .eq("token", token)
       .eq("code", code)
       .limit(1);
+
     if (error || !rows?.length) return res.status(401).json({ error: "Invalid code or token" });
 
     const invite = rows[0];
-    if (!invite?.guest) return res.status(401).json({ error: "Invalid invite" });
-    if (new Date(invite.expires_at) < new Date()) return res.status(410).json({ error: "Code expired" });
+    
+    // STRUCTURAL CHECK 1: Is it already used?
+    if (invite.used_at) {
+      return res.status(403).json({ 
+        error: "Link already used", 
+        message: "This portal link has already been activated. Please check your latest device session or request a fresh link." 
+      });
+    }
 
+    // STRUCTURAL CHECK 2: Is it expired?
+    if (new Date(invite.expires_at) < new Date()) {
+      return res.status(410).json({ 
+        error: "Link expired", 
+        message: "This portal link has expired. Please contact S&G to reactivate your coordinates." 
+      });
+    }
+
+    // SUCCESS: Mark as used and proceed
     await supabase
       .from("invite_tokens")
-      .update({ delivery_status: "responded" })
+      .update({ 
+        delivery_status: "responded",
+        used_at: new Date().toISOString() // LOCK THE TOKEN
+      })
       .eq("token", token);
 
     const jwt = await issueJWT({ guest_id: invite.guest.id, email: invite.guest.email });
-
     await supabase.from("user_activity").insert([{ guest_id: invite.guest.id, kind: "auth_success" }]);
 
     res.json({ token: jwt, guest_id: invite.guest.id });
@@ -1305,6 +1340,36 @@ app.post("/api/v1/admin/guest/:id/rsvp-override", requireAdminAuth, async (req, 
   } catch (e) {
     console.error("[AdminRSVPOverride] Error:", e);
     return res.status(500).json({ error: "Override failed" });
+  }
+});
+
+// ---- Admin: PATCH update guest's active invite token expiry ----
+app.patch("/api/v1/admin/guest/:id/invite-token", requireAdminAuth, async (req, res) => {
+  try {
+    const { id: guest_id } = req.params;
+    const { expires_at } = req.body;
+
+    if (!expires_at) return res.status(400).json({ error: "Missing expires_at" });
+
+    // Update the most recent unused, non-expired token for this guest
+    const { data, error } = await supabase
+      .from("invite_tokens")
+      .update({ expires_at })
+      .eq("guest_id", guest_id)
+      .is("used_at", null)
+      .select()
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      return res.status(404).json({ error: "No active token found to update" });
+    }
+
+    return res.json({ ok: true, token: data[0] });
+  } catch (e) {
+    console.error("[AdminTokenUpdate] Error:", e);
+    return res.status(500).json({ error: "Failed to update token expiry" });
   }
 });
 

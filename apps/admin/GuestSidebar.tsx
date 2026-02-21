@@ -101,6 +101,9 @@ export default function GuestSidebar({ guest, onClose, onUpdate }: GuestSidebarP
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
   const [showSendModal, setShowSendModal] = useState(false);
   const [isUpdatingRSVP, setIsUpdatingRSVP] = useState(false);
+  const [activeToken, setActiveToken] = useState<{ id: string, expires_at: string } | null>(null);
+  const [isEditingExpiry, setIsEditingExpiry] = useState(false);
+  const [newExpiry, setNewExpiry] = useState("");
 
   const handleGroupSuccess = () => {
     if (onUpdate) onUpdate();
@@ -138,14 +141,36 @@ export default function GuestSidebar({ guest, onClose, onUpdate }: GuestSidebarP
   useEffect(() => {
     let alive = true;
     (async () => {
-      const data = await fetchGuestActivity(guest.id);
+      // Fetch full guest detail which includes tokens (based on your existing GET /guest/:id route)
+      const data = await apiFetch(`/admin/guest/${guest.id}`);
       if (alive) {
         setActivity(data.activity || []);
+        // Find the latest unused token
+        const latestToken = data.tokens?.find((t: any) => !t.used_at);
+        if (latestToken) {
+          setActiveToken(latestToken);
+          setNewExpiry(new Date(latestToken.expires_at).toISOString().slice(0, 16));
+        }
         setLoading(false);
       }
     })();
     return () => { alive = false; };
   }, [guest.id]);
+
+  const handleUpdateExpiry = async () => {
+    try {
+      const isoDate = new Date(newExpiry).toISOString();
+      await apiFetch(`/admin/guest/${guest.id}/invite-token`, {
+        method: "PATCH",
+        body: JSON.stringify({ expires_at: isoDate }),
+      });
+      setActiveToken(prev => prev ? { ...prev, expires_at: isoDate } : null);
+      setIsEditingExpiry(false);
+      if (onUpdate) onUpdate();
+    } catch (err) {
+      alert("EXPIRY ERROR: Failed to update token deadline.");
+    }
+  };
 
   const timeline = useMemo(() => {
     if (!activity || activity.length === 0) return [];
@@ -228,6 +253,44 @@ export default function GuestSidebar({ guest, onClose, onUpdate }: GuestSidebarP
                 {!guest.invited_at ? "Send Invite" : "Resend Invite"}
               </button>
             </div>
+
+            {/* TOKEN EXPIRY INTERFACE */}
+            {activeToken && (
+              <div className="mt-4 bg-[#45CC2D]/5 border border-[#45CC2D]/20 p-2">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-[9px] uppercase font-bold opacity-60">Portal Expiration:</span>
+                  {!isEditingExpiry && (
+                    <button 
+                      onClick={() => setIsEditingExpiry(true)} 
+                      className="text-[9px] underline hover:text-white"
+                    >
+                      EDIT_DEADLINE
+                    </button>
+                  )}
+                </div>
+                
+                {isEditingExpiry ? (
+                  <div className="flex flex-col gap-2">
+                    <input 
+                      type="datetime-local" 
+                      value={newExpiry} 
+                      onChange={(e) => setNewExpiry(e.target.value)}
+                      className="bg-black border border-[#45CC2D] text-[#45CC2D] text-[10px] p-1 outline-none"
+                    />
+                    <div className="flex justify-end gap-2">
+                      <button onClick={() => setIsEditingExpiry(false)} className="text-[9px] uppercase">Cancel</button>
+                      <button onClick={handleUpdateExpiry} className="text-[9px] bg-[#45CC2D] text-black px-2 font-bold uppercase">Update</button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className={`text-[10px] font-bold ${new Date(activeToken.expires_at) < new Date() ? 'text-red-500' : 'text-[#45CC2D]'}`}>
+                    {new Date(activeToken.expires_at).toLocaleString()}
+                    {new Date(activeToken.expires_at) < new Date() && " (EXPIRED)"}
+                  </p>
+                )}
+              </div>
+            )}
+
             {guest.invited_at && <p className="text-[10px] text-[#45CC2D]/60 mt-1">LAST SENT: {new Date(guest.invited_at).toLocaleString()}</p>}
           </div>
 
