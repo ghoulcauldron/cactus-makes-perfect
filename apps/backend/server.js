@@ -1514,6 +1514,27 @@ app.post("/api/v1/admin/lodging/units", requireAdminAuth, async (req, res) => {
   }
 });
 
+// ---- Admin: PATCH update unit (label, capacity) ----
+app.patch("/api/v1/admin/lodging/units/:id", requireAdminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { label, capacity } = req.body;
+
+    const { data, error } = await supabase
+      .from("lodging_units")
+      .update({ label, capacity })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return res.json({ ok: true, unit: data });
+  } catch (e) {
+    console.error("[AdminUnitUpdate] Error:", e);
+    return res.status(500).json({ error: "Failed to update unit" });
+  }
+});
+
 // ---- Admin: GET unassigned guests (eligible for lodging) ----
 app.get("/api/v1/admin/lodging/eligible-guests", requireAdminAuth, async (req, res) => {
   try {

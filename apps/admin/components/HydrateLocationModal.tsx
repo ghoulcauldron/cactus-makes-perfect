@@ -1,7 +1,7 @@
 // apps/admin/components/HydrateLocationModal.tsx
 import React, { useState } from "react";
 import { apiFetch } from "../api/client";
-import { XMarkIcon, CheckIcon, PencilSquareIcon } from '@heroicons/react/20/solid';
+import { XMarkIcon, CheckIcon } from '@heroicons/react/20/solid';
 
 export default function HydrateLocationModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
   const [url, setUrl] = useState("");
@@ -16,7 +16,8 @@ export default function HydrateLocationModal({ onClose, onSuccess }: { onClose: 
     e.preventDefault();
     setLoading(true);
     try {
-      const data = await apiFetch("/admin/lodging/hydrate", { // Removed ?preview=true as backend is now preview-only
+      // Ensure this endpoint ONLY returns data and DOES NOT save to DB
+      const data = await apiFetch("/admin/lodging/hydrate?preview=true", { 
         method: "POST",
         body: JSON.stringify({ url }),
       });
@@ -31,6 +32,7 @@ export default function HydrateLocationModal({ onClose, onSuccess }: { onClose: 
   const handleConfirmSave = async () => {
     setLoading(true);
     try {
+      // This is the ONLY place where the database should be touched
       await apiFetch("/admin/lodging/locations", {
         method: "POST",
         body: JSON.stringify(preview),
@@ -83,6 +85,7 @@ export default function HydrateLocationModal({ onClose, onSuccess }: { onClose: 
               </div>
             </div>
             <div className="flex justify-between items-center pt-2">
+              {/* Resetting preview effectively cancels the flow since nothing has been saved yet */}
               <button onClick={() => setPreview(null)} className="text-[10px] text-gray-500 uppercase font-bold hover:text-white">Cancel</button>
               <button onClick={handleConfirmSave} disabled={loading} className="bg-[#45CC2D] text-black px-6 py-2 text-xs font-bold uppercase flex items-center gap-2">
                 <CheckIcon className="h-4 w-4" /> Save Location
