@@ -182,14 +182,30 @@ export default function PhotoCalculatorAuth({
     setSubmitting(true);
     startTicker("ooooh...");
     try {
-      // Only send token and code
       const res = await fetch("/api/v1/auth/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token: token || "", code: pass }),
       });
-      stopTicker();
-      if (!res.ok) throw new Error(await res.text());
+
+      // --- STRATEGIC INTERCEPTION ---
+      if (!res.ok) {
+        stopTicker();
+        
+        // If the link is structurally dead (Expired or Already Used), redirect.
+        if (res.status === 410) {
+          window.location.replace("/denied?reason=expired");
+          return;
+        }
+        if (res.status === 403) {
+          window.location.replace("/denied?reason=used");
+          return;
+        }
+
+        // If it's a 401 (Wrong Code), throw to the catch block for the "NOPE" behavior.
+        throw new Error("Invalid entry");
+      }
+
       const data = await res.json();
       if (data?.token) localStorage.setItem("auth_token", data.token);
       if (data?.guest_id) localStorage.setItem("guest_user_id", data.guest_id);
