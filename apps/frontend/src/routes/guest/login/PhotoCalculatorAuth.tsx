@@ -399,12 +399,35 @@ export default function PhotoCalculatorAuth({
 
 
   // Early conditional render: if not in DEBUG and missing token, show message
+  // --- UPDATED RESTRICTED ACCESS RENDER ---
   if (!token) {
     if (!DEBUG) {
       return (
-        <div className="w-screen h-screen bg-cactus-green flex items-center justify-center">
-          <div className="text-xl font-semibold text-center px-8 py-6 bg-white/80 rounded-xl shadow">
-            Mingle or I'll mangle!
+        <div className="w-screen h-screen bg-black flex flex-col items-center justify-center font-mono text-[#45CC2D] p-4 text-center">
+          <pre className="text-[10px] leading-[1.1] mb-8 animate-pulse">
+{`
+         .  .
+       .        .
+      .  O      O  .
+     .              .
+      .    vvvv    .
+       .  ^^^^^^  .
+         .      .
+          .    .
+            ..
+`}
+          </pre>
+          <div className="space-y-4 max-w-xs">
+            <h2 className="text-sm font-bold tracking-[0.3em] uppercase border-b border-[#45CC2D]/30 pb-2">
+              Unauthorized Sector
+            </h2>
+            <p className="text-[10px] uppercase leading-relaxed opacity-70">
+              The system could not detect a valid landing beacon. 
+              Mingle or I'll mangle.
+            </p>
+          </div>
+          <div className="mt-12 text-[8px] opacity-30 tracking-[0.5em] uppercase">
+            Error: Beacon_Missing
           </div>
         </div>
       );
