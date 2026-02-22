@@ -1,5 +1,5 @@
 // apps/frontend/src/pages/AccessDenied.tsx
-import React from "react";
+import React, { useEffect} from "react";
 import { useLocation, Link } from "react-router-dom";
 import { ShieldExclamationIcon, ClockIcon, LockClosedIcon } from "@heroicons/react/24/outline";
 
@@ -7,6 +7,16 @@ export default function AccessDenied() {
   const location = useLocation();
   const query = new URLSearchParams(location.search);
   const reason = query.get("reason") || "unauthorized";
+
+  // --- ADD THIS EFFECT ---
+  useEffect(() => {
+    // If we've reached this page, any existing local session is now 
+    // considered structurally out of sync with the portal state.
+    localStorage.removeItem("auth_token");
+    localStorage.removeItem("guest_user_id");
+    localStorage.removeItem("auth_ok");
+    console.log("[AccessDenied] Stale session cleared.");
+  }, []);
 
   const errorStates = {
     expired: {
