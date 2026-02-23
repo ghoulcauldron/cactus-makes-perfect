@@ -10,7 +10,7 @@ import './fonts.css';
 import AmbientSound from './components/AmbientSound';
 
 // --- ARTIFACT IMPORT ---
-import TheArtifact from './components/Artifact/TheArtifact';
+import TheArtifact from './TheArtifact';
 
 // --- SIMPLE DEV GATEKEEPER ---
 // This prevents random users from stumbling onto your 3D test
