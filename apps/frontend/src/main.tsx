@@ -7,6 +7,7 @@ import PhotoCalculatorAuth from './routes/guest/login/PhotoCalculatorAuth'
 import AccessDenied from './pages/AccessDenied'
 import './index.css'
 import './fonts.css';
+import AmbientSound from './components/AmbientSound';
 
 // --- ARTIFACT IMPORT ---
 import TheArtifact from './components/Artifact/TheArtifact';
@@ -88,6 +89,7 @@ const router = createBrowserRouter([
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
+    <AmbientSound />
     <RouterProvider router={router}/>
   </React.StrictMode>
 )
