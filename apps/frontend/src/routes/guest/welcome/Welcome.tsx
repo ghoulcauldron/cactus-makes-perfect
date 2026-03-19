@@ -10,6 +10,8 @@ export default function SurveyModal({
   onClose: () => void;
 }) {
   const [selections, setSelections] = useState<Record<string, boolean>>({});
+  
+  // Using an object for refs to avoid array mapping issues
   const scrambleRefs = useRef<Record<string, PatternScrambleHandle | null>>({});
 
   const toggle = (key: string) => {
@@ -23,23 +25,24 @@ export default function SurveyModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 relative overflow-hidden">
+    // FIX: Removed 'relative' from the root fixed container
+    <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 overflow-hidden">
       
       {/* --- BACKDROP LAYERS --- */}
       {/* 1. The Blur & Tint Layer */}
-      <div className="absolute inset-0 bg-[#0a001a]/40 backdrop-blur-xl backdrop-saturate-150 transition-opacity duration-500" />
+      <div className="absolute inset-0 bg-[#0a001a]/60 backdrop-blur-xl backdrop-saturate-150 transition-opacity duration-500" />
       
       {/* 2. The Noise Texture Overlay */}
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none mix-blend-overlay animate-noise-grain" 
+      <div className="absolute inset-0 opacity-[0.05] pointer-events-none mix-blend-overlay animate-noise-grain" 
            style={{ backgroundImage: `url('https://grainy-gradients.vercel.app/noise.svg')` }} />
 
       {/* --- MODAL CONTENT --- */}
-      <div className="relative w-full max-w-[500px] max-h-[90vh] flex flex-col shadow-[0_0_50px_rgba(0,0,0,0.8)]">
+      <div className="relative w-full max-w-[500px] max-h-[90vh] flex flex-col shadow-[0_0_100px_rgba(0,0,0,0.9)]">
         
         {/* IRIDESCENT BORDER SHELL */}
         <div className="absolute -inset-[2px] bg-gradient-to-b from-artifact-cyan via-artifact-purple to-cactus-green rounded-sm opacity-50" />
         
-        <div className="relative flex flex-col bg-black border border-white/10 overflow-hidden">
+        <div className="relative flex flex-col bg-black border border-white/10 overflow-hidden h-full">
           
           {/* HEADER */}
           <div className="p-6 border-b border-artifact-cyan/30 bg-gradient-to-b from-artifact-void to-black">
@@ -48,14 +51,14 @@ export default function SurveyModal({
                 onMouseEnter={() => scrambleRefs.current['header_top']?.triggerHover()}
                 className="cursor-crosshair"
               >
-                <p className="text-[10px] tracking-[0.4em] mb-1 text-artifact-cyan animate-pulse font-segment">
+                <div className="text-[10px] tracking-[0.4em] mb-1 text-artifact-cyan animate-pulse font-segment">
                    <PatternScramble 
-                    ref={(el) => (scrambleRefs.current['header_top'] = el)}
+                    ref={(el) => { if (el) scrambleRefs.current['header_top'] = el; }}
                     text="/// AUTHENTICATION REQUIRED ///" 
                     {...CYBERPUNK_THEME}
                     speed={0.8}
                   />
-                </p>
+                </div>
                 <h2 className="text-2xl font-bold text-white tracking-tighter italic font-display uppercase">
                   TRAJECTORY <span className="text-cactus-green">SYNC</span>
                 </h2>
@@ -100,19 +103,18 @@ export default function SurveyModal({
                           : "bg-black/40 border-cactus-green/40 text-cactus-green hover:border-artifact-cyan/60 hover:bg-artifact-cyan/5"}
                       `}
                     >
-                      {/* Active Shimmer effect */}
                       {active && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shimmer" />}
                       
-                      <span className="relative z-10 block">
+                      <div className="relative z-10 block pointer-events-none">
                         <PatternScramble 
-                          ref={(el) => (scrambleRefs.current[item.id] = el)}
+                          ref={(el) => { if (el) scrambleRefs.current[item.id] = el; }}
                           text={item.label}
                           {...CYBERPUNK_THEME}
                           speed={0.6}
                           waveWidth={10}
                           startTrigger={false}
                         />
-                      </span>
+                      </div>
                     </button>
                   );
                 })}
@@ -137,7 +139,7 @@ export default function SurveyModal({
               <div className="absolute inset-0 bg-artifact-cyan translate-y-[100%] group-hover:translate-y-0 transition-transform duration-300" />
               <div className="relative border border-artifact-cyan px-4 py-1 text-artifact-cyan group-hover:text-black font-bold text-sm transition-colors font-segment">
                 <PatternScramble 
-                  ref={(el) => (scrambleRefs.current['transmit'] = el)}
+                  ref={(el) => { if (el) scrambleRefs.current['transmit'] = el; }}
                   text="TRANSMIT DATA" 
                   colors={["#000000", "#00FFFF"]}
                   startTrigger={false}
@@ -151,19 +153,19 @@ export default function SurveyModal({
       <style>{`
         @keyframes noise-grain {
           0%, 100% { transform: translate(0, 0); }
-          10% { transform: translate(-1%, -1%); }
-          20% { transform: translate(1%, 1%); }
-          30% { transform: translate(-2%, 0); }
-          40% { transform: translate(2%, 2%); }
-          50% { transform: translate(-1%, 1%); }
-          60% { transform: translate(1%, -2%); }
-          70% { transform: translate(-2%, 2%); }
-          80% { transform: translate(2%, -1%); }
-          90% { transform: translate(-1%, -2%); }
+          10% { transform: translate(-2%, -2%); }
+          20% { transform: translate(2%, 2%); }
+          30% { transform: translate(-3%, 0); }
+          40% { transform: translate(3%, 3%); }
+          50% { transform: translate(-2%, 2%); }
+          60% { transform: translate(2%, -3%); }
+          70% { transform: translate(-3%, 3%); }
+          80% { transform: translate(3%, -2%); }
+          90% { transform: translate(-2%, -3%); }
         }
         .animate-noise-grain {
-          animation: noise-grain 0.2s steps(2) infinite;
-          background-size: 200px 200px;
+          animation: noise-grain 0.15s steps(2) infinite;
+          background-size: 250px 250px;
         }
       `}</style>
     </div>
