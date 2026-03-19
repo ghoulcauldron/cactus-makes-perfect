@@ -592,7 +592,8 @@ app.post("/api/v1/admin/invites/resend", requireAdminAuth, async (req, res) => {
 app.post("/api/v1/auth/verify", async (req, res) => {
   try {
     const { token, code } = req.body || {};
-    if (!token) return res.status(400).json({ error: "Missing token" }); return res.status(400).json({ error: "Missing fields" });
+    if (!token) return res.status(400).json({ error: "Missing token" });
+    if (!code && !req.headers.authorization) return res.status(400).json({ error: "Missing fields" });
 
     // Phase 2.5: allow JWT-based re-entry without code
     const existingGuest = await getGuestFromJWT(req);
