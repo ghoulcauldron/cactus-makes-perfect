@@ -21,7 +21,7 @@ const DARK_STYLE = {
       id: "carto-dark-layer",
       type: "raster",
       source: "carto-dark",
-      paint: { "raster-brightness-max": 0.8, "raster-contrast": 0.2 }
+      paint: { "raster-brightness-max": 1.0, "raster-contrast": 0.5 }
     }
   ]
 };
@@ -45,7 +45,6 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
   const [showMap, setShowMap] = useState(false);
   const scrambleRefs = useRef<Record<string, PatternScrambleHandle | null>>({});
 
-  // S&G COORDS & INITIAL STATE
   const [viewState, setViewState] = useState({
     latitude: 35.68951139154887,
     longitude: -105.94493696136955,
@@ -55,14 +54,12 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
     padding: { top: 0, bottom: 0, left: 0, right: 0 }
   });
 
-  // CINEMATIC ZOOM-IN
   useEffect(() => {
     if (showMap) {
       const timer = setTimeout(() => {
         setViewState(prev => ({ 
           ...prev, 
           zoom: 15.5,
-          // In v8, these props trigger the internal FlyTo logic automatically
           transitionDuration: 3000 
         } as any));
       }, 600);
@@ -91,7 +88,7 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
       <div className="absolute inset-0 opacity-[0.06] pointer-events-none mix-blend-screen animate-noise-grain" 
            style={{ backgroundImage: `url('https://grainy-gradients.vercel.app/noise.svg')` }} />
 
-      {/* --- S&G SECURE MAP POP-OUT --- */}
+      {/* --- MAP POP-OUT --- */}
       {showMap && (
         <div 
           className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/95 backdrop-blur-md p-4 animate-modal-entry"
@@ -101,28 +98,34 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
             className="w-full max-w-4xl h-[70vh] border-2 border-[#00ffff] relative overflow-hidden shadow-[0_0_50px_rgba(0,255,255,0.3)] bg-black"
             onClick={(e) => e.stopPropagation()}
           >
-            <Map
-              {...viewState}
-              onMove={evt => setViewState(evt.viewState as any)}
-              mapLib={maplibregl}
-              mapStyle={DARK_STYLE as any}
-              style={{ width: '100%', height: '100%' }}
-              {...({ antialias: true } as any)}
-            >
-              {/* This DIV only wraps the Tiles, making lines glow without affecting the Marker */}
-              <div className="absolute inset-0 pointer-events-none opacity-80 brightness-150 contrast-125 hue-rotate-180 invert-[0.05]" />
-              
-              <Marker longitude={-105.94493696136955} latitude={35.68951139154887} anchor="bottom">
-                <UFOMarker />
-              </Marker>
-            </Map>
+            {/* 1. FILTER STACK: Forces map lines to pop and shifts hue to cyan/green */}
+            <div className="absolute inset-0 brightness-[1.8] contrast-[1.5] saturate-[1.2] invert-[0.1] sepia-[0.3] hue-rotate-[140deg]">
+              <Map
+                {...viewState}
+                onMove={evt => setViewState(evt.viewState as any)}
+                mapLib={maplibregl}
+                mapStyle={DARK_STYLE as any}
+                style={{ width: '100%', height: '100%' }}
+                {...({ antialias: true } as any)}
+              >
+                <Marker longitude={-105.94493696136955} latitude={35.68951139154887} anchor="bottom">
+                  <UFOMarker />
+                </Marker>
+              </Map>
+            </div>
+
+            {/* 2. SCANLINE OVERLAY: Adds texture to distinguish empty space from lines */}
+            <div className="absolute inset-0 pointer-events-none opacity-[0.15] z-[5]" 
+                 style={{ 
+                   background: 'linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 255, 255, 0.25) 50%)',
+                   backgroundSize: '100% 4px'
+                 }} />
             
-            {/* Overlay HUD elements */}
             <div className="absolute top-4 left-4 bg-black/80 border border-[#00ffff] p-2 text-[#00ffff] text-[10px] font-mono tracking-widest uppercase z-10 pointer-events-none">
               [ SECURE FEED: S&G LOCATION LOCKED ]
             </div>
             
-            <div className="absolute bottom-4 right-4 text-[#39FF14] text-[8px] font-mono opacity-40 pointer-events-none">
+            <div className="absolute bottom-4 right-4 text-[#39FF14] text-[8px] font-mono opacity-40 pointer-events-none z-10">
               LAT: {viewState.latitude.toFixed(4)} // LON: {viewState.longitude.toFixed(4)}
             </div>
 
