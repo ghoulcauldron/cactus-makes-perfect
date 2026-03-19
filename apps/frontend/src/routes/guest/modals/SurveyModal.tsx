@@ -143,10 +143,10 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
 
           <div className="p-6 overflow-y-auto custom-scrollbar space-y-8 bg-[radial-gradient(circle_at_center,_#1a0033_0%,_#000000_100%)] text-sm">
             {[
-              { date: "THU AUG 27", label: "PRIMARY INFILTRATION", details: "Rolling infiltration begins.", hasMap: true, id: 2 },
-              { date: "FRI AUG 28", label: "THE PSYCH-FEAST", details: "Midday: Off-World Excursion (Feelin' Psychedelic).\n6PM: Ceremonial Feast", id: 3 },
+              { date: "THU AUG 27", label: "THE ARRIVAL", details: "Rolling infiltration begins.", hasMap: true, id: 2 },
+              { date: "FRI AUG 28", label: "THE PSYCHE-FEASTIA", details: "Midday: Off-World Excursion (Feelin' Psychedelic).\n6PM: Ceremonial Feast", id: 3 },
               { date: "SAT AUG 29", label: "ATMOSPHERIC TRANSIT", details: "6PM: Ride into the sky.", id: 4 },
-              { date: "SUN AUG 30", label: "POST-MISSION DEBRIEF", details: "Midday: Post-Mission Brunch.\nEvening: Final Transmission + Soft Entertainment", id: 5 }
+              { date: "SUN AUG 30", label: "POST-MISSION DEBRIEF", details: "Midday: Brunch.\nEvening: Final Transmission + Soft Entertainment", id: 5 }
             ].map((section) => (
               <div key={section.date} className="group">
                 <div className="flex items-center gap-2 mb-2">
@@ -169,7 +169,7 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
                   {section.hasMap && (
                     <button onClick={() => setShowMap(true)} className="mt-3 group/map flex items-center gap-2 text-[10px] text-[#00ffff] hover:text-white transition-colors">
                       <span className="border border-[#00ffff] px-1 group-hover/map:bg-[#00ffff] group-hover/map:text-black font-bold uppercase tracking-widest">GROUND ZERO</span>
-                      <span className="opacity-60 font-segment tracking-widest">[ VIEW SECURE COORDINATES ]</span>
+                      <span className="opacity-60 font-segment tracking-widest">[ VIEW S&G COORDINATES ]</span>
                     </button>
                   )}
                 </div>

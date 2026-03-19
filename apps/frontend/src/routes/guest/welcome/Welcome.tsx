@@ -31,7 +31,13 @@ export default function Welcome() {
         <img src={assets.background} alt="" className="absolute inset-0 w-full h-full object-cover object-bottom z-0" />
         <img src={assets.rocksMain} alt="" className="absolute inset-0 w-full h-full object-cover object-bottom z-10" />
         <img src={assets.alienBack} alt="" className="absolute inset-0 w-full h-full object-cover object-bottom z-20" />
-        <img src={assets.ufo} alt="UFO" className="absolute inset-0 w-full h-full object-cover object-bottom z-40 animate-pulse" style={{ filter: 'drop-shadow(0 0 20px #00ffff) invert(1)' }} />
+        <img
+          src={assets.ufo}
+          alt="UFO"
+          className="absolute inset-0 w-full h-full object-cover object-bottom z-40 animate-pulse cursor-pointer"
+          style={{ filter: 'drop-shadow(0 0 20px #00ffff) invert(1)' }}
+          onClick={() => setSurveyModalOpen(true)}
+        />
         <img src={assets.rocksFG} alt="" className="absolute inset-0 w-full h-full object-cover object-bottom z-50" />
         <img src={assets.aliensFront} alt="" className="absolute inset-0 w-full h-full object-cover object-bottom z-[60]" />
       </div>
