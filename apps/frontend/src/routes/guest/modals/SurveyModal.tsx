@@ -6,26 +6,25 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { PatternScramble, type PatternScrambleHandle } from "../../../components/UI/PatternScramble";
 import { CYBERPUNK_THEME } from "../../../constants/themes";
 
-const DARK_STYLE = {
+// --- STABLE RASTER SOURCE (Bypasses Mapbox property crashes) ---
+const STABLE_DARK_STYLE = {
   version: 8,
   sources: {
-    "carto-dark": {
+    "raster-tiles": {
       type: "raster",
       tiles: ["https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png"],
       tileSize: 256,
-      attribution: "&copy; OpenStreetMap contributors"
+      attribution: "&copy; OpenStreetMap"
     }
   },
   layers: [
     {
-      id: "carto-dark-layer",
+      id: "simple-tiles",
       type: "raster",
-      source: "carto-dark",
+      source: "raster-tiles",
       paint: { 
         "raster-brightness-max": 1.0, 
-        "raster-brightness-min": 0.2,
-        "raster-contrast": 0.8,
-        "raster-saturation": -1.0 
+        "raster-contrast": 0.7  // TWEAK: Boosted contrast for line visibility
       }
     }
   ]
@@ -39,7 +38,7 @@ const UFOMarker = () => (
     />
     <div className="w-4 h-4 bg-[#39FF14] rounded-full shadow-[0_0_15px_#39FF14] animate-ping" />
     <div className="absolute w-2 h-2 bg-white rounded-full" />
-    <div className="absolute -bottom-8 whitespace-nowrap text-[#39FF14] text-[9px] font-mono tracking-tighter bg-black/80 px-2 border border-[#39FF14]/30 uppercase z-50">
+    <div className="absolute -bottom-8 whitespace-nowrap text-[#39FF14] text-[9px] font-mono tracking-tighter bg-black/80 px-2 border border-[#39FF14]/30 uppercase">
       Signal_Origin: S&G_SECURE
     </div>
   </div>
@@ -50,6 +49,7 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
   const [showMap, setShowMap] = useState(false);
   const scrambleRefs = useRef<Record<string, PatternScrambleHandle | null>>({});
 
+  // S&G COORDS
   const [viewState, setViewState] = useState({
     latitude: 35.68951139154887,
     longitude: -105.94493696136955,
@@ -58,10 +58,15 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
     pitch: 0
   });
 
+  // CINEMATIC ZOOM (The only "new" tweak we keep)
   useEffect(() => {
     if (showMap) {
       const timer = setTimeout(() => {
-        setViewState(prev => ({ ...prev, zoom: 15.5, transitionDuration: 3000 } as any));
+        setViewState(prev => ({ 
+          ...prev, 
+          zoom: 15.5,
+          transitionDuration: 3000 
+        } as any));
       }, 600);
       return () => clearTimeout(timer);
     } else {
@@ -84,11 +89,10 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-auto overflow-hidden">
-      <div className="absolute inset-0 bg-[#0a001a]/70 backdrop-blur-xl transition-opacity duration-700" />
+      <div className="absolute inset-0 bg-[#0a001a]/85 backdrop-blur-xl transition-opacity duration-700" />
       <div className="absolute inset-0 opacity-[0.06] pointer-events-none mix-blend-screen animate-noise-grain" 
            style={{ backgroundImage: `url('https://grainy-gradients.vercel.app/noise.svg')` }} />
 
-      {/* --- S&G SECURE MAP POP-OUT --- */}
       {showMap && (
         <div 
           className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/95 p-4 animate-modal-entry"
@@ -102,7 +106,7 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
               {...viewState}
               onMove={evt => setViewState(evt.viewState as any)}
               mapLib={maplibregl}
-              mapStyle={DARK_STYLE as any}
+              mapStyle={STABLE_DARK_STYLE as any}
               style={{ width: '100%', height: '100%' }}
               {...({ antialias: true } as any)}
             >
@@ -111,7 +115,8 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
               </Marker>
             </Map>
 
-            <div className="absolute inset-0 pointer-events-none opacity-[0.08] z-10" 
+            {/* Subtle Scanlines - Z-indexed to be on top */}
+            <div className="absolute inset-0 pointer-events-none opacity-[0.05] z-10" 
                  style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 255, 255, 0.2) 2px, rgba(0, 255, 255, 0.2) 4px)' }} />
             
             <div className="absolute top-4 left-4 bg-black/90 border border-[#00ffff] p-2 text-[#00ffff] text-[10px] font-mono tracking-widest uppercase z-20">
@@ -128,15 +133,13 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
         </div>
       )}
 
-      {/* --- MAIN MODAL: FULL VERSION RESTORED --- */}
+      {/* --- RESTORED MAIN MODAL CONTENT --- */}
       <div className="relative w-full max-w-[500px] max-h-[90vh] flex flex-col shadow-[0_0_100px_rgba(0,0,0,0.9)] animate-modal-entry">
         <div className="absolute -inset-[2px] bg-gradient-to-b from-[#00ffff] via-[#FF00FF] to-[#39FF14] opacity-50" />
         
         <div className="relative flex flex-col bg-black border border-white/20 overflow-hidden h-full font-mono">
           <div className="bg-[#39FF14]/10 border-b border-[#39FF14]/30 px-6 py-2">
-             <p className="text-[#39FF14] text-[10px] tracking-widest text-center animate-pulse">
-                TRANSMISSION RECEIVED. THANK YOU FOR YOUR CONFIRMATION.
-             </p>
+             <p className="text-[#39FF14] text-[10px] tracking-widest text-center animate-pulse uppercase">Transmission Received. Thank you.</p>
           </div>
 
           <div className="p-6 border-b border-[#00ffff]/30 bg-gradient-to-b from-[#1a0033] to-black">
@@ -160,16 +163,16 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
           <div className="p-6 overflow-y-auto custom-scrollbar space-y-8 bg-[radial-gradient(circle_at_center,_#1a0033_0%,_#000000_100%)] text-sm">
             {[
               { date: "THU AUG 27", label: "PRIMARY INFILTRATION", details: "Rolling infiltration begins.", hasMap: true, id: 2 },
-              { date: "FRI AUG 28", label: "THE PSYCH-FEAST", details: "Midday: Off-World Excursion (Feelin' Psychedelic).\n6PM: Ceremonial Feast", id: 3 },
+              { date: "FRI AUG 28", label: "THE PSYCH-FEAST", details: "Midday: Off-World Excursion.\n6PM: Ceremonial Feast", id: 3 },
               { date: "SAT AUG 29", label: "ATMOSPHERIC TRANSIT", details: "6PM: Ride into the sky.", id: 4 },
-              { date: "SUN AUG 30", label: "POST-MISSION DEBRIEF", details: "Midday: Post-Mission Brunch.\nEvening: Final Transmission + Soft Entertainment", id: 5 }
+              { date: "SUN AUG 30", label: "POST-MISSION DEBRIEF", details: "Midday: Post-Mission Brunch.", id: 5 }
             ].map((section) => (
               <div key={section.date} className="group">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-[10px] font-bold bg-[#39FF14] text-black px-1 uppercase">{section.date}</span>
                   <div className="h-[1px] flex-1 bg-[#39FF14]/20" />
                 </div>
-                <div className="pl-4 py-1 border-l border-white/10 hover:border-[#00ffff]/50 transition-colors cursor-default relative">
+                <div className="pl-4 py-1 border-l border-white/10 relative">
                   <div className="text-white font-bold tracking-tight" onMouseEnter={() => scrambleRefs.current[section.date]?.triggerHover()}>
                     {loadStep >= section.id && (
                       <PatternScramble 
@@ -177,7 +180,6 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
                         text={section.label}
                         {...CYBERPUNK_THEME}
                         startTrigger={true}
-                        speed={0.5}
                       />
                     )}
                   </div>
@@ -194,29 +196,18 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
           </div>
 
           <div className="p-4 bg-black border-t border-white/10 flex justify-between items-center">
-            <button onClick={onClose} className="text-[10px] uppercase text-white/40 hover:text-white transition-colors font-mono tracking-widest">
-              [ Dismiss ]
-            </button>
-            <div className="text-[9px] text-[#39FF14]/40 uppercase tracking-[0.2em]">
-              Transmission End // Stand By
-            </div>
+            <button onClick={onClose} className="text-[10px] uppercase text-white/40 hover:text-white transition-colors font-mono tracking-widest">[ Dismiss ]</button>
+            <div className="text-[9px] text-[#39FF14]/40 uppercase tracking-[0.2em]">Transmission End</div>
           </div>
         </div>
       </div>
 
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.3); }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #39FF14; box-shadow: 0 0 10px #39FF14; border-radius: 2px; }
-        @keyframes noise-grain {
-          0%, 100% { transform: translate(0,0); }
-          50% { transform: translate(-1%, 2%); }
-        }
+        @keyframes noise-grain { 0%, 100% { transform: translate(0,0); } 50% { transform: translate(-1%, 2%); } }
         .animate-noise-grain { animation: noise-grain 0.15s steps(2) infinite; background-size: 250px 250px; }
-        @keyframes modal-entry {
-          0% { opacity: 0; transform: translateY(15px) scale(0.98); filter: blur(4px); }
-          100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); }
-        }
+        @keyframes modal-entry { 0% { opacity: 0; transform: translateY(15px) scale(0.98); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
         .animate-modal-entry { animation: modal-entry 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
       `}</style>
     </div>
