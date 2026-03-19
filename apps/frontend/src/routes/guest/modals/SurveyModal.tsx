@@ -88,44 +88,46 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
       <div className="absolute inset-0 opacity-[0.06] pointer-events-none mix-blend-screen animate-noise-grain" 
            style={{ backgroundImage: `url('https://grainy-gradients.vercel.app/noise.svg')` }} />
 
-      {/* --- MAP POP-OUT --- */}
+      {/* --- S&G SECURE MAP POP-OUT --- */}
       {showMap && (
         <div 
           className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/95 backdrop-blur-md p-4 animate-modal-entry"
           onClick={() => setShowMap(false)}
         >
           <div 
-            className="w-full max-w-4xl h-[70vh] border-2 border-[#00ffff] relative overflow-hidden shadow-[0_0_50px_rgba(0,255,255,0.3)] bg-black"
+            className="w-full max-w-4xl h-[70vh] border-2 border-[#00ffff] relative overflow-hidden shadow-[0_0_50px_rgba(0,255,255,0.3)] bg-[#050505]"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* 1. FILTER STACK: Forces map lines to pop and shifts hue to cyan/green */}
-            <div className="absolute inset-0 brightness-[1.8] contrast-[1.5] saturate-[1.2] invert-[0.1] sepia-[0.3] hue-rotate-[140deg]">
-              <Map
-                {...viewState}
-                onMove={evt => setViewState(evt.viewState as any)}
-                mapLib={maplibregl}
-                mapStyle={DARK_STYLE as any}
-                style={{ width: '100%', height: '100%' }}
-                {...({ antialias: true } as any)}
-              >
-                <Marker longitude={-105.94493696136955} latitude={35.68951139154887} anchor="bottom">
-                  <UFOMarker />
-                </Marker>
-              </Map>
-            </div>
+            {/* 1. THE MAP ENGINE (Filtered via Backdrop for stability) */}
+            <Map
+              {...viewState}
+              onMove={evt => setViewState(evt.viewState as any)}
+              mapLib={maplibregl}
+              mapStyle={DARK_STYLE as any}
+              style={{ width: '100%', height: '100%' }}
+              {...({ antialias: true } as any)}
+            >
+              <Marker longitude={-105.94493696136955} latitude={35.68951139154887} anchor="bottom">
+                <UFOMarker />
+              </Marker>
+            </Map>
 
-            {/* 2. SCANLINE OVERLAY: Adds texture to distinguish empty space from lines */}
-            <div className="absolute inset-0 pointer-events-none opacity-[0.15] z-[5]" 
+            {/* 2. THE INFECTION OVERLAY (Backdrop filter makes the map lines pop) */}
+            <div className="absolute inset-0 pointer-events-none z-[5] backdrop-brightness-[1.6] backdrop-contrast-[1.4] backdrop-hue-rotate-[160deg] backdrop-invert-[0.1]" />
+
+            {/* 3. THE SCANLINE TEXTURE */}
+            <div className="absolute inset-0 pointer-events-none opacity-[0.12] z-[6]" 
                  style={{ 
-                   background: 'linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 255, 255, 0.25) 50%)',
+                   backgroundImage: 'linear-gradient(rgba(0, 255, 255, 0) 50%, rgba(0, 255, 255, 0.2) 50%)',
                    backgroundSize: '100% 4px'
                  }} />
             
-            <div className="absolute top-4 left-4 bg-black/80 border border-[#00ffff] p-2 text-[#00ffff] text-[10px] font-mono tracking-widest uppercase z-10 pointer-events-none">
+            {/* HUD Elements */}
+            <div className="absolute top-4 left-4 bg-black/80 border border-[#00ffff] p-2 text-[#00ffff] text-[10px] font-mono tracking-widest uppercase z-10">
               [ SECURE FEED: S&G LOCATION LOCKED ]
             </div>
             
-            <div className="absolute bottom-4 right-4 text-[#39FF14] text-[8px] font-mono opacity-40 pointer-events-none z-10">
+            <div className="absolute bottom-4 right-4 text-[#39FF14] text-[8px] font-mono opacity-60 z-10 bg-black/40 px-1">
               LAT: {viewState.latitude.toFixed(4)} // LON: {viewState.longitude.toFixed(4)}
             </div>
 
