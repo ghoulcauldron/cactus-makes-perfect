@@ -58,43 +58,43 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
             </div>
           </div>
 
-          {/* CONTENT: STREAMLINED ITINERARY */}
+          {/* CONTENT: THEMATIC STREAMLINED ITINERARY */}
           <div className="p-6 overflow-y-auto custom-scrollbar space-y-8 bg-[radial-gradient(circle_at_center,_#1a0033_0%,_#000000_100%)] text-sm">
             
             {[
               { 
                 date: "THU AUG 27", 
-                label: "ARRIVAL HERE", 
+                label: "PRIMARY INFILTRATION", 
                 details: "Rolling infiltration begins.",
                 id: 2
               },
               { 
                 date: "FRI AUG 28", 
-                label: "ARRIVAL HERE", 
-                details: "Midday: Off-World Excursion (Feelin' Psychedelic). \n6PM: Ceremonial Feast",
+                label: "THE PSYCH-FEAST", 
+                details: "Midday: Off-World Excursion (Feelin' Psychedelic).\n6PM: Ceremonial Feast",
                 id: 3
               },
               { 
                 date: "SAT AUG 29", 
-                label: "ARRIVAL HERE", 
+                label: "ATMOSPHERIC TRANSIT", 
                 details: "6PM: Ride into the sky.",
                 id: 4
               },
               { 
                 date: "SUN AUG 30", 
-                label: "DEBRIEF", 
-                details: "Midday: Post-Mission Brunch. \nEvening: Final Transmission + Soft Entertainment",
+                label: "POST-MISSION DEBRIEF", 
+                details: "Midday: Post-Mission Brunch.\nEvening: Final Transmission + Soft Entertainment",
                 id: 5
               }
             ].map((section) => (
               <div key={section.date} className="group">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-[10px] font-bold bg-[#39FF14] text-black px-1">{section.date}</span>
+                  <span className="text-[10px] font-bold bg-[#39FF14] text-black px-1 uppercase">{section.date}</span>
                   <div className="h-[1px] flex-1 bg-[#39FF14]/20" />
                 </div>
                 
                 <div className="pl-4 py-1 border-l border-white/10 hover:border-[#00ffff]/50 transition-colors cursor-default">
-                  <div className="text-white font-bold" onMouseEnter={() => scrambleRefs.current[section.date]?.triggerHover()}>
+                  <div className="text-white font-bold tracking-tight" onMouseEnter={() => scrambleRefs.current[section.date]?.triggerHover()}>
                     {loadStep >= section.id && (
                       <PatternScramble 
                         ref={(el) => { scrambleRefs.current[section.date] = el; }}
@@ -118,7 +118,7 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
               <p className="text-[11px] text-white/80 leading-relaxed">
                 Primary Drop Zone: <strong>ALBUQUERQUE (ABQ)</strong>. <br/>
                 Ground Transport: Rental unit or Railrunner ($9). <br/>
-                <span className="italic opacity-60 mt-2 block italic text-[10px]">
+                <span className="italic opacity-60 mt-2 block text-[10px]">
                   ** TACTICAL ADVICE: Refuel at Duran's Pharmacy before ABQ departure.
                 </span>
               </p>
@@ -127,10 +127,10 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
 
           {/* FOOTER */}
           <div className="p-4 bg-black border-t border-white/10 flex justify-between items-center">
-            <button onClick={onClose} className="text-[10px] uppercase text-white/40 hover:text-white transition-colors">
+            <button onClick={onClose} className="text-[10px] uppercase text-white/40 hover:text-white transition-colors font-mono tracking-widest">
               [ Dismiss ]
             </button>
-            <div className="text-[9px] text-[#39FF14]/40 uppercase tracking-widest">
+            <div className="text-[9px] text-[#39FF14]/40 uppercase tracking-[0.2em]">
               Transmission End // Stand By
             </div>
           </div>
