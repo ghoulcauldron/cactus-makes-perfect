@@ -21,7 +21,12 @@ const DARK_STYLE = {
       id: "carto-dark-layer",
       type: "raster",
       source: "carto-dark",
-      paint: { "raster-brightness-max": 1.0, "raster-contrast": 0.5 }
+      paint: { 
+        "raster-brightness-max": 1.0, 
+        "raster-brightness-min": 0.2,
+        "raster-contrast": 0.8,
+        "raster-saturation": -1.0 
+      }
     }
   ]
 };
@@ -34,7 +39,7 @@ const UFOMarker = () => (
     />
     <div className="w-4 h-4 bg-[#39FF14] rounded-full shadow-[0_0_15px_#39FF14] animate-ping" />
     <div className="absolute w-2 h-2 bg-white rounded-full" />
-    <div className="absolute -bottom-8 whitespace-nowrap text-[#39FF14] text-[9px] font-mono tracking-tighter bg-black/80 px-2 border border-[#39FF14]/30 uppercase">
+    <div className="absolute -bottom-8 whitespace-nowrap text-[#39FF14] text-[9px] font-mono tracking-tighter bg-black/80 px-2 border border-[#39FF14]/30 uppercase z-50">
       Signal_Origin: S&G_SECURE
     </div>
   </div>
@@ -50,18 +55,13 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
     longitude: -105.94493696136955,
     zoom: 12,
     bearing: 0,
-    pitch: 0,
-    padding: { top: 0, bottom: 0, left: 0, right: 0 }
+    pitch: 0
   });
 
   useEffect(() => {
     if (showMap) {
       const timer = setTimeout(() => {
-        setViewState(prev => ({ 
-          ...prev, 
-          zoom: 15.5,
-          transitionDuration: 3000 
-        } as any));
+        setViewState(prev => ({ ...prev, zoom: 15.5, transitionDuration: 3000 } as any));
       }, 600);
       return () => clearTimeout(timer);
     } else {
@@ -84,21 +84,20 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-auto overflow-hidden">
-      <div className="absolute inset-0 bg-[#0a001a]/70 backdrop-blur-xl backdrop-saturate-150 transition-opacity duration-700" />
+      <div className="absolute inset-0 bg-[#0a001a]/70 backdrop-blur-xl transition-opacity duration-700" />
       <div className="absolute inset-0 opacity-[0.06] pointer-events-none mix-blend-screen animate-noise-grain" 
            style={{ backgroundImage: `url('https://grainy-gradients.vercel.app/noise.svg')` }} />
 
       {/* --- S&G SECURE MAP POP-OUT --- */}
       {showMap && (
         <div 
-          className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/95 backdrop-blur-md p-4 animate-modal-entry"
+          className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/95 p-4 animate-modal-entry"
           onClick={() => setShowMap(false)}
         >
           <div 
-            className="w-full max-w-4xl h-[70vh] border-2 border-[#00ffff] relative overflow-hidden shadow-[0_0_50px_rgba(0,255,255,0.3)] bg-[#050505]"
+            className="w-full max-w-4xl h-[70vh] border-2 border-[#00ffff] relative overflow-hidden bg-black shadow-[0_0_50px_rgba(0,255,255,0.2)]"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* 1. THE MAP ENGINE (Filtered via Backdrop for stability) */}
             <Map
               {...viewState}
               onMove={evt => setViewState(evt.viewState as any)}
@@ -112,28 +111,16 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
               </Marker>
             </Map>
 
-            {/* 2. THE INFECTION OVERLAY (Backdrop filter makes the map lines pop) */}
-            <div className="absolute inset-0 pointer-events-none z-[5] backdrop-brightness-[1.6] backdrop-contrast-[1.4] backdrop-hue-rotate-[160deg] backdrop-invert-[0.1]" />
-
-            {/* 3. THE SCANLINE TEXTURE */}
-            <div className="absolute inset-0 pointer-events-none opacity-[0.12] z-[6]" 
-                 style={{ 
-                   backgroundImage: 'linear-gradient(rgba(0, 255, 255, 0) 50%, rgba(0, 255, 255, 0.2) 50%)',
-                   backgroundSize: '100% 4px'
-                 }} />
+            <div className="absolute inset-0 pointer-events-none opacity-[0.08] z-10" 
+                 style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 255, 255, 0.2) 2px, rgba(0, 255, 255, 0.2) 4px)' }} />
             
-            {/* HUD Elements */}
-            <div className="absolute top-4 left-4 bg-black/80 border border-[#00ffff] p-2 text-[#00ffff] text-[10px] font-mono tracking-widest uppercase z-10">
+            <div className="absolute top-4 left-4 bg-black/90 border border-[#00ffff] p-2 text-[#00ffff] text-[10px] font-mono tracking-widest uppercase z-20">
               [ SECURE FEED: S&G LOCATION LOCKED ]
             </div>
             
-            <div className="absolute bottom-4 right-4 text-[#39FF14] text-[8px] font-mono opacity-60 z-10 bg-black/40 px-1">
-              LAT: {viewState.latitude.toFixed(4)} // LON: {viewState.longitude.toFixed(4)}
-            </div>
-
             <button 
               onClick={() => setShowMap(false)}
-              className="absolute top-4 right-4 bg-black border border-[#00ffff] text-[#00ffff] px-3 py-1 hover:bg-[#00ffff] hover:text-black transition-all text-xs font-mono z-50 shadow-[0_0_10px_rgba(0,255,255,0.5)]"
+              className="absolute top-4 right-4 bg-black border border-[#00ffff] text-[#00ffff] px-3 py-1 hover:bg-[#00ffff] hover:text-black transition-all text-xs font-mono z-50"
             >
               TERMINATE_FEED
             </button>
@@ -141,7 +128,7 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
         </div>
       )}
 
-      {/* --- MAIN MODAL --- */}
+      {/* --- MAIN MODAL: FULL VERSION RESTORED --- */}
       <div className="relative w-full max-w-[500px] max-h-[90vh] flex flex-col shadow-[0_0_100px_rgba(0,0,0,0.9)] animate-modal-entry">
         <div className="absolute -inset-[2px] bg-gradient-to-b from-[#00ffff] via-[#FF00FF] to-[#39FF14] opacity-50" />
         
@@ -153,22 +140,20 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
           </div>
 
           <div className="p-6 border-b border-[#00ffff]/30 bg-gradient-to-b from-[#1a0033] to-black">
-            <div className="flex justify-between items-start">
-              <div onMouseEnter={() => scrambleRefs.current['header']?.triggerHover()}>
-                <div className="text-[10px] tracking-[0.4em] mb-1 text-[#00ffff]">
-                  {loadStep >= 1 && (
-                    <PatternScramble 
-                      ref={(el) => { if (el) scrambleRefs.current['header'] = el; }}
-                      text="/// OPERATION: 20 YEAR DARE ///" 
-                      {...CYBERPUNK_THEME}
-                      startTrigger={true}
-                    />
-                  )}
-                </div>
-                <h2 className="text-2xl font-bold text-white tracking-tighter italic uppercase">
-                  Mission <span className="text-[#39FF14]">Briefing</span>
-                </h2>
+            <div onMouseEnter={() => scrambleRefs.current['header']?.triggerHover()}>
+              <div className="text-[10px] tracking-[0.4em] mb-1 text-[#00ffff]">
+                {loadStep >= 1 && (
+                  <PatternScramble 
+                    ref={(el) => { if (el) scrambleRefs.current['header'] = el; }}
+                    text="/// OPERATION: 20 YEAR DARE ///" 
+                    {...CYBERPUNK_THEME}
+                    startTrigger={true}
+                  />
+                )}
               </div>
+              <h2 className="text-2xl font-bold text-white tracking-tighter italic uppercase">
+                Mission <span className="text-[#39FF14]">Briefing</span>
+              </h2>
             </div>
           </div>
 
@@ -223,13 +208,11 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.3); }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #39FF14; box-shadow: 0 0 10px #39FF14; border-radius: 2px; }
-
         @keyframes noise-grain {
           0%, 100% { transform: translate(0,0); }
           50% { transform: translate(-1%, 2%); }
         }
         .animate-noise-grain { animation: noise-grain 0.15s steps(2) infinite; background-size: 250px 250px; }
-        
         @keyframes modal-entry {
           0% { opacity: 0; transform: translateY(15px) scale(0.98); filter: blur(4px); }
           100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); }
