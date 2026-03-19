@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-import SurveyModal from "../modals/SurveyModal";
+import RSVPModal from "../modals/RSVPModal";
+import InfoModal from "../modals/InfoModal"; // <-- New Import
 
 // --- REUSABLE GRAPHIC BUTTON COMPONENT ---
 function GraphicButton({ 
@@ -38,7 +39,8 @@ export default function Welcome() {
   console.log("Rendering Welcome.tsx component");
   const navigate = useNavigate();
 
-  const [isSurveyModalOpen, setSurveyModalOpen] = useState(false);
+  const [isRSVPModalOpen, setRSVPModalOpen] = useState(false);
+  const [isEventInfoModalOpen, setEventInfoModalOpen] = useState(false);
   // Removed activeTab state as it is no longer needed in Welcome.tsx
 
   // --- ASSETS: SCENE LAYERS ---
@@ -48,6 +50,15 @@ export default function Welcome() {
   const imgUFO         = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0005_logo.png";
   const imgRocksFG     = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0000_rocks_fg.png";
   const imgAliensFront = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0000_aliens_cacti_top.png";
+
+  // --- ASSETS: BUTTONS ---
+  const btnRsvpUp    = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/buttons/RSVP_button_up.png";
+  const btnRsvpHover = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/buttons/RSVP_button_hover.png";
+  const btnRsvpDown  = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/buttons/RSVP_button_down.png";
+
+  const btnInfoUp    = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/buttons/INFO_button_up.png";
+  const btnInfoHover = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/buttons/INFO_button_hover.png";
+  const btnInfoDown  = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/buttons/INFO_button_down.png";
 
   return (
     <div className="h-screen w-full bg-[#90c974] overflow-hidden relative">
@@ -70,6 +81,49 @@ export default function Welcome() {
       {/* LAYER 7: Aliens Front (z-[60]) */}
       <img src={imgAliensFront} alt="Aliens Front" className="absolute inset-0 w-full h-full object-cover object-bottom z-[60] pointer-events-none" />
 
+      {/* --- BUTTONS LAYER (z-[80] - Topmost) --- */}
+      <div className="absolute top-1/2 left-1/2 w-0 h-0 z-[80] overflow-visible pointer-events-none">
+          
+        {/* RSVP Button */}
+        <div className={`
+          absolute pointer-events-auto
+          
+          /* Mobile: W 128px, Left -50px, Top +50px (Below Center) */
+          w-[128px] h-auto -ml-[120px] top-[70px]
+          
+          /* Desktop: W 180px, Left -100px, Top -100px (Above Center) */
+          md:w-[180px] md:h-auto md:-ml-[165px] md:top-[-15px]
+        `}>
+          <GraphicButton 
+            srcUp={btnRsvpUp} 
+            srcHover={btnRsvpHover} 
+            srcDown={btnRsvpDown} 
+            alt="RSVP" 
+            onClick={() => setRSVPModalOpen(true)}
+          />
+        </div>
+
+        {/* INFO Button */}
+        <div className={`
+          absolute pointer-events-auto
+          
+          /* Mobile: W 128px, Left -40px, Top +180px (Below Center) */
+          w-[128px] h-auto -ml-[25px] top-[140px]
+
+          /* Desktop: W 190px, Left -10px, Top +100px (Below Center) */
+          md:w-[190px] md:h-auto md:-ml-[30px] md:top-[75px] 
+        `}>
+          <GraphicButton 
+            srcUp={btnInfoUp} 
+            srcHover={btnInfoHover} 
+            srcDown={btnInfoDown} 
+            alt="Info" 
+            onClick={() => setEventInfoModalOpen(true)}
+          />
+        </div>
+
+      </div>
+
       {/* --- UI OVERLAYS (z-[70]) --- */}
       <footer className="absolute bottom-6 w-full text-center z-[70] pointer-events-auto">
         <p className="text-[#ffffff] font-mono text-xs font-bold tracking-[0.2em] opacity-100 inline-block px-2 py-1 rounded">
@@ -78,12 +132,20 @@ export default function Welcome() {
       </footer>
 
       {/* MODALS */}
-      {isSurveyModalOpen && (
-        <div className="fixed inset-0 z-[200]">
-          <div className="absolute inset-0" />
-          <SurveyModal
-            isOpen={isSurveyModalOpen}
-            onClose={() => setSurveyModalOpen(false)}
+      {isRSVPModalOpen && (
+        <div className="relative z-[200]">
+          <RSVPModal
+            isOpen={isRSVPModalOpen}
+            onClose={() => setRSVPModalOpen(false)}
+          />
+        </div>
+      )}
+
+      {isEventInfoModalOpen && (
+        <div className="relative z-[200]">
+          <InfoModal 
+            isOpen={isEventInfoModalOpen}
+            onClose={() => setEventInfoModalOpen(false)}
           />
         </div>
       )}
