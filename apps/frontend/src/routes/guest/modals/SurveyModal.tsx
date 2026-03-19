@@ -70,20 +70,20 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
               },
               { 
                 date: "FRI AUG 28", 
-                label: "THE PSYCH-FEAST", 
-                details: "Midday: Off-World Excursion (Feelin' Psychedelic).\n6PM: Ceremonial Feast",
+                label: "THE PSYCHE-FEASTIA", 
+                details: "Midday: Off-World Excursion (Feelin' Psychedelic)\n6PM: Ceremonial Feast",
                 id: 3
               },
               { 
                 date: "SAT AUG 29", 
                 label: "ATMOSPHERIC TRANSIT", 
-                details: "6PM: Ride into the sky.",
+                details: "6PM: Ride into the sky",
                 id: 4
               },
               { 
                 date: "SUN AUG 30", 
                 label: "POST-MISSION DEBRIEF", 
-                details: "Midday: Post-Mission Brunch.\nEvening: Final Transmission + Soft Entertainment",
+                details: "Midday: Brunch\nEvening: Final Transmission + Soft Entertainment",
                 id: 5
               }
             ].map((section) => (
