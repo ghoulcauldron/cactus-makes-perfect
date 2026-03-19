@@ -64,7 +64,7 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
             {[
               { 
                 date: "THU AUG 27", 
-                label: "PRIMARY INFILTRATION", 
+                label: "ARRIVAL", 
                 details: "Rolling infiltration begins.",
                 id: 2
               },
