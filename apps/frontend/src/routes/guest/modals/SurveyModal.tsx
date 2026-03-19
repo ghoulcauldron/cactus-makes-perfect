@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect } from "react";
 import Map, { Marker } from "react-map-gl/maplibre";
 import maplibregl from "maplibre-gl";
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -6,12 +6,32 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { PatternScramble, type PatternScrambleHandle } from "../../../components/UI/PatternScramble";
 import { CYBERPUNK_THEME } from "../../../constants/themes";
 
-const MAPBOX_TOKEN = "pk.eyJ1IjoiZ2hvdWxjYXVsZHJvbiIsImEiOiJjbW14Z2ZubzcxMnN0MnBvcXdxYmppdDJyIn0.OQ4TP1JJkN3Gx0aEf77FmQ";
+// --- THE DARK MATTER STYLE (Safe for MapLibre) ---
+const DARK_STYLE = {
+  version: 8,
+  sources: {
+    "carto-dark": {
+      type: "raster",
+      tiles: [
+        "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png"
+      ],
+      tileSize: 256,
+      attribution: "&copy; OpenStreetMap contributors &copy; CARTO"
+    }
+  },
+  layers: [
+    {
+      id: "carto-dark-layer",
+      type: "raster",
+      source: "carto-dark",
+      minzoom: 0,
+      maxzoom: 22
+    }
+  ]
+};
 
-// --- CUSTOM UFO BEAM MARKER ---
 const UFOMarker = () => (
   <div className="relative flex items-center justify-center">
-    {/* The Tractor Beam */}
     <div 
       className="absolute bottom-1 w-12 h-32 bg-gradient-to-t from-[#39FF14]/50 to-transparent blur-sm animate-pulse" 
       style={{ 
@@ -19,7 +39,6 @@ const UFOMarker = () => (
         transformOrigin: 'bottom' 
       }} 
     />
-    {/* The Core Point */}
     <div className="w-4 h-4 bg-[#39FF14] rounded-full shadow-[0_0_15px_#39FF14] animate-ping" />
     <div className="absolute w-2 h-2 bg-white rounded-full" />
     <div className="absolute -bottom-8 whitespace-nowrap text-[#39FF14] text-[9px] font-mono tracking-tighter bg-black/80 px-2 border border-[#39FF14]/30 uppercase">
@@ -31,32 +50,13 @@ const UFOMarker = () => (
 export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const [loadStep, setLoadStep] = useState(0);
   const [showMap, setShowMap] = useState(false);
-  const [cleanStyle, setCleanStyle] = useState<any>(null);
   const scrambleRefs = useRef<Record<string, PatternScrambleHandle | null>>({});
 
-  // Santa Fe Downtown Coordinates
   const viewport = {
     latitude: 35.6870,
     longitude: -105.9378,
     zoom: 14
   };
-
-  // --- MAP DECRYPTION LOGIC ---
-  // We fetch the style manually to strip the "name" property that crashes MapLibre 5
-  useEffect(() => {
-    if (isOpen && !cleanStyle) {
-      const styleUrl = `https://api.mapbox.com/styles/v1/mapbox/dark-v11?access_token=${MAPBOX_TOKEN}`;
-      
-      fetch(styleUrl)
-        .then(res => res.json())
-        .then(data => {
-          // Strip the "name" property which is invalid in the strict MapLibre schema
-          const { name, ...sanitized } = data; 
-          setCleanStyle(sanitized);
-        })
-        .catch(err => console.error("CRITICAL: Map Decryption Failed", err));
-    }
-  }, [isOpen, cleanStyle]);
 
   useEffect(() => {
     if (isOpen) {
@@ -73,12 +73,11 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-auto overflow-hidden">
-      {/* BACKDROP */}
       <div className="absolute inset-0 bg-[#0a001a]/70 backdrop-blur-xl backdrop-saturate-150 transition-opacity duration-700" />
       <div className="absolute inset-0 opacity-[0.06] pointer-events-none mix-blend-screen animate-noise-grain" 
            style={{ backgroundImage: `url('https://grainy-gradients.vercel.app/noise.svg')` }} />
 
-      {/* --- MAPBOX POP-OUT --- */}
+      {/* --- STABLE MAPBOX POP-OUT --- */}
       {showMap && (
         <div 
           className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-modal-entry"
@@ -88,24 +87,18 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
             className="w-full max-w-4xl h-[70vh] border-2 border-[#00ffff] relative overflow-hidden shadow-[0_0_50px_rgba(0,255,255,0.3)]"
             onClick={(e) => e.stopPropagation()}
           >
-            {cleanStyle ? (
-              <Map
-                mapLib={maplibregl}
-                initialViewState={viewport}
-                mapStyle={cleanStyle}
-              >
-                <Marker longitude={-105.9378} latitude={35.6870} anchor="bottom">
-                  <UFOMarker />
-                </Marker>
-              </Map>
-            ) : (
-              <div className="flex items-center justify-center h-full text-[#39FF14] font-mono animate-pulse">
-                DECRYPTING_SECURE_FEED...
-              </div>
-            )}
+            <Map
+              mapLib={maplibregl}
+              initialViewState={viewport}
+              mapStyle={DARK_STYLE as any}
+            >
+              <Marker longitude={-105.9378} latitude={35.6870} anchor="bottom">
+                <UFOMarker />
+              </Marker>
+            </Map>
             
-            <div className="absolute top-4 left-4 bg-black/80 border border-[#00ffff] p-2 text-[#00ffff] text-[10px] font-mono tracking-widest">
-              [ SCANNED: GROUND ZERO COORDINATES ]
+            <div className="absolute top-4 left-4 bg-black/80 border border-[#00ffff] p-2 text-[#00ffff] text-[10px] font-mono tracking-widest uppercase">
+              [ Secure Feed: Santa Fe Sector ]
             </div>
             <button 
               onClick={() => setShowMap(false)}
@@ -122,7 +115,6 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
         <div className="absolute -inset-[2px] bg-gradient-to-b from-[#00ffff] via-[#FF00FF] to-[#39FF14] opacity-50" />
         
         <div className="relative flex flex-col bg-black border border-white/20 overflow-hidden h-full font-mono">
-          
           <div className="bg-[#39FF14]/10 border-b border-[#39FF14]/30 px-6 py-2">
              <p className="text-[#39FF14] text-[10px] tracking-widest text-center animate-pulse">
                 TRANSMISSION RECEIVED. THANK YOU FOR YOUR CONFIRMATION.
@@ -206,6 +198,28 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
           </div>
         </div>
       </div>
+
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.3); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #39FF14; box-shadow: 0 0 10px #39FF14; border-radius: 2px; }
+
+        @keyframes noise-grain {
+          0%, 100% { transform: translate(0,0); }
+          10% { transform: translate(-2%, -1%); }
+          30% { transform: translate(1%, 2%); }
+          50% { transform: translate(-1%, 1%); }
+          70% { transform: translate(2%, 1%); }
+          90% { transform: translate(-1%, -2%); }
+        }
+        .animate-noise-grain { animation: noise-grain 0.15s steps(2) infinite; background-size: 250px 250px; }
+        
+        @keyframes modal-entry {
+          0% { opacity: 0; transform: translateY(15px) scale(0.98); filter: blur(4px); }
+          100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); }
+        }
+        .animate-modal-entry { animation: modal-entry 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+      `}</style>
     </div>
   );
 }
