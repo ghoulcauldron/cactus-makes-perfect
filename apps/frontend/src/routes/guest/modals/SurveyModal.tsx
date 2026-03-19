@@ -94,36 +94,41 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
       {/* --- S&G SECURE MAP POP-OUT --- */}
       {showMap && (
         <div 
-          className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-modal-entry"
+          className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/95 backdrop-blur-md p-4 animate-modal-entry"
           onClick={() => setShowMap(false)}
         >
           <div 
-            className="w-full max-w-4xl h-[70vh] border-2 border-[#00ffff] relative overflow-hidden shadow-[0_0_50px_rgba(0,255,255,0.3)]"
+            className="w-full max-w-4xl h-[70vh] border-2 border-[#00ffff] relative overflow-hidden shadow-[0_0_50px_rgba(0,255,255,0.3)] bg-black"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Visual filtering to pop the 'lines' */}
-            <div className="absolute inset-0 brightness-[1.4] contrast-[1.3] saturate-0">
-              <Map
-                {...viewState}
-                onMove={evt => setViewState(evt.viewState as any)}
-                mapLib={maplibregl}
-                mapStyle={DARK_STYLE as any}
-                style={{ width: '100%', height: '100%' }}
-                // Hack to bypass TS while keeping antialias in the constructor
-                {...({ antialias: true } as any)}
-              >
-                <Marker longitude={-105.94493696136955} latitude={35.68951139154887} anchor="bottom">
-                  <UFOMarker />
-                </Marker>
-              </Map>
-            </div>
+            <Map
+              {...viewState}
+              onMove={evt => setViewState(evt.viewState as any)}
+              mapLib={maplibregl}
+              mapStyle={DARK_STYLE as any}
+              style={{ width: '100%', height: '100%' }}
+              {...({ antialias: true } as any)}
+            >
+              {/* This DIV only wraps the Tiles, making lines glow without affecting the Marker */}
+              <div className="absolute inset-0 pointer-events-none opacity-80 brightness-150 contrast-125 hue-rotate-180 invert-[0.05]" />
+              
+              <Marker longitude={-105.94493696136955} latitude={35.68951139154887} anchor="bottom">
+                <UFOMarker />
+              </Marker>
+            </Map>
             
-            <div className="absolute top-4 left-4 bg-black/80 border border-[#00ffff] p-2 text-[#00ffff] text-[10px] font-mono tracking-widest uppercase z-10">
+            {/* Overlay HUD elements */}
+            <div className="absolute top-4 left-4 bg-black/80 border border-[#00ffff] p-2 text-[#00ffff] text-[10px] font-mono tracking-widest uppercase z-10 pointer-events-none">
               [ SECURE FEED: S&G LOCATION LOCKED ]
             </div>
+            
+            <div className="absolute bottom-4 right-4 text-[#39FF14] text-[8px] font-mono opacity-40 pointer-events-none">
+              LAT: {viewState.latitude.toFixed(4)} // LON: {viewState.longitude.toFixed(4)}
+            </div>
+
             <button 
               onClick={() => setShowMap(false)}
-              className="absolute top-4 right-4 bg-black border border-[#00ffff] text-[#00ffff] px-3 py-1 hover:bg-[#00ffff] hover:text-black transition-all text-xs font-mono z-50"
+              className="absolute top-4 right-4 bg-black border border-[#00ffff] text-[#00ffff] px-3 py-1 hover:bg-[#00ffff] hover:text-black transition-all text-xs font-mono z-50 shadow-[0_0_10px_rgba(0,255,255,0.5)]"
             >
               TERMINATE_FEED
             </button>
