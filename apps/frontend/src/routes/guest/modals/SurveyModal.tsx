@@ -9,7 +9,7 @@ import { CYBERPUNK_THEME } from "../../../constants/themes";
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 
-// --- CUSTOM UFO BEAM MARKER ---
+// --- CUSTOM UFO BEAM MARKERs ---
 const UFOMarker = () => (
   <div className="relative flex items-center justify-center">
     {/* The Tractor Beam */}
