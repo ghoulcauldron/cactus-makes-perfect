@@ -78,12 +78,21 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
             <Map
               mapLib={maplibregl}
               initialViewState={viewport}
-              // The token is already passed here, which is all MapLibre needs to fetch the tiles
-              mapStyle={`https://api.mapbox.com/styles/v1/mapbox/dark-v11?access_token=${MAPBOX_TOKEN}`}
+              // 1. Use the standard style ID
+              mapStyle="mapbox://styles/mapbox/dark-v11"
+              // 2. Add the transformRequest to inject the token into every tile call
+              transformRequest={(url) => {
+                if (url.startsWith("mapbox://")) {
+                  return {
+                    url: url.replace("mapbox://", "https://api.mapbox.com/").concat(`?access_token=${MAPBOX_TOKEN}`),
+                  };
+                }
+                return { url };
+              }}
             >
               <Marker longitude={-105.9378} latitude={35.6870} anchor="bottom">
                 <UFOMarker />
-              </Marker>const MAPBOX_TOKEN = "pk.eyJ1IjoiZ2hvdWxjYXVsZHJvbiIsImEiOiJjbW14Z2ZubzcxMnN0MnBvcXdxYmppdDJyIn0.OQ4TP1JJkN3Gx0aEf77FmQ";
+              </Marker>
             </Map>
             ) : (
               <div className="flex items-center justify-center h-full text-[#39FF14] font-mono animate-pulse">
