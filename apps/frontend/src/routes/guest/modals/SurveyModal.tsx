@@ -78,13 +78,20 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
             <Map
               mapLib={maplibregl}
               initialViewState={viewport}
-              // 1. Use the standard style ID
+              // 1. Keep the standard style string
               mapStyle="mapbox://styles/mapbox/dark-v11"
-              // 2. Add the transformRequest to inject the token into every tile call
-              transformRequest={(url) => {
+              // 2. The Transformer: This is the key to loading Mapbox styles in MapLibre
+              transformRequest={(url, resourceType) => {
+                // If the URL starts with mapbox://, convert it to a valid HTTPS request
                 if (url.startsWith("mapbox://")) {
+                  const transformedUrl = url
+                    .replace("mapbox://styles/", "https://api.mapbox.com/styles/v1/")
+                    .replace("mapbox://sprites/", "https://api.mapbox.com/sprites/v1/")
+                    .replace("mapbox://fonts/", "https://api.mapbox.com/fonts/v1/")
+                    .replace("mapbox://v4/", "https://api.mapbox.com/v4/");
+                  
                   return {
-                    url: url.replace("mapbox://", "https://api.mapbox.com/").concat(`?access_token=${MAPBOX_TOKEN}`),
+                    url: `${transformedUrl}${transformedUrl.includes('?') ? '&' : '?'}access_token=${MAPBOX_TOKEN}`
                   };
                 }
                 return { url };
