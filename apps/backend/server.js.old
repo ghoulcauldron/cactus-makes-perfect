@@ -36,11 +36,12 @@ function canonicalizeGroupLabel(label) {
 
 // ---- Helper: get or create valid invite token (Phase 1.5) ----
 async function getOrCreateInviteToken(guest) {
-  // Phase 2: allow reuse regardless of used_at
+  // Look for most recent UNUSED token (ignore expiry for now)
   const { data: existing } = await supabase
     .from("invite_tokens")
     .select("*")
     .eq("guest_id", guest.id)
+    .is("used_at", null) // STRUCTURAL LOCK: Only unused tokens can be reused
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -67,7 +68,7 @@ async function getOrCreateInviteToken(guest) {
     return { tokenRow: existing, reused: true, revived: false };
   }
 
-  // Create new only if none exist (tokens are now reusable)
+  // Create new if none exist OR if all previous are already "used"
   const code = genCode(6);
   const token = uuidv4();
   const expires_at = new Date(Date.now() + RSVP_WINDOW_MS).toISOString();
@@ -592,24 +593,6 @@ app.post("/api/v1/admin/invites/resend", requireAdminAuth, async (req, res) => {
 app.post("/api/v1/auth/verify", async (req, res) => {
   try {
     const { token, code } = req.body || {};
-    if (!token) return res.status(400).json({ error: "Missing token" }); return res.status(400).json({ error: "Missing fields" });
-
-    // Phase 2.5: allow JWT-based re-entry without code
-    const existingGuest = await getGuestFromJWT(req);
-    if (existingGuest && token) {
-      const { data: inviteRow } = await supabase
-        .from("invite_tokens")
-        .select("*")
-        .eq("token", token)
-        .limit(1)
-        .maybeSingle();
-
-      if (inviteRow && new Date(inviteRow.expires_at) >= new Date()) {
-        const jwt = await issueJWT({ guest_id: existingGuest.id, email: existingGuest.email });
-        return res.json({ token: jwt, guest_id: existingGuest.id, reused_session: true });
-      }
-    }
-
     if (!token || !code) return res.status(400).json({ error: "Missing fields" });
 
     const { data: rows, error } = await supabase
@@ -622,6 +605,14 @@ app.post("/api/v1/auth/verify", async (req, res) => {
     if (error || !rows?.length) return res.status(401).json({ error: "Invalid code or token" });
 
     const invite = rows[0];
+    
+    // STRUCTURAL CHECK 1: Is it already used?
+    if (invite.used_at) {
+      return res.status(403).json({ 
+        error: "Link already used", 
+        message: "This portal link has already been activated. Please check your latest device session or request a fresh link." 
+      });
+    }
 
     // STRUCTURAL CHECK 2: Is it expired?
     if (new Date(invite.expires_at) < new Date()) {
@@ -631,23 +622,19 @@ app.post("/api/v1/auth/verify", async (req, res) => {
       });
     }
 
-    // SUCCESS: allow reusable access and proceed (Phase 2 behavior)
+    // SUCCESS: Mark as used and proceed
     await supabase
       .from("invite_tokens")
       .update({ 
-        delivery_status: "responded"
-        // Phase 2: do NOT set used_at (tokens remain reusable)
+        delivery_status: "responded",
+        used_at: new Date().toISOString() // LOCK THE TOKEN
       })
       .eq("token", token);
 
     const jwt = await issueJWT({ guest_id: invite.guest.id, email: invite.guest.email });
     await supabase.from("user_activity").insert([{ guest_id: invite.guest.id, kind: "auth_success" }]);
 
-    res.json({ 
-      token: jwt, 
-      guest_id: invite.guest.id,
-      expires_at: invite.expires_at
-    });
+    res.json({ token: jwt, guest_id: invite.guest.id });
   } catch (e) {
     console.error("verify error", e);
     res.status(500).json({ error: "Internal error" });
@@ -715,11 +702,12 @@ app.get("/api/v1/rsvps/me/:guest_id", async (req, res) => {
       return res.status(422).json({ error: "Supabase fetch failed", details: error });
     }
 
-    // Fetch latest active invite token for this guest (not expired)
+    // Fetch latest active invite token for this guest (unused, not expired)
     const { data: inviteRow, error: inviteErr } = await supabase
       .from("invite_tokens")
       .select("expires_at")
       .eq("guest_id", guest_id)
+      .is("used_at", null)
       .gt("expires_at", new Date().toISOString())
       .order("created_at", { ascending: false })
       .limit(1)
@@ -732,80 +720,6 @@ app.get("/api/v1/rsvps/me/:guest_id", async (req, res) => {
     });
   } catch (e) {
     console.error("[RSVP] Unexpected fetch error", e);
-    return res.status(500).json({ error: "Internal error" });
-  }
-});
-
-// ---- API: Get my event responses ----
-app.get("/api/v1/event-responses/me/:guest_id", async (req, res) => {
-  try {
-    const { guest_id } = req.params;
-    if (!guest_id) return res.status(400).json({ error: "Missing guest_id" });
-
-    const { data, error } = await supabase
-      .from("event_responses")
-      .select("*")
-      .eq("guest_id", guest_id)
-      .maybeSingle();
-
-    if (error) {
-      console.error("[EventResponses] Fetch failed", error);
-      return res.status(422).json({ error: "Fetch failed" });
-    }
-
-    return res.json({ response: data || null });
-  } catch (e) {
-    console.error("[EventResponses] Unexpected error", e);
-    return res.status(500).json({ error: "Internal error" });
-  }
-});
-
-// ---- API: Upsert event responses ----
-app.post("/api/v1/event-responses", async (req, res) => {
-  try {
-    const {
-      guest_id,
-      thursday_arrival,
-      friday_meowwolf,
-      friday_dinner,
-      saturday_railway,
-      sunday_brunch,
-      sunday_movie
-    } = req.body || {};
-
-    if (!guest_id) return res.status(400).json({ error: "Missing guest_id" });
-
-    const payload = {
-      guest_id,
-      thursday_arrival: !!thursday_arrival,
-      friday_meowwolf: !!friday_meowwolf,
-      friday_dinner: !!friday_dinner,
-      saturday_railway: !!saturday_railway,
-      sunday_brunch: !!sunday_brunch,
-      sunday_movie: !!sunday_movie,
-      updated_at: new Date().toISOString()
-    };
-
-    const { data, error } = await supabase
-      .from("event_responses")
-      .upsert([payload], { onConflict: "guest_id" })
-      .select()
-      .single();
-
-    if (error) {
-      console.error("[EventResponses] Upsert failed", error);
-      return res.status(422).json({ error: "Upsert failed" });
-    }
-
-    await supabase.from("user_activity").insert([{
-      guest_id,
-      kind: "event_responses_updated",
-      meta: payload
-    }]);
-
-    return res.json({ ok: true, response: data });
-  } catch (e) {
-    console.error("[EventResponses] Unexpected error", e);
     return res.status(500).json({ error: "Internal error" });
   }
 });
@@ -1437,11 +1351,12 @@ app.patch("/api/v1/admin/guest/:id/invite-token", requireAdminAuth, async (req, 
 
     if (!expires_at) return res.status(400).json({ error: "Missing expires_at" });
 
-    // Update the most recent token for this guest (tokens are now reusable)
+    // Update the most recent unused, non-expired token for this guest
     const { data, error } = await supabase
       .from("invite_tokens")
       .update({ expires_at })
       .eq("guest_id", guest_id)
+      .is("used_at", null)
       .select()
       .order("created_at", { ascending: false })
       .limit(1);
@@ -1722,31 +1637,6 @@ app.listen(port, () => {
 // ---- Helper: generate numeric code ----
 const genCode = (len = 6) =>
   [...Array(len)].map(() => Math.floor(Math.random() * 10)).join("");
-
-// ---- Middleware: optional guest auth via JWT ----
-async function getGuestFromJWT(req) {
-  try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) return null;
-
-    const token = authHeader.replace("Bearer ", "").trim();
-    const { payload } = await import("jose").then(j =>
-      j.jwtVerify(token, new TextEncoder().encode(JWT_SECRET))
-    );
-
-    if (!payload?.guest_id) return null;
-
-    const { data: guest } = await supabase
-      .from("guests")
-      .select("*")
-      .eq("id", payload.guest_id)
-      .maybeSingle();
-
-    return guest || null;
-  } catch {
-    return null;
-  }
-}
 
 // ---- Helper: issue JWT ----
 async function issueJWT(payload) {
