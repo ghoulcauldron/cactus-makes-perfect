@@ -78,24 +78,8 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
             <Map
               mapLib={maplibregl}
               initialViewState={viewport}
-              // 1. Keep the standard style string
-              mapStyle="mapbox://styles/mapbox/dark-v11"
-              // 2. The Transformer: This is the key to loading Mapbox styles in MapLibre
-              transformRequest={(url, resourceType) => {
-                // If the URL starts with mapbox://, convert it to a valid HTTPS request
-                if (url.startsWith("mapbox://")) {
-                  const transformedUrl = url
-                    .replace("mapbox://styles/", "https://api.mapbox.com/styles/v1/")
-                    .replace("mapbox://sprites/", "https://api.mapbox.com/sprites/v1/")
-                    .replace("mapbox://fonts/", "https://api.mapbox.com/fonts/v1/")
-                    .replace("mapbox://v4/", "https://api.mapbox.com/v4/");
-                  
-                  return {
-                    url: `${transformedUrl}${transformedUrl.includes('?') ? '&' : '?'}access_token=${MAPBOX_TOKEN}`
-                  };
-                }
-                return { url };
-              }}
+              // This direct URL is the "Master Key" - it bypasses MapLibre's 'mapbox://' confusion
+              mapStyle={`https://api.mapbox.com/styles/v1/mapbox/dark-v11?access_token=${MAPBOX_TOKEN}`}
             >
               <Marker longitude={-105.9378} latitude={35.6870} anchor="bottom">
                 <UFOMarker />
