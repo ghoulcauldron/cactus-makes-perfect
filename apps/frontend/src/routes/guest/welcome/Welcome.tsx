@@ -24,16 +24,19 @@ export default function Welcome() {
   return (
     <div className="h-screen w-full bg-[#0a001a] overflow-hidden relative transition-opacity duration-1000">
       
-      {/* HUD OVERLAY (Vignette) - Added pointer-events-none to ensure it doesn't block clicks */}
+      {/* HUD OVERLAY (Vignette) - Darkens the edges to make the modal stand out */}
       <div className="absolute inset-0 z-[65] pointer-events-none shadow-[inset_0_0_150px_rgba(0,0,0,0.9)] bg-gradient-to-b from-artifact-purple/10 via-transparent to-artifact-void/40" />
 
-      {/* SCENE LAYERS - Using a standard CSS class 'infected-assets' instead of arbitrary Tailwind filters */}
-      <div className={`infected-assets transition-all duration-[2000ms] absolute inset-0 w-full h-full ${showScene ? 'opacity-100 scale-105' : 'opacity-0 scale-100'}`}>
+      {/* CRT SCANLINE OVERLAY - Simulates an old monitor display */}
+      <div className="absolute inset-0 z-[66] pointer-events-none bg-[repeating-linear-gradient(0deg,rgba(0,0,0,0.1),rgba(0,0,0,0.1)_1px,transparent_1px,transparent_2px)]"></div>
+
+      {/* SCENE LAYERS - Applied 'invert-assets' class to create a surreal, inverted-color world */}
+      <div className={`invert-assets transition-all duration-[2000ms] absolute inset-0 w-full h-full ${showScene ? 'opacity-100 scale-105' : 'opacity-0 scale-100'}`}>
         <img src={assets.background} alt="" className="absolute inset-0 w-full h-full object-cover object-bottom z-0" />
         <img src={assets.rocksMain} alt="" className="absolute inset-0 w-full h-full object-cover object-bottom z-10" />
         <img src={assets.alienBack} alt="" className="absolute inset-0 w-full h-full object-cover object-bottom z-20" />
         
-        {/* UFO with specific "Glow" effect */}
+        {/* UFO with specific "Glow" effect - Keeps the cyan glow for contrast */}
         <img 
             src={assets.ufo} 
             alt="UFO" 
@@ -63,9 +66,9 @@ export default function Welcome() {
       )}
 
       <style>{`
-        /* The standard CSS way to ensure the filter actually renders */
-        .infected-assets {
-          filter: hue-rotate(140deg) saturate(0.8) brightness(0.7) contrast(1.1);
+        /* The CSS way to invert the assets and create the striking purple-and-green world */
+        .invert-assets {
+          filter: invert(1);
           will-change: transform, opacity, filter;
         }
 
