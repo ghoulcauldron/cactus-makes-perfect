@@ -38,7 +38,7 @@ export default function Welcome() {
   console.log("Rendering Welcome.tsx component");
   const navigate = useNavigate();
 
-  const [isSurveyModalOpen, setSurveyModalOpen] = useState(false);
+  const [isSurveyModalOpen, setSurveyModalOpen] = useState(true);
   // Removed activeTab state as it is no longer needed in Welcome.tsx
 
   // --- ASSETS: SCENE LAYERS ---
