@@ -39,10 +39,10 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
             {[
               { date: "AUG 27", title: "ARRIVAL", items: [{ id: "thursday_arrival", label: "INITIAL INFILTRATION" }] },
               { date: "AUG 28", title: "EXCURSION", items: [
-                { id: "friday_meowwolf", label: "OFF-WORLD: MEOW WOLF" },
+                { id: "friday_meowwolf", label: "OFF-WORLD: FEELIN' PSYCHEDELIA" },
                 { id: "friday_dinner", label: "COMMUNAL FUELING (6PM)" }
               ]},
-              { date: "AUG 29", title: "TRANSPORT", items: [{ id: "saturday_railway", label: "SKY RAILWAY SERENADE" }] },
+              { date: "AUG 29", title: "TRANSPORT", items: [{ id: "saturday_railway", label: "SUNSET SERENADE" }] },
               { date: "AUG 30", title: "DEBRIEF", items: [
                 { id: "sunday_brunch", label: "POST-MISSION BRUNCH" },
                 { id: "sunday_movie", label: "FINAL TRANSMISSION + CINEMA" }

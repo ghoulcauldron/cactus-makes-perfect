@@ -6,14 +6,12 @@ export default function Welcome() {
   const [isSurveyModalOpen, setSurveyModalOpen] = useState(false);
   const [showScene, setShowScene] = useState(false);
 
-  // Delay modal and scene entrance for maximum "impact"
   useEffect(() => {
     setShowScene(true);
     const timer = setTimeout(() => setSurveyModalOpen(true), 800);
     return () => clearTimeout(timer);
   }, []);
 
-  // --- ASSETS ---
   const assets = {
     background: "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0004_background.png",
     rocksMain: "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0003_rocks_main.png",
@@ -23,24 +21,25 @@ export default function Welcome() {
     aliensFront: "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0000_aliens_cacti_top.png"
   };
 
-  // Shared filter for assets to match the modal's "Cyan/Purple" world
-  // Adjust brightness/contrast to make the scene feel "night-vision"
-  const assetFilter = "hue-rotate-[140deg] saturate-[0.8] brightness-[0.7] contrast-[1.1]";
-
   return (
     <div className="h-screen w-full bg-[#0a001a] overflow-hidden relative transition-opacity duration-1000">
       
-      {/* HUD OVERLAY (Vignette) */}
-      <div className="absolute inset-0 z-[65] pointer-events-none shadow-[inset_0_0_150px_rgba(0,0,0,0.9)] bg-gradient-to-b from-artifact-void/20 via-transparent to-artifact-void/40" />
+      {/* HUD OVERLAY (Vignette) - Added pointer-events-none to ensure it doesn't block clicks */}
+      <div className="absolute inset-0 z-[65] pointer-events-none shadow-[inset_0_0_150px_rgba(0,0,0,0.9)] bg-gradient-to-b from-artifact-purple/10 via-transparent to-artifact-void/40" />
 
-      {/* SCENE LAYERS */}
-      <div className={`transition-all duration-[2000ms] ${showScene ? 'opacity-100 scale-105' : 'opacity-0 scale-100'} ${assetFilter}`}>
+      {/* SCENE LAYERS - Using a standard CSS class 'infected-assets' instead of arbitrary Tailwind filters */}
+      <div className={`infected-assets transition-all duration-[2000ms] absolute inset-0 w-full h-full ${showScene ? 'opacity-100 scale-105' : 'opacity-0 scale-100'}`}>
         <img src={assets.background} alt="" className="absolute inset-0 w-full h-full object-cover object-bottom z-0" />
         <img src={assets.rocksMain} alt="" className="absolute inset-0 w-full h-full object-cover object-bottom z-10" />
         <img src={assets.alienBack} alt="" className="absolute inset-0 w-full h-full object-cover object-bottom z-20" />
         
         {/* UFO with specific "Glow" effect */}
-        <img src={assets.ufo} alt="UFO" className="absolute inset-0 w-full h-full object-cover object-bottom z-40 animate-pulse-slow drop-shadow-[0_0_15px_rgba(0,255,255,0.5)]" />
+        <img 
+            src={assets.ufo} 
+            alt="UFO" 
+            className="absolute inset-0 w-full h-full object-cover object-bottom z-40 animate-pulse-slow"
+            style={{ filter: 'drop-shadow(0 0 15px rgba(0,255,255,0.6))' }} 
+        />
         
         <img src={assets.rocksFG} alt="" className="absolute inset-0 w-full h-full object-cover object-bottom z-50" />
         <img src={assets.aliensFront} alt="" className="absolute inset-0 w-full h-full object-cover object-bottom z-[60]" />
@@ -63,8 +62,13 @@ export default function Welcome() {
         </div>
       )}
 
-      {/* CSS For Entry Animations */}
       <style>{`
+        /* The standard CSS way to ensure the filter actually renders */
+        .infected-assets {
+          filter: hue-rotate(140deg) saturate(0.8) brightness(0.7) contrast(1.1);
+          will-change: transform, opacity, filter;
+        }
+
         @keyframes modal-entry {
           0% { 
             opacity: 0; 
