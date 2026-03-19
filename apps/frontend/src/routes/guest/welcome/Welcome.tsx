@@ -34,9 +34,8 @@ export default function Welcome() {
         <img
           src={assets.ufo}
           alt="UFO"
-          className="absolute inset-0 w-full h-full object-cover object-bottom z-40 animate-pulse cursor-pointer"
+          className="absolute inset-0 w-full h-full object-cover object-bottom z-40 animate-pulse"
           style={{ filter: 'drop-shadow(0 0 20px #00ffff) invert(1)' }}
-          onClick={() => setSurveyModalOpen(true)}
         />
         <img src={assets.rocksFG} alt="" className="absolute inset-0 w-full h-full object-cover object-bottom z-50" />
         <img src={assets.aliensFront} alt="" className="absolute inset-0 w-full h-full object-cover object-bottom z-[60]" />
@@ -49,6 +48,14 @@ export default function Welcome() {
         </p>
       </footer>
 
+      {!isSurveyModalOpen && (
+        <button
+          type="button"
+          aria-label="Open survey"
+          className="absolute inset-0 z-[65] cursor-pointer bg-transparent"
+          onClick={() => setSurveyModalOpen(true)}
+        />
+      )}
       {isSurveyModalOpen && (
         <SurveyModal isOpen={isSurveyModalOpen} onClose={() => setSurveyModalOpen(false)} />
       )}
