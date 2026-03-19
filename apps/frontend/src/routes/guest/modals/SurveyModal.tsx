@@ -7,7 +7,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { PatternScramble, type PatternScrambleHandle } from "../../../components/UI/PatternScramble";
 import { CYBERPUNK_THEME } from "../../../constants/themes";
 
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
+const MAPBOX_TOKEN = "pk.eyJ1IjoiZ2hvdWxjYXVsZHJvbiIsImEiOiJjbW14Z2ZubzcxMnN0MnBvcXdxYmppdDJyIn0.OQ4TP1JJkN3Gx0aEf77FmQ";
 
 // --- CUSTOM UFO BEAM MARKERs ---
 const UFOMarker = () => (
@@ -83,7 +83,7 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
             >
               <Marker longitude={-105.9378} latitude={35.6870} anchor="bottom">
                 <UFOMarker />
-              </Marker>
+              </Marker>const MAPBOX_TOKEN = "pk.eyJ1IjoiZ2hvdWxjYXVsZHJvbiIsImEiOiJjbW14Z2ZubzcxMnN0MnBvcXdxYmppdDJyIn0.OQ4TP1JJkN3Gx0aEf77FmQ";
             </Map>
             ) : (
               <div className="flex items-center justify-center h-full text-[#39FF14] font-mono animate-pulse">
