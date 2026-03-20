@@ -10,6 +10,21 @@ import { CYBERPUNK_THEME } from "../../../constants/themes";
 const MAPBOX_TOKEN = "pk.eyJ1IjoiZ2hvdWxjYXVsZHJvbiIsImEiOiJjbW14Z2ZubzcxMnN0MnBvcXdxYmppdDJyIn0.OQ4TP1JJkN3Gx0aEf77FmQ";
 const CUSTOM_STYLE = "mapbox://styles/ghoulcauldron/cmmxjbezx003t01rx6fvi5z7r";
 
+// --- UFO MARKER COMPONENT ---
+const UFOMarker = () => (
+  <div className="relative flex items-center justify-center">
+    <div 
+      className="absolute bottom-1 w-12 h-32 bg-gradient-to-t from-[#39FF14]/50 to-transparent blur-sm animate-pulse" 
+      style={{ clipPath: 'polygon(25% 0%, 75% 0%, 100% 100%, 0% 100%)', transformOrigin: 'bottom' }} 
+    />
+    <div className="w-4 h-4 bg-[#39FF14] rounded-full shadow-[0_0_15px_#39FF14] animate-ping" />
+    <div className="absolute w-2 h-2 bg-white rounded-full" />
+    <div className="absolute -bottom-8 whitespace-nowrap text-[#39FF14] text-[9px] font-mono tracking-tighter bg-black/80 px-2 border border-[#39FF14]/30 uppercase z-50">
+      S&G: DOS HERMANAS COMPOUND
+    </div>
+  </div>
+);
+
 // --- COSMIC NEBULA SHADER ---
 function ShootingStar() {
   const meshRef = useRef<THREE.Mesh>(null);
@@ -162,8 +177,8 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
             <div className="w-full h-full relative overflow-hidden bg-black border-2 border-[#00ffff]/40 shadow-[0_0_100px_rgba(0,255,255,0.4)]" style={{ clipPath: 'ellipse(48% 42% at 50% 50%)' }} onClick={(e) => e.stopPropagation()}>
               <Map initialViewState={{ latitude: 35.689511, longitude: -105.944936, zoom: 15.5 }} mapboxAccessToken={MAPBOX_TOKEN} mapStyle={CUSTOM_STYLE} style={{ width: '100%', height: '100%' }}>
                 <Marker longitude={-105.944936} latitude={35.689511} anchor="bottom">
-                   <div className="w-4 h-4 bg-[#39FF14] rounded-full shadow-[0_0_15px_#39FF14] animate-ping" />
-                </Marker>
+                    <UFOMarker />
+                  </Marker>
               </Map>
               {/* Infected Edge Glow */}
               <svg className="absolute inset-0 w-full h-full pointer-events-none z-[60]">
@@ -212,11 +227,20 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
                 { date: "SUN AUG 30", key: 'sunday', title: "Post-Mission Debrief", keys: ['sunday_brunch', 'sunday_movie'] }
               ].map((section) => (
                 <div key={section.date} className="flex flex-col items-center text-center">
-                  <button onClick={() => setArrival(section.key as any)} className={`text-[10px] font-bold px-4 py-1.5 uppercase tracking-[0.3em] mb-3 border transition-all ${state.arrival_day === section.key ? 'bg-[#39FF14] text-black border-[#39FF14] shadow-[0_0_15px_#39FF14]' : 'text-white/40 border-white/10 hover:border-[#39FF14]/40'}`}>{section.date}</button>
+                  <button 
+                    onClick={() => setArrival(section.key as any)} 
+                    className={`text-[10px] font-bold px-4 py-1.5 uppercase tracking-[0.3em] mb-3 border transition-all ${
+                      state.arrival_day === section.key 
+                        ? '!bg-[#39FF14] !text-black border-[#39FF14] shadow-[0_0_15px_#39FF14]' 
+                        : 'text-white/40 border-white/10 hover:border-[#39FF14]/40 hover:text-white'
+                    }`}
+                  >
+                    {section.date}
+                  </button>
                   <div className="text-xl font-bold tracking-tight text-white mb-3 uppercase" onMouseEnter={() => scrambleRefs.current[section.key]?.triggerHover()}>
                     <PatternScramble ref={(el) => { if (el) scrambleRefs.current[section.key] = el; }} text={section.title} {...CYBERPUNK_THEME} startTrigger={true} />
                   </div>
-                  {section.desc && <p className="text-white/20 text-[10px] italic leading-tight uppercase">{section.desc}</p>}
+                  {section.desc && <p className="text-white/40 text-[10px] italic leading-tight uppercase">{section.desc}</p>}
                   {section.keys && <div className="space-y-2 w-full max-w-[200px]">
                     {section.keys.map(k => (
                       <button key={k} onClick={() => setState(s => ({ ...s, [k]: !s[k as keyof typeof s], isSaved: false }))} className={`block w-full text-[10px] py-2.5 border transition-all uppercase ${state[k as keyof typeof state] ? 'bg-[#00ffff] text-black border-[#00ffff]' : 'text-white/40 border-white/10 hover:border-[#00ffff]/40'}`}>
