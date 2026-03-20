@@ -68,27 +68,32 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
 
   if (!isOpen) return null;
 
+  // Unified Geometry for Mobile & Desktop
+  const OVAL_CLIP = "ellipse(48% 40% at 50% 50%)";
+  const MODAL_SIZE = "w-[95vw] max-w-[850px] h-[70vh] md:h-[65vh]";
+
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-auto overflow-hidden font-mono">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2 pointer-events-auto overflow-hidden font-mono">
       {/* BACKDROP */}
       <div 
         className="absolute inset-0 bg-[#0a001a]/85 backdrop-blur-xl transition-opacity duration-700 cursor-zoom-out" 
-        onClick={() => showMap ? setShowMap(false) : onClose()} 
+        onClick={() => (showMap ? setShowMap(false) : onClose())} 
       />
       
-      {/* --- OVAL MAP OVERLAY --- */}
+      {/* --- UNIFIED OVAL MAP OVERLAY --- */}
       {showMap && (
         <div 
-          className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/40 p-4 animate-modal-entry"
+          className="fixed inset-0 z-[10000] flex items-center justify-center p-2 animate-modal-entry"
           onClick={() => setShowMap(false)}
         >
-          <div className="relative w-full max-w-5xl h-[60vh] group">
-            {/* Outer Glow */}
-            <div className="absolute -inset-10 bg-[#00ffff]/10 blur-3xl rounded-full animate-pulse pointer-events-none" />
-            
+          <div className={`relative ${MODAL_SIZE} group`}>
+            {/* EXTERNAL GLOWS */}
+            <div className="absolute -inset-10 bg-[#39FF14]/15 blur-[80px] rounded-full animate-pulse pointer-events-none" />
+            <div className="absolute -inset-20 bg-[#00ffff]/10 blur-[100px] rounded-full pointer-events-none" />
+
             <div 
-              className="w-full h-full border-2 border-[#00ffff]/40 relative overflow-hidden bg-black shadow-[0_0_80px_rgba(0,255,255,0.4)]"
-              style={{ clipPath: 'ellipse(48% 40% at 50% 50%)' }}
+              className="w-full h-full relative overflow-hidden bg-black shadow-[0_0_80px_rgba(0,255,255,0.4)]"
+              style={{ clipPath: OVAL_CLIP }}
               onClick={(e) => e.stopPropagation()}
             >
               <Map
@@ -103,9 +108,15 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
                   <UFOMarker />
                 </Marker>
               </Map>
+
+              {/* Glowing Infected Border (SVG Overlay) */}
+              <svg className="absolute inset-0 w-full h-full pointer-events-none z-[60]">
+                <ellipse cx="50%" cy="50%" rx="48%" ry="40%" fill="none" stroke="#39FF14" strokeWidth="1" className="opacity-40" />
+              </svg>
+
               <button 
                 onClick={() => setShowMap(false)}
-                className="absolute bottom-[22%] left-1/2 -translate-x-1/2 bg-black border border-[#00ffff] text-[#00ffff] px-4 py-1.5 hover:bg-[#00ffff] hover:text-black transition-all text-[10px] z-50 uppercase tracking-tighter"
+                className="absolute bottom-[22%] left-1/2 -translate-x-1/2 bg-black border border-[#00ffff] text-[#00ffff] px-4 py-1.5 hover:bg-[#00ffff] hover:text-black transition-all text-[10px] z-[70] uppercase tracking-tighter"
               >
                 TERMINATE_FEED
               </button>
@@ -115,7 +126,7 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
       )}
 
       {/* --- MAIN WIDE OVAL MODAL --- */}
-      <div className="relative w-full max-w-[850px] h-[55vh] md:h-[65vh] flex flex-col items-center justify-center animate-modal-entry">
+      <div className={`relative ${MODAL_SIZE} flex flex-col items-center justify-center animate-modal-entry`}>
         
         {/* EXTERNAL GLOWS (S&G Green + Cyan Aura) */}
         <div className="absolute -inset-10 bg-[#39FF14]/15 blur-[80px] rounded-full animate-pulse pointer-events-none" />
@@ -123,16 +134,18 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
 
         <div 
           className="relative w-full h-full flex flex-col items-center justify-center"
-          style={{ clipPath: 'ellipse(48% 40% at 50% 50%)' }} // Wide Oval Logic
+          style={{ clipPath: OVAL_CLIP }}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Edge Glitch Border */}
-          <div className="absolute -inset-1 bg-gradient-to-r from-[#00ffff]/20 via-[#FF00FF]/20 to-[#39FF14]/20 opacity-40" />
+          {/* Glowing Infected Border (SVG Overlay) */}
+          <svg className="absolute inset-0 w-full h-full pointer-events-none z-[60]">
+            <ellipse cx="50%" cy="50%" rx="48%" ry="40%" fill="none" stroke="#39FF14" strokeWidth="1" className="opacity-40" />
+          </svg>
           
-          <div className="relative flex flex-col bg-black border border-white/10 w-full h-full overflow-hidden text-white pt-12 pb-12 px-20">
+          <div className="relative flex flex-col bg-black border border-white/10 w-full h-full overflow-hidden text-white pt-10 pb-10 px-6 md:px-20">
             
             {/* Header Area */}
-            <div className="border-b border-[#00ffff]/20 bg-gradient-to-b from-[#1a0033]/30 to-black flex flex-col items-center py-4 mb-4">
+            <div className="border-b border-[#00ffff]/20 bg-gradient-to-b from-[#1a0033]/30 to-black flex flex-col items-center py-4 mb-2">
               <div onMouseEnter={() => scrambleRefs.current['header']?.triggerHover()}>
                 <div className="text-[10px] tracking-[0.5em] mb-1 text-[#00ffff] text-center uppercase opacity-80">
                   {loadStep >= 1 && (
@@ -144,20 +157,20 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
                     />
                   )}
                 </div>
-                <h2 className="text-4xl font-bold tracking-tighter italic uppercase text-center leading-none">
+                <h2 className="text-3xl md:text-4xl font-bold tracking-tighter italic uppercase text-center leading-none">
                   Mission <span className="text-[#39FF14]">Briefing</span>
                 </h2>
               </div>
             </div>
 
-            {/* Scrollable Itinerary - Centered Grid for Wide View */}
+            {/* Scrollable Itinerary */}
             <div className="flex-1 overflow-y-auto hide-scrollbar bg-[radial-gradient(circle_at_center,_#1a0033_10%,_#000000_90%)]">
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8 p-4">
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6 md:gap-y-8 p-4">
                 {[
                   { date: "THU AUG 27", label: "THE ARRIVAL", details: "Rolling infiltration begins.", hasMap: true, id: 2 },
-                  { date: "FRI AUG 28", label: "THE PSYCHE-FEASTIA", details: "Midday: Off-World Excursion.\n6PM: Ceremonial Feast", id: 3 },
+                  { date: "FRI AUG 28", label: "THE PSYCHE-FEASTIA", details: "Midday: Off-World Excursion\n\n6PM: Ceremonial Feast", id: 3 },
                   { date: "SAT AUG 29", label: "ATMOSPHERIC TRANSIT", details: "6PM: Ride into the sky.", id: 4 },
-                  { date: "SUN AUG 30", label: "POST-MISSION DEBRIEF", details: "Midday: Brunch.\nEvening: Final Transmission.", id: 5 }
+                  { date: "SUN AUG 30", label: "POST-MISSION DEBRIEF", details: "Midday: Brunch.\n\nEvening: Final Transmission", id: 5 }
                 ].map((section) => (
                   <div key={section.date} className="group flex flex-col items-center text-center">
                     <span className="text-[9px] font-bold text-[#39FF14] px-1 uppercase tracking-[0.3em] mb-1">{section.date}</span>
@@ -172,10 +185,10 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
                         />
                       )}
                     </div>
-                    <p className="text-white/40 text-[11px] leading-tight max-w-[200px]">{section.details}</p>
+                    <p className="text-white/40 text-[11px] leading-tight max-w-[200px] whitespace-pre-line">{section.details}</p>
                     {section.hasMap && (
                       <button onClick={() => setShowMap(true)} className="mt-2 text-[9px] text-[#00ffff] hover:text-[#39FF14] transition-colors border-b border-[#00ffff]/20">
-                        [ ACCESS COORDS ]
+                        [ S&G COORDS ]
                       </button>
                     )}
                   </div>
