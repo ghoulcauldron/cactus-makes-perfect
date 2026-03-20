@@ -50,7 +50,6 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
     return () => window.removeEventListener("keydown", handleEsc);
   }, [handleEsc]);
 
-  // --- HYDRATION ---
   useEffect(() => {
     const hydrate = async () => {
       if (!isOpen) return;
@@ -86,7 +85,6 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
     hydrate();
   }, [isOpen]);
 
-  // --- ACTIONS ---
   const handleSave = async () => {
     const guestId = localStorage.getItem("guest_user_id");
     setState(prev => ({ ...prev, isSaving: true, isSaved: false }));
@@ -115,8 +113,7 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
 
   if (!isOpen) return null;
 
-  // REFINED GEOMETRY: Explicit taller height for mobile
-  const MODAL_SIZE = "w-[95vw] max-w-[850px] h-[88vh] md:h-[65vh]";
+  const MODAL_SIZE = "w-[95vw] max-w-[850px] h-[88vh] md:h-[70vh]";
   const OVAL_CLIP = "ellipse(48% 40% at 50% 50%)";
 
   return (
@@ -126,7 +123,6 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
         onClick={() => (showMap ? setShowMap(false) : onClose())} 
       />
       
-      {/* --- UNIFIED OVAL MAP --- */}
       {showMap && (
         <div className="fixed inset-0 z-[10000] flex items-center justify-center p-2 animate-modal-entry" onClick={() => setShowMap(false)}>
           <div className={`relative ${MODAL_SIZE} group`}>
@@ -149,13 +145,12 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
         </div>
       )}
 
-      {/* --- MAIN OVAL MODAL --- */}
       <div className={`relative ${MODAL_SIZE} flex flex-col items-center justify-center animate-modal-entry`}>
         <div className="absolute -inset-10 bg-[#39FF14]/15 blur-[80px] rounded-full animate-pulse pointer-events-none" />
         <div className="absolute -inset-20 bg-[#00ffff]/10 blur-[100px] rounded-full pointer-events-none" />
 
         <div 
-          className="relative w-full h-full flex flex-col items-center justify-center"
+          className="relative w-full h-full flex flex-col items-center"
           style={{ clipPath: OVAL_CLIP }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -163,57 +158,90 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
             <ellipse cx="50%" cy="50%" rx="48%" ry="40%" fill="none" stroke="#39FF14" strokeWidth="1" className="opacity-40" />
           </svg>
           
-          <div className="relative flex flex-col bg-black border border-white/10 w-full h-full overflow-hidden text-white pt-24 pb-24 px-6 md:px-20 md:pt-12 md:pb-12">
+          <div className="relative flex flex-col bg-black border border-white/10 w-full h-full overflow-hidden text-white pt-16 pb-16 px-6 md:px-20">
             
-            <div className="border-b border-[#00ffff]/20 flex flex-col items-center py-4 mb-2 shrink-0">
+            {/* 1. ANCHORED MISSION BRIEFING & S&G DATES */}
+            <div className="flex flex-col items-center shrink-0 mb-4 pt-4">
               <div className="text-[10px] tracking-[0.5em] mb-1 text-[#00ffff] text-center uppercase opacity-80">/// OPERATION: 20 YEAR DARE ///</div>
               <h2 className="text-3xl md:text-4xl font-bold tracking-tighter italic uppercase text-center leading-none">Mission <span className="text-[#39FF14]">Briefing</span></h2>
-            </div>
-
-            <div className="flex-grow overflow-y-auto hide-scrollbar">
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6 md:gap-y-8 p-4">
-                {[
-                  { date: "THU AUG 27", label: "THE ARRIVAL", details: "Rolling infiltration begins.", hasMap: true, key: 'arrival_day' },
-                  { date: "FRI AUG 28", label: "THE PSYCHE-FEASTIA", details: "Midday: Off-World Excursion\n6PM: Ceremonial Feast", keys: ['friday_meowwolf', 'friday_dinner'] },
-                  { date: "SAT AUG 29", label: "ATMOSPHERIC TRANSIT", details: "6PM: Ride into the sky.", keys: ['saturday_railway'] },
-                  { date: "SUN AUG 30", label: "POST-MISSION DEBRIEF", details: "Midday: Brunch.\nEvening: Final Transmission", keys: ['sunday_brunch', 'sunday_movie'] }
-                ].map((section) => (
-                  <div key={section.date} className="group flex flex-col items-center text-center">
-                    {/* Arrival Selection Logic */}
-                    {section.key === 'arrival_day' ? (
-                        <button 
-                          onClick={() => setState(s => ({ ...s, arrival_day: s.arrival_day === 'thursday' ? null : 'thursday', isSaved: false }))}
-                          className={`text-[9px] font-bold px-2 py-0.5 uppercase tracking-[0.3em] mb-1 border transition-all ${state.arrival_day === 'thursday' ? 'bg-[#39FF14] text-black border-[#39FF14]' : 'text-white/40 border-white/10'}`}
-                        >
-                          {section.date}
-                        </button>
-                    ) : (
-                        <span className="text-[9px] font-bold text-[#39FF14] px-1 uppercase tracking-[0.3em] mb-1 opacity-60">{section.date}</span>
-                    )}
-
-                    <div className="text-lg font-bold tracking-tight text-white mb-1">{section.label}</div>
-                    <p className="text-white/40 text-[11px] leading-tight max-w-[200px] whitespace-pre-line">{section.details}</p>
-                    
-                    {/* Event Toggles */}
-                    {section.keys && section.keys.map(k => (
-                        <button 
-                          key={k}
-                          onClick={() => setState(s => ({ ...s, [k]: !s[k as keyof typeof s], isSaved: false }))}
-                          className={`mt-2 block w-full text-[10px] px-2 py-1 border transition-all ${state[k as keyof typeof state] ? 'bg-[#00ffff] text-black border-[#00ffff]' : 'text-white/40 border-white/10'}`}
-                        >
-                          {k.includes('meowwolf') ? "Midday: Off-World Excursion" : k.includes('dinner') ? "6PM: Ceremonial Feast" : k.includes('railway') ? "6PM: Ride into the sky" : k.includes('brunch') ? "Midday: Brunch" : "Evening: Final Transmission"}
-                        </button>
-                    ))}
-
-                    {section.hasMap && (
-                      <button onClick={() => setShowMap(true)} className="mt-3 text-[9px] text-[#00ffff] hover:text-[#39FF14] border-b border-[#00ffff]/20">[ S&G COORDS ]</button>
-                    )}
-                  </div>
-                ))}
+              
+              <div className="mt-4 flex flex-col items-center border border-[#00ffff]/20 bg-[#00ffff]/5 p-3 rounded-sm w-full max-w-sm">
+                <p className="text-[9px] text-[#00ffff] tracking-[0.2em] uppercase font-bold mb-1">Target Window: AUG 27 — AUG 31</p>
+                <p className="text-[8px] text-white/60 text-center uppercase leading-relaxed mb-2">
+                  1. Select Arrival Date // 2. Confirm Event Attendance // 3. Transmit Data
+                </p>
+                <button onClick={() => setShowMap(true)} className="text-[9px] text-[#39FF14] hover:text-white transition-colors border border-[#39FF14]/30 px-2 py-1 bg-black/50">
+                  [ S&G COORDS ]
+                </button>
               </div>
             </div>
 
-            {/* REFINED FOOTER: No background, strictly flex-positioned */}
+            {/* 2. SCROLLABLE INFILTRATION DATA */}
+            <div className="flex-grow overflow-y-auto hide-scrollbar px-4">
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6 p-2">
+                
+                {/* THURSDAY */}
+                <div className="group flex flex-col items-center text-center">
+                  <button 
+                    onClick={() => setState(s => ({ ...s, arrival_day: s.arrival_day === 'thursday' ? null : 'thursday', isSaved: false }))}
+                    className={`text-[9px] font-bold px-3 py-1 uppercase tracking-[0.3em] mb-1 border transition-all ${state.arrival_day === 'thursday' ? 'bg-[#39FF14] text-black border-[#39FF14]' : 'text-white/40 border-white/10 hover:border-[#39FF14]/50'}`}
+                  >
+                    THU AUG 27
+                  </button>
+                  <div className="text-lg font-bold tracking-tight text-white mb-2 uppercase">The Arrival</div>
+                  <p className="text-white/30 text-[10px] italic leading-tight uppercase">Infiltration window opens</p>
+                </div>
+
+                {/* FRIDAY */}
+                <div className="group flex flex-col items-center text-center">
+                  <button 
+                    onClick={() => setState(s => ({ ...s, arrival_day: s.arrival_day === 'friday' ? null : 'friday', isSaved: false }))}
+                    className={`text-[9px] font-bold px-3 py-1 uppercase tracking-[0.3em] mb-1 border transition-all ${state.arrival_day === 'friday' ? 'bg-[#39FF14] text-black border-[#39FF14]' : 'text-white/40 border-white/10 hover:border-[#39FF14]/50'}`}
+                  >
+                    FRI AUG 28
+                  </button>
+                  <div className="text-lg font-bold tracking-tight text-white mb-2 uppercase">Psyche-Feastia</div>
+                  <div className="space-y-2 w-full max-w-[180px]">
+                    <button onClick={() => setState(s => ({ ...s, friday_meowwolf: !s.friday_meowwolf, isSaved: false }))} className={`block w-full text-[10px] py-2 border transition-all uppercase ${state.friday_meowwolf ? 'bg-[#00ffff] text-black border-[#00ffff]' : 'text-white/40 border-white/10'}`}>
+                      Midday: Off-World Excursion
+                    </button>
+                    <button onClick={() => setState(s => ({ ...s, friday_dinner: !s.friday_dinner, isSaved: false }))} className={`block w-full text-[10px] py-2 border transition-all uppercase ${state.friday_dinner ? 'bg-[#00ffff] text-black border-[#00ffff]' : 'text-white/40 border-white/10'}`}>
+                      6PM: Ceremonial Feast
+                    </button>
+                  </div>
+                </div>
+
+                {/* SATURDAY */}
+                <div className="group flex flex-col items-center text-center">
+                  <button 
+                    onClick={() => setState(s => ({ ...s, arrival_day: s.arrival_day === 'saturday' ? null : 'saturday', isSaved: false }))}
+                    className={`text-[9px] font-bold px-3 py-1 uppercase tracking-[0.3em] mb-1 border transition-all ${state.arrival_day === 'saturday' ? 'bg-[#39FF14] text-black border-[#39FF14]' : 'text-white/40 border-white/10 hover:border-[#39FF14]/50'}`}
+                  >
+                    SAT AUG 29
+                  </button>
+                  <div className="text-lg font-bold tracking-tight text-white mb-2 uppercase">Atmospheric Transit</div>
+                  <button onClick={() => setState(s => ({ ...s, saturday_railway: !s.saturday_railway, isSaved: false }))} className={`block w-full max-w-[180px] text-[10px] py-2 border transition-all uppercase ${state.saturday_railway ? 'bg-[#00ffff] text-black border-[#00ffff]' : 'text-white/40 border-white/10'}`}>
+                    6PM: Ride into the sky
+                  </button>
+                </div>
+
+                {/* SUNDAY */}
+                <div className="group flex flex-col items-center text-center">
+                  <span className="text-[9px] font-bold text-white/20 px-3 py-1 uppercase tracking-[0.3em] mb-1">SUN AUG 30</span>
+                  <div className="text-lg font-bold tracking-tight text-white mb-2 uppercase">Post-Mission Debrief</div>
+                  <div className="space-y-2 w-full max-w-[180px]">
+                    <button onClick={() => setState(s => ({ ...s, sunday_brunch: !s.sunday_brunch, isSaved: false }))} className={`block w-full text-[10px] py-2 border transition-all uppercase ${state.sunday_brunch ? 'bg-[#00ffff] text-black border-[#00ffff]' : 'text-white/40 border-white/10'}`}>
+                      Midday: Brunch.
+                    </button>
+                    <button onClick={() => setState(s => ({ ...s, sunday_movie: !s.sunday_movie, isSaved: false }))} className={`block w-full text-[10px] py-2 border transition-all uppercase ${state.sunday_movie ? 'bg-[#00ffff] text-black border-[#00ffff]' : 'text-white/40 border-white/10'}`}>
+                      Evening: Final Transmission
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 3. TRANSMISSION CONTROLS */}
             <div className="mt-4 pt-4 flex flex-col items-center shrink-0">
               <button 
                 onClick={handleSave} 
@@ -226,7 +254,7 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
               >
                 {state.isSaving ? "/// TRANSMITTING ///" : state.isSaved ? "DATA UPLOADED ✓" : "[ TRANSMIT DATA ]"}
               </button>
-              <button onClick={onClose} className="mt-4 text-[9px] uppercase text-white/20 hover:text-white transition-colors tracking-[0.4em] bg-transparent border-none">
+              <button onClick={onClose} className="mt-4 text-[9px] uppercase text-white/20 hover:text-white transition-colors tracking-[0.4em] bg-transparent">
                 [ Close Terminal ]
               </button>
             </div>
