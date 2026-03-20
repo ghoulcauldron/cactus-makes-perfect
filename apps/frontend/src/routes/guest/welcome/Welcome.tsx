@@ -21,13 +21,11 @@ export default function Welcome() {
   };
 
   return (
-    <div className="h-screen w-full bg-[#0a001a] overflow-hidden relative">
+    /* Force the wrapper to be black to prevent background bleed */
+    <div className="h-screen w-full bg-black overflow-hidden relative">
       
-      {/* 1. CRT SCANLINES - Lower opacity so they don't 'flood' the green */}
-      <div className="absolute inset-0 z-[66] pointer-events-none bg-[repeating-linear-gradient(0deg,rgba(0,0,0,0.1),rgba(0,0,0,0.1)_1px,transparent_1px,transparent_3px)] opacity-40" />
-
-      {/* 2. VIGNETTE - Adds depth and stops the edges from being 'full green' */}
-      <div className="absolute inset-0 z-[61] pointer-events-none shadow-[inset_0_0_150px_rgba(0,0,0,0.8)]" />
+      {/* CRT SCANLINES - z-index high to sit over everything */}
+      <div className="absolute inset-0 z-[80] pointer-events-none bg-[repeating-linear-gradient(0deg,rgba(0,0,0,0.2),rgba(0,0,0,0.2)_1px,transparent_1px,transparent_2px)] opacity-50" />
 
       {/* SCENE LAYERS */}
       <div className={`infected-scene transition-all duration-[2000ms] absolute inset-0 w-full h-full ${showScene ? 'opacity-100 scale-105' : 'opacity-0 scale-100'}`}>
@@ -35,12 +33,12 @@ export default function Welcome() {
         <img src={assets.rocksMain} alt="" className="absolute inset-0 w-full h-full object-cover object-bottom z-10" />
         <img src={assets.alienBack} alt="" className="absolute inset-0 w-full h-full object-cover object-bottom z-20" />
         
-        {/* UFO - Removed individual invert(1) since the parent container is already inverting everything */}
+        {/* UFO - Removed the nested invert(1) here */}
         <img
           src={assets.ufo}
           alt="UFO"
           className="absolute inset-0 w-full h-full object-cover object-bottom z-40 animate-pulse"
-          style={{ filter: 'drop-shadow(0 0 25px #00ffff)' }}
+          style={{ filter: 'drop-shadow(0 0 20px #00ffff)' }}
         />
         
         <img src={assets.rocksFG} alt="" className="absolute inset-0 w-full h-full object-cover object-bottom z-50" />
@@ -48,17 +46,18 @@ export default function Welcome() {
       </div>
 
       {/* FOOTER */}
-      <footer className="absolute bottom-6 w-full text-center z-[70]">
-        <p className="text-[#39FF14] font-mono text-[10px] tracking-[0.4em] opacity-80 uppercase animate-pulse drop-shadow-[0_0_5px_rgba(57,255,20,0.5)]">
+      <footer className="absolute bottom-6 w-full text-center z-[90]">
+        <p className="text-[#39FF14] font-mono text-[10px] tracking-[0.4em] opacity-80 uppercase animate-pulse">
           S-FE // 08-2026 // SIGNAL DETECTED
         </p>
       </footer>
 
+      {/* INVISIBLE TRIGGER BUTTON */}
       {!isSurveyModalOpen && (
         <button
           type="button"
-          aria-label="Open mission briefing"
-          className="absolute inset-0 z-[75] cursor-pointer bg-transparent"
+          aria-label="Open survey"
+          className="absolute inset-0 z-[100] cursor-pointer bg-transparent"
           onClick={() => setSurveyModalOpen(true)}
         />
       )}
@@ -69,8 +68,9 @@ export default function Welcome() {
 
       <style>{`
         .infected-scene {
-          /* TWEAKED: Slightly less contrast, deeper blacks */
-          filter: invert(1) hue-rotate(195deg) contrast(1.1) brightness(0.7) saturate(1.2);
+          /* This inverts your layers into that tactical green look */
+          /* Using brightness(0.6) prevents the "Green Flood" by keeping the blacks deep */
+          filter: invert(1) hue-rotate(180deg) contrast(1.4) brightness(0.6);
         }
       `}</style>
     </div>
