@@ -145,27 +145,39 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
 
   {/* --- TARGETED PATCH: CINEMATIC FLY-OVER --- */}
   useEffect(() => {
-    if (showMap && mapRef.current) {
-      // 1. Initial State for "The Reveal" (High altitude, flat)
-      mapRef.current.jumpTo({
-        center: [-105.944936, 35.689511],
-        zoom: 8,
-        pitch: 0,
-        bearing: -60
-      });
+    if (showMap) {
+      let checkCount = 0;
+      
+      const triggerFlyOver = () => {
+        // Check if the native map instance is ready and style is loaded
+        const mapInstance = mapRef.current?.getMap();
+        
+        if (mapInstance && mapInstance.isStyleLoaded()) {
+          // 1. Force the high-altitude starting position immediately
+          mapInstance.jumpTo({
+            center: [-105.944936, 35.689511],
+            zoom: 8,
+            pitch: 0,
+            bearing: -60
+          });
 
-      // 2. The 12-Second "Dive" (Fly-over)
-      const timer = setTimeout(() => {
-        mapRef.current.flyTo({
-          center: [-105.944936, 35.689511],
-          zoom: 15.5,
-          pitch: 75,
-          bearing: 0,
-          duration: 12000, // 12 seconds as requested
-          essential: true
-        });
-      }, 100);
-      return () => clearTimeout(timer);
+          // 2. Execute the 12-second dramatic dive
+          mapInstance.flyTo({
+            center: [-105.944936, 35.689511],
+            zoom: 15.5,
+            pitch: 75,
+            bearing: 0,
+            duration: 12000, // 12 seconds
+            essential: true
+          });
+        } else if (checkCount < 50) {
+          // If not ready, wait 100ms and try again (up to 5 seconds)
+          checkCount++;
+          setTimeout(triggerFlyOver, 100);
+        }
+      };
+
+      triggerFlyOver();
     }
   }, [showMap]);
 
@@ -211,25 +223,27 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
           <div className="relative w-[98vw] max-w-[1000px] h-[80vh] group">
             <div className="absolute -inset-10 bg-[#39FF14]/20 blur-[60px] rounded-full animate-pulse pointer-events-none" />
             <div className="w-full h-full relative overflow-hidden bg-black border-2 border-[#00ffff]/40 shadow-[0_0_100px_rgba(0,255,255,0.4)]" style={{ clipPath: 'ellipse(48% 42% at 50% 50%)' }} onClick={(e) => e.stopPropagation()}>
-              {/* --- TARGETED PATCH: MAP COMPONENT --- */}
-              <Map 
-                ref={mapRef} // Attach the ref here
-                initialViewState={{ 
-                  latitude: 35.689511, 
-                  longitude: -105.944936, 
-                  zoom: 8, 
-                  pitch: 0, 
-                  bearing: -60 
-                }}
-                mapboxAccessToken={MAPBOX_TOKEN} 
-                mapStyle={CUSTOM_STYLE} 
-                style={{ width: '100%', height: '100%' }}
-                antialias={true}
-              >
-                <Marker longitude={-105.944936} latitude={35.689511} anchor="bottom">
-                  <UFOMarker />
-                </Marker>
-              </Map>
+            {/* --- TARGETED PATCH: MAP COMPONENT --- */}
+            <Map 
+              ref={mapRef}
+              initialViewState={{ 
+                latitude: 35.689511, 
+                longitude: -105.944936, 
+                zoom: 8, 
+                pitch: 0, 
+                bearing: -60 
+              }}
+              mapboxAccessToken={MAPBOX_TOKEN} 
+              mapStyle={CUSTOM_STYLE} 
+              style={{ width: '100%', height: '100%' }}
+              antialias={true}
+              maxPitch={85} // Allows the deep 75-degree tilt
+              terrain={{ source: 'mapbox-dem', exaggeration: 1.5 }} // Fixes console warning
+            >
+              <Marker longitude={-105.944936} latitude={35.689511} anchor="bottom">
+                <UFOMarker />
+              </Marker>
+            </Map>
               {/* Infected Edge Glow */}
               <svg className="absolute inset-0 w-full h-full pointer-events-none z-[60]">
                 <ellipse cx="50%" cy="50%" rx="48%" ry="42%" fill="none" stroke="#39FF14" strokeWidth="2" className="opacity-40" />
