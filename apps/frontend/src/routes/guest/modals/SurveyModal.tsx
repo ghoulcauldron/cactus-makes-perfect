@@ -355,10 +355,14 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
                   >
                     {section.date}
                   </button>
+                  {/* --- TARGETED PATCH: RESTORE DESC + INSTANT EVENT TOGGLE --- */}
                   <div className="text-xl font-bold tracking-tight text-white mb-3 uppercase" onMouseEnter={() => scrambleRefs.current[section.key]?.triggerHover()}>
                     <PatternScramble ref={(el) => { if (el) scrambleRefs.current[section.key] = el; }} text={section.title} {...CYBERPUNK_THEME} startTrigger={true} />
                   </div>
-                  {/* --- TARGETED PATCH: INSTANT EVENT TOGGLE --- */}
+
+                  {/* RESTORED: Infiltration window / mission notes */}
+                  {section.desc && <p className="text-white/40 text-[10px] italic leading-tight uppercase mb-4">{section.desc}</p>}
+
                   {section.keys && <div className="space-y-2 w-full max-w-[200px]">
                     {section.keys.map(k => (
                       <button 
