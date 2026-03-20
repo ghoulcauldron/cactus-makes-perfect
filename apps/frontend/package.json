@@ -23,7 +23,7 @@
     "postprocessing": "^6.38.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-map-gl": "^8.1.0",
+    "react-map-gl": "^7.1.9",
     "react-router-dom": "^6.27.0",
     "three": "^0.160.0",
     "zustand": "^5.0.11"

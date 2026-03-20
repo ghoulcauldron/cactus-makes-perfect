@@ -3,7 +3,6 @@ import { useState, useRef, useEffect } from "react";
 import Map, { Marker } from "react-map-gl";
 import mapboxgl from "mapbox-gl";
 import 'mapbox-gl/dist/mapbox-gl.css';
-
 import { PatternScramble, type PatternScrambleHandle } from "../../../components/UI/PatternScramble";
 import { CYBERPUNK_THEME } from "../../../constants/themes";
 
