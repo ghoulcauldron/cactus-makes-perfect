@@ -23,9 +23,6 @@ export default function Welcome() {
   return (
     <div className="h-screen w-full bg-[#0a001a] overflow-hidden relative">
       
-      {/* CRT SCANLINES */}
-      <div className="absolute inset-0 z-[66] pointer-events-none bg-[repeating-linear-gradient(0deg,rgba(0,0,0,0.15),rgba(0,0,0,0.15)_1px,transparent_1px,transparent_2px)]" />
-
       {/* SCENE LAYERS - HEAVY INVERSION */}
       <div className={`infected-scene transition-all duration-[2000ms] absolute inset-0 w-full h-full ${showScene ? 'opacity-100 scale-105' : 'opacity-0 scale-100'}`}>
         <img src={assets.background} alt="" className="absolute inset-0 w-full h-full object-cover object-bottom z-0" />
