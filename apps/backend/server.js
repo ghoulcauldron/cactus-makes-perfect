@@ -745,7 +745,16 @@ app.get("/api/v1/event-responses/me/:guest_id", async (req, res) => {
 
     const { data, error } = await supabase
       .from("event_responses")
-      .select("*")
+      .select(`
+        guest_id,
+        arrival_day,
+        friday_meowwolf,
+        friday_dinner,
+        saturday_railway,
+        sunday_brunch,
+        sunday_movie,
+        updated_at
+      `)
       .eq("guest_id", guest_id)
       .maybeSingle();
 
@@ -766,7 +775,7 @@ app.post("/api/v1/event-responses", async (req, res) => {
   try {
     const {
       guest_id,
-      thursday_arrival,
+      arrival_day,
       friday_meowwolf,
       friday_dinner,
       saturday_railway,
@@ -776,9 +785,13 @@ app.post("/api/v1/event-responses", async (req, res) => {
 
     if (!guest_id) return res.status(400).json({ error: "Missing guest_id" });
 
+    if (arrival_day && !["thursday", "friday", "saturday"].includes(arrival_day)) {
+      return res.status(400).json({ error: "Invalid arrival_day" });
+    }
+
     const payload = {
       guest_id,
-      thursday_arrival: !!thursday_arrival,
+      arrival_day: arrival_day || null,
       friday_meowwolf: !!friday_meowwolf,
       friday_dinner: !!friday_dinner,
       saturday_railway: !!saturday_railway,
