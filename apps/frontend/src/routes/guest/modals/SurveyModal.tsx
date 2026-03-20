@@ -323,7 +323,7 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
             <div className="text-[10px] tracking-[0.5em] mb-1 text-[#00ffff] text-center uppercase" onMouseEnter={() => scrambleRefs.current['operation']?.triggerHover()}>
                <PatternScramble ref={(el) => { if (el) scrambleRefs.current['operation'] = el; }} text="/// OPERATION: 20 YEAR DARE ///" {...CYBERPUNK_THEME} startTrigger={true} />
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tighter italic uppercase text-center leading-none mb-6">
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tighter italic uppercase text-center leading-none mb-6">
                Mission <span className="text-[#39FF14]">Briefing</span>
             </h2>
             
@@ -358,11 +358,23 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
                   <div className="text-xl font-bold tracking-tight text-white mb-3 uppercase" onMouseEnter={() => scrambleRefs.current[section.key]?.triggerHover()}>
                     <PatternScramble ref={(el) => { if (el) scrambleRefs.current[section.key] = el; }} text={section.title} {...CYBERPUNK_THEME} startTrigger={true} />
                   </div>
-                  {section.desc && <p className="text-white/40 text-[10px] italic leading-tight uppercase">{section.desc}</p>}
+                  {/* --- TARGETED PATCH: INSTANT EVENT TOGGLE --- */}
                   {section.keys && <div className="space-y-2 w-full max-w-[200px]">
                     {section.keys.map(k => (
-                      <button key={k} onClick={() => setState(s => ({ ...s, [k]: !s[k as keyof typeof s], isSaved: false }))} className={`block w-full text-[10px] py-2.5 border transition-all uppercase ${state[k as keyof typeof state] ? 'bg-[#00ffff] text-black border-[#00ffff]' : 'text-white/40 border-white/10 hover:border-[#00ffff]/40'}`}>
-                        {k.includes('meowwolf') ? "Midday: Off-World Excursion" : k.includes('dinner') ? "6PM: Ceremonial Feast" : k.includes('railway') ? "6PM: Ride into the sky" : k.includes('brunch') ? "Midday: Brunch." : "Evening: Final Transmission"}
+                      <button 
+                        key={k} 
+                        onClick={() => setState(s => ({ ...s, [k]: !s[k as keyof typeof s], isSaved: false }))} 
+                        className={`block w-full text-[10px] py-2.5 border transition-all uppercase ${
+                          state[k as keyof typeof state] 
+                            ? '!bg-[#00ffff] !text-black border-[#00ffff]' 
+                            : 'text-white/40 border-white/10 hover:border-[#00ffff]/40 hover:text-white'
+                        }`}
+                      >
+                        {k.includes('meowwolf') ? "Midday: Off-World Excursion" : 
+                        k.includes('dinner') ? "6PM: Ceremonial Feast" : 
+                        k.includes('railway') ? "6PM: Ride into the sky" : 
+                        k.includes('brunch') ? "Midday: Brunch." : 
+                        "Evening: Final Transmission"}
                       </button>
                     ))}
                   </div>}
