@@ -52,12 +52,12 @@ export default function Welcome() {
         </p>
       </footer>
 
-      {/* INVISIBLE TRIGGER BUTTON */}
+      {/* INVISIBLE TRIGGER BUTTON - Explicitly kill all hover states */}
       {!isSurveyModalOpen && (
         <button
           type="button"
           aria-label="Open survey"
-          className="absolute inset-0 z-[100] cursor-pointer bg-transparent"
+          className="absolute inset-0 z-[100] cursor-pointer bg-transparent border-none outline-none ring-0 hover:bg-transparent active:bg-transparent focus:outline-none"
           onClick={() => setSurveyModalOpen(true)}
         />
       )}
