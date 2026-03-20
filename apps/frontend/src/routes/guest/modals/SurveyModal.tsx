@@ -91,6 +91,15 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
   const [loadStep, setLoadStep] = useState(0);
   const scrambleRefs = useRef<Record<string, PatternScrambleHandle | null>>({});
 
+  {/* --- TARGETED PATCH: INITIAL VIEWSTATE --- */}
+  const [viewState, setViewState] = useState({
+    latitude: 35.689511,
+    longitude: -105.944936,
+    zoom: 12,
+    bearing: -60, // Matches your example
+    pitch: 60,    // Matches your example (degrees 0-85)
+  });
+
   const handleEsc = useCallback((e: KeyboardEvent) => {
     if (e.key === "Escape") {
       if (showMap) setShowMap(false);
@@ -132,6 +141,30 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
     };
     hydrate();
   }, [isOpen]);
+
+  {/* --- TARGETED PATCH: CINEMATIC EFFECT --- */}
+  useEffect(() => {
+    if (showMap) {
+      const timer = setTimeout(() => {
+        setViewState(prev => ({ 
+          ...prev, 
+          zoom: 15.5,
+          pitch: 65,    // Dives to tilt
+          bearing: 0,   // Straightens view
+          transitionDuration: 3000 
+        }));
+      }, 600);
+      return () => clearTimeout(timer);
+    } else {
+      setViewState(prev => ({ 
+        ...prev, 
+        zoom: 12, 
+        pitch: 60, 
+        bearing: -60, 
+        transitionDuration: 0 
+      }));
+    }
+  }, [showMap]);
 
   const handleSave = async () => {
     const guestId = localStorage.getItem("guest_user_id");
@@ -175,7 +208,14 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
           <div className="relative w-[98vw] max-w-[1000px] h-[80vh] group">
             <div className="absolute -inset-10 bg-[#39FF14]/20 blur-[60px] rounded-full animate-pulse pointer-events-none" />
             <div className="w-full h-full relative overflow-hidden bg-black border-2 border-[#00ffff]/40 shadow-[0_0_100px_rgba(0,255,255,0.4)]" style={{ clipPath: 'ellipse(48% 42% at 50% 50%)' }} onClick={(e) => e.stopPropagation()}>
-              <Map initialViewState={{ latitude: 35.689511, longitude: -105.944936, zoom: 15.5 }} mapboxAccessToken={MAPBOX_TOKEN} mapStyle={CUSTOM_STYLE} style={{ width: '100%', height: '100%' }}>
+              <Map 
+                {...viewState} 
+                onMove={(evt) => setViewState(evt.viewState)}
+                mapboxAccessToken={MAPBOX_TOKEN} 
+                mapStyle={CUSTOM_STYLE} 
+                style={{ width: '100%', height: '100%' }}
+                antialias={true}
+              >
                 <Marker longitude={-105.944936} latitude={35.689511} anchor="bottom">
                     <UFOMarker />
                   </Marker>
