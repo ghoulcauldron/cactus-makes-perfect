@@ -7,7 +7,6 @@ import PhotoCalculatorAuth from './routes/guest/login/PhotoCalculatorAuth'
 import AccessDenied from './pages/AccessDenied'
 import './index.css'
 import './fonts.css';
-import 'mapbox-gl/dist/mapbox-gl.css';
 import AmbientSound from './components/AmbientSound';
 
 // --- ARTIFACT IMPORT ---
