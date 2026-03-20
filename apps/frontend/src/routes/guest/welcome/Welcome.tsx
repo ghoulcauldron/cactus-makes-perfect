@@ -69,9 +69,21 @@ export default function Welcome() {
 
       <style>{`
         .infected-scene {
-          /* This inverts your layers into that tactical green look */
-          /* Using brightness(0.6) prevents the "Green Flood" by keeping the blacks deep */
           filter: invert(1) hue-rotate(180deg) contrast(1.4) brightness(0.6);
+        }
+        /* REFINED GROW ANIMATION */
+        @keyframes modal-entry {
+          0% { 
+            opacity: 0; 
+            transform: scale(0); 
+          }
+          100% { 
+            opacity: 1; 
+            transform: scale(1); 
+          }
+        }
+        .animate-modal-entry { 
+          animation: modal-entry 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; 
         }
       `}</style>
     </div>

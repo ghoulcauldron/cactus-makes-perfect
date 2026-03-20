@@ -90,7 +90,7 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
   const [showMap, setShowMap] = useState(false);
   const [showUFOMarker, setShowUFOMarker] = useState(false);
   const mapRef = useRef<any>(null);
-  const [loadStep, setLoadStep] = useState(0);
+  const hasFlownRef = useRef(false);
   const scrambleRefs = useRef<Record<string, PatternScrambleHandle | null>>({});
 
   {/* --- TARGETED PATCH: INITIAL VIEWSTATE --- */}
@@ -144,34 +144,45 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
     hydrate();
   }, [isOpen]);
 
-  {/* --- TARGETED PATCH: CINEMATIC FLY-OVER --- */}
+  {/* --- TARGETED PATCH: PERSISTENT STATE & 5S FLY-OVER --- */}
     useEffect(() => {
       if (showMap) {
+        // If we've already flown once, don't trigger the animation again
+        if (hasFlownRef.current) {
+          setShowUFOMarker(true);
+          return;
+        }
+
         let checkCount = 0;
-        setShowUFOMarker(false); // Reset marker on every map open
+        setShowUFOMarker(false);
         
         const triggerFlyOver = () => {
           const mapInstance = mapRef.current?.getMap();
           
           if (mapInstance && mapInstance.isStyleLoaded()) {
+            // 1. Initial State: Dead on (0 pitch), higher altitude
             mapInstance.jumpTo({
               center: [-105.944936, 35.689511],
-              zoom: 8,
+              zoom: 10,
               pitch: 0,
-              bearing: -60
+              bearing: 0
             });
 
+            // 2. 5-Second Fly-Over
             mapInstance.flyTo({
               center: [-105.944936, 35.689511],
               zoom: 15.5,
-              pitch: 75,
-              bearing: 0,
-              duration: 12000,
+              pitch: 0,   // Keep it dead on
+              bearing: 0, // Keep it dead on
+              duration: 5000, // Reduced to 5 seconds
               essential: true
             });
 
-            // Logic Gate: Reveal UFO after 90% of flight (10.8 seconds)
-            setTimeout(() => setShowUFOMarker(true), 10800);
+            // Logic Gate: UFO appears at 90% (4.5s)
+            setTimeout(() => {
+              setShowUFOMarker(true);
+              hasFlownRef.current = true; // Lock the animation so it never plays again
+            }, 4500);
 
           } else if (checkCount < 50) {
             checkCount++;
@@ -229,11 +240,9 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
             <Map 
               ref={mapRef}
               initialViewState={{ 
-                latitude: 35.689511, 
-                longitude: -105.944936, 
-                zoom: 8, 
-                pitch: 0, 
-                bearing: -60 
+              latitude: 35.689511, 
+              longitude: -105.944936, 
+              zoom: 10 
               }}
               mapboxAccessToken={MAPBOX_TOKEN} 
               mapStyle={CUSTOM_STYLE} 
