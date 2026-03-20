@@ -102,6 +102,20 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
     pitch: 60,    // Matches your example (degrees 0-85)
   });
 
+  {/* --- TARGETED PATCH: RESET VIEW LOGIC --- */}
+  const resetView = () => {
+    if (mapRef.current) {
+      mapRef.current.flyTo({
+        center: [-105.944936, 35.689511],
+        zoom: 15.5,
+        pitch: 0,
+        bearing: 0,
+        duration: 2000,
+        essential: true
+      });
+    }
+  };
+
   const handleEsc = useCallback((e: KeyboardEvent) => {
     if (e.key === "Escape") {
       if (showMap) setShowMap(false);
@@ -230,42 +244,69 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2 pointer-events-auto overflow-hidden font-mono">
       <div className="absolute inset-0 bg-[#0a001a]/90 backdrop-blur-xl transition-opacity duration-700" onClick={() => (showMap ? setShowMap(false) : onClose())} />
       
-      {/* --- OVAL MAP OVERLAY (BIGGER + OUTER GLOW) --- */}
-      {showMap && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 animate-map-pop" onClick={() => setShowMap(false)}>
-          <div className="relative w-[98vw] max-w-[1000px] h-[80vh] group">
-            <div className="absolute -inset-10 bg-[#39FF14]/20 blur-[60px] rounded-full animate-pulse pointer-events-none" />
-            <div className="w-full h-full relative overflow-hidden bg-black border-2 border-[#00ffff]/40 shadow-[0_0_100px_rgba(0,255,255,0.4)]" style={{ clipPath: 'ellipse(48% 42% at 50% 50%)' }} onClick={(e) => e.stopPropagation()}>
-            {/* --- TARGETED PATCH: MAP COMPONENT --- */}
+    {/* --- OVAL MAP OVERLAY (BIGGER + OUTER GLOW) --- */}
+    {showMap && (
+      <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 animate-map-pop" onClick={() => setShowMap(false)}>
+        
+        {/* 1. Relative Wrapper for the entire map area */}
+        <div className="relative w-[98vw] max-w-[1000px] h-[80vh] group">
+          
+          {/* 2. THE RESET BUBBLE (Nesting it here keeps it outside the oval clip) */}
+          <button 
+            onClick={(e) => {
+              e.stopPropagation(); // Prevents closing the map when clicking the bubble
+              resetView();
+            }}
+            aria-label="Reset Map View"
+            className="absolute top-[8%] right-[4%] z-[110] w-10 h-10 md:w-12 md:h-12 rounded-full bg-black/60 border border-[#39FF14]/40 text-[#39FF14] flex items-center justify-center backdrop-blur-md shadow-[0_0_20px_rgba(57,255,20,0.3)] hover:bg-[#39FF14] hover:text-black transition-all active:scale-90 group-hover:opacity-100 opacity-0 md:opacity-100"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 md:h-6 md:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </button>
+
+          {/* 3. The Glow Layer */}
+          <div className="absolute -inset-10 bg-[#39FF14]/20 blur-[60px] rounded-full animate-pulse pointer-events-none" />
+
+          {/* 4. The Clipped Oval Container */}
+          <div 
+            className="w-full h-full relative overflow-hidden bg-black border-2 border-[#00ffff]/40 shadow-[0_0_100px_rgba(0,255,255,0.4)]" 
+            style={{ clipPath: 'ellipse(48% 42% at 50% 50%)' }} 
+            onClick={(e) => e.stopPropagation()}
+          >
             <Map 
               ref={mapRef}
-              initialViewState={{ 
-              latitude: 35.689511, 
-              longitude: -105.944936, 
-              zoom: 10 
-              }}
+              {...viewState}
+              onMove={(evt) => setViewState(evt.viewState)}
               mapboxAccessToken={MAPBOX_TOKEN} 
               mapStyle={CUSTOM_STYLE} 
               style={{ width: '100%', height: '100%' }}
               antialias={true}
-              maxPitch={85} // Allows the deep 75-degree tilt
-              terrain={{ source: 'mapbox-dem', exaggeration: 1.5 }} // Fixes console warning
-            >
+              maxPitch={85}
+              terrain={{ source: 'mapbox-dem', exaggeration: 1.5 }}
+            > 
               {showUFOMarker && (
-                  <Marker longitude={-105.944936} latitude={35.689511} anchor="bottom">
-                    <UFOMarker />
-                  </Marker>
-                )}
+                <Marker longitude={-105.944936} latitude={35.689511} anchor="bottom">
+                  <UFOMarker />
+                </Marker>
+              )}
             </Map>
-              {/* Infected Edge Glow */}
-              <svg className="absolute inset-0 w-full h-full pointer-events-none z-[60]">
-                <ellipse cx="50%" cy="50%" rx="48%" ry="42%" fill="none" stroke="#39FF14" strokeWidth="2" className="opacity-40" />
-              </svg>
-              <button onClick={() => setShowMap(false)} className="absolute bottom-[20%] left-1/2 -translate-x-1/2 bg-black border border-[#00ffff] text-[#00ffff] px-6 py-2 text-[10px] uppercase tracking-widest hover:bg-[#00ffff] hover:text-black transition-all">TERMINATE_FEED</button>
-            </div>
+
+            {/* Infected Edge Glow */}
+            <svg className="absolute inset-0 w-full h-full pointer-events-none z-[60]">
+              <ellipse cx="50%" cy="50%" rx="48%" ry="42%" fill="none" stroke="#39FF14" strokeWidth="2" className="opacity-40" />
+            </svg>
+
+            <button 
+              onClick={() => setShowMap(false)} 
+              className="absolute bottom-[20%] left-1/2 -translate-x-1/2 bg-black border border-[#00ffff] text-[#00ffff] px-6 py-2 text-[10px] uppercase tracking-widest hover:bg-[#00ffff] hover:text-black transition-all z-[70]"
+            >
+              TERMINATE_FEED
+            </button>
           </div>
         </div>
-      )}
+      </div>
+    )}
 
       {/* --- RECTANGULAR SURVEY MODAL --- */}
       <div className={`relative w-full max-w-[850px] h-[85vh] md:h-[75vh] bg-black border border-[#00ffff]/30 rounded-xl shadow-[0_0_80px_rgba(0,0,0,0.9)] overflow-hidden flex flex-col transition-all duration-500 ${showMap ? 'opacity-0 scale-90 pointer-events-none' : 'opacity-100 scale-100'}`} onClick={(e) => e.stopPropagation()}>
