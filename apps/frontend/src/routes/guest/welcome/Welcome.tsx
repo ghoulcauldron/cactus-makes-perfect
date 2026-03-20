@@ -6,10 +6,11 @@ export default function Welcome() {
   const [showScene, setShowScene] = useState(false);
 
   useEffect(() => {
-    setShowScene(true);
-    const timer = setTimeout(() => setSurveyModalOpen(true), 1000);
-    return () => clearTimeout(timer);
-  }, []);
+      setShowScene(true);
+      // Increased gate: 3 second pause before modal loads
+      const timer = setTimeout(() => setSurveyModalOpen(true), 3000);
+      return () => clearTimeout(timer);
+    }, []);
 
   const assets = {
     background: "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/welcome/CMP_v2_0004_background.png",
