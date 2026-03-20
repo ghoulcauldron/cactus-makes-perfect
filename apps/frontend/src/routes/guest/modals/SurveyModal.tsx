@@ -26,14 +26,10 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
   const [showMap, setShowMap] = useState(false);
   const scrambleRefs = useRef<Record<string, PatternScrambleHandle | null>>({});
 
-  // Keyboard Logic: If map is open, close map. Else, close modal.
   const handleEsc = useCallback((e: KeyboardEvent) => {
     if (e.key === "Escape") {
-      if (showMap) {
-        setShowMap(false);
-      } else {
-        onClose();
-      }
+      if (showMap) setShowMap(false);
+      else onClose();
     }
   }, [showMap, onClose]);
 
@@ -74,28 +70,25 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-auto overflow-hidden font-mono">
-      {/* BACKDROP - Contextual close */}
+      {/* BACKDROP */}
       <div 
         className="absolute inset-0 bg-[#0a001a]/85 backdrop-blur-xl transition-opacity duration-700 cursor-zoom-out" 
         onClick={() => showMap ? setShowMap(false) : onClose()} 
       />
-      <div className="absolute inset-0 opacity-[0.06] pointer-events-none mix-blend-screen animate-noise-grain" 
-           style={{ backgroundImage: `url('https://grainy-gradients.vercel.app/noise.svg')` }} />
-
+      
       {/* --- OVAL MAP OVERLAY --- */}
       {showMap && (
         <div 
           className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/40 p-4 animate-modal-entry"
           onClick={() => setShowMap(false)}
         >
-          {/* MAP GLOW CONTAINER */}
-          <div className="relative w-full max-w-4xl h-[75vh] group">
+          <div className="relative w-full max-w-5xl h-[60vh] group">
             {/* Outer Glow */}
-            <div className="absolute -inset-4 bg-[#00ffff]/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+            <div className="absolute -inset-10 bg-[#00ffff]/10 blur-3xl rounded-full animate-pulse pointer-events-none" />
             
             <div 
-              className="w-full h-full border-2 border-[#00ffff]/40 relative overflow-hidden bg-black shadow-[0_0_80px_rgba(0,255,255,0.3)]"
-              style={{ clipPath: 'ellipse(48% 48% at 50% 50%)' }}
+              className="w-full h-full border-2 border-[#00ffff]/40 relative overflow-hidden bg-black shadow-[0_0_80px_rgba(0,255,255,0.4)]"
+              style={{ clipPath: 'ellipse(48% 40% at 50% 50%)' }}
               onClick={(e) => e.stopPropagation()}
             >
               <Map
@@ -110,14 +103,9 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
                   <UFOMarker />
                 </Marker>
               </Map>
-              <div className="absolute inset-0 pointer-events-none opacity-[0.1]" 
-                   style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 255, 255, 0.2) 2px, rgba(0, 255, 255, 0.2) 4px)' }} />
-              <div className="absolute top-[18%] left-1/2 -translate-x-1/2 bg-black/80 border border-[#00ffff] p-2 text-[#00ffff] text-[10px] tracking-widest uppercase z-20">
-                [ SECURE FEED: DOS HERMANAS SECTOR ]
-              </div>
               <button 
                 onClick={() => setShowMap(false)}
-                className="absolute bottom-[18%] left-1/2 -translate-x-1/2 bg-black border border-[#00ffff] text-[#00ffff] px-4 py-2 hover:bg-[#00ffff] hover:text-black transition-all text-xs z-50 shadow-[0_0_15px_rgba(0,255,255,0.4)]"
+                className="absolute bottom-[22%] left-1/2 -translate-x-1/2 bg-black border border-[#00ffff] text-[#00ffff] px-4 py-1.5 hover:bg-[#00ffff] hover:text-black transition-all text-[10px] z-50 uppercase tracking-tighter"
               >
                 TERMINATE_FEED
               </button>
@@ -126,26 +114,27 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
         </div>
       )}
 
-      {/* --- MAIN OVAL MODAL --- */}
-      {/* Container for Glow and Shape */}
-      <div className="relative w-full max-w-[480px] h-[85vh] flex flex-col items-center justify-center animate-modal-entry">
+      {/* --- MAIN WIDE OVAL MODAL --- */}
+      <div className="relative w-full max-w-[850px] h-[55vh] md:h-[65vh] flex flex-col items-center justify-center animate-modal-entry">
         
-        {/* EXTERNAL GLOWS */}
-        <div className="absolute inset-0 bg-[#39FF14]/10 blur-3xl rounded-full animate-pulse pointer-events-none" />
-        <div className="absolute inset-10 bg-[#00ffff]/10 blur-2xl rounded-full pointer-events-none" />
+        {/* EXTERNAL GLOWS (S&G Green + Cyan Aura) */}
+        <div className="absolute -inset-10 bg-[#39FF14]/15 blur-[80px] rounded-full animate-pulse pointer-events-none" />
+        <div className="absolute -inset-20 bg-[#00ffff]/10 blur-[100px] rounded-full pointer-events-none" />
 
         <div 
           className="relative w-full h-full flex flex-col items-center justify-center"
-          style={{ clipPath: 'ellipse(42% 48% at 50% 50%)' }} // Narrowed width for more "Oval" feel
+          style={{ clipPath: 'ellipse(48% 40% at 50% 50%)' }} // Wide Oval Logic
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="absolute -inset-1 bg-gradient-to-b from-[#00ffff] via-[#FF00FF] to-[#39FF14] opacity-20" />
+          {/* Edge Glitch Border */}
+          <div className="absolute -inset-1 bg-gradient-to-r from-[#00ffff]/20 via-[#FF00FF]/20 to-[#39FF14]/20 opacity-40" />
           
-          <div className="relative flex flex-col bg-black border border-white/10 w-full h-full overflow-hidden text-white pt-24 pb-24">
+          <div className="relative flex flex-col bg-black border border-white/10 w-full h-full overflow-hidden text-white pt-12 pb-12 px-20">
             
-            <div className="p-6 border-b border-[#00ffff]/20 bg-gradient-to-b from-[#1a0033]/40 to-black flex flex-col items-center">
+            {/* Header Area */}
+            <div className="border-b border-[#00ffff]/20 bg-gradient-to-b from-[#1a0033]/30 to-black flex flex-col items-center py-4 mb-4">
               <div onMouseEnter={() => scrambleRefs.current['header']?.triggerHover()}>
-                <div className="text-[10px] tracking-[0.4em] mb-1 text-[#00ffff] text-center">
+                <div className="text-[10px] tracking-[0.5em] mb-1 text-[#00ffff] text-center uppercase opacity-80">
                   {loadStep >= 1 && (
                     <PatternScramble 
                       ref={(el) => { if (el) scrambleRefs.current['header'] = el; }}
@@ -155,26 +144,23 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
                     />
                   )}
                 </div>
-                <h2 className="text-3xl font-bold tracking-tighter italic uppercase text-center">
+                <h2 className="text-4xl font-bold tracking-tighter italic uppercase text-center leading-none">
                   Mission <span className="text-[#39FF14]">Briefing</span>
                 </h2>
               </div>
             </div>
 
-            <div className="p-8 overflow-y-auto hide-scrollbar space-y-10 bg-[radial-gradient(circle_at_center,_#1a0033_0%,_#000000_100%)] text-sm">
-              {[
-                { date: "THU AUG 27", label: "THE ARRIVAL", details: "Rolling infiltration begins.", hasMap: true, id: 2 },
-                { date: "FRI AUG 28", label: "THE PSYCHE-FEASTIA", details: "Midday: Off-World Excursion (Feelin' Psychedelic).\n6PM: Ceremonial Feast", id: 3 },
-                { date: "SAT AUG 29", label: "ATMOSPHERIC TRANSIT", details: "6PM: Ride into the sky.", id: 4 },
-                { date: "SUN AUG 30", label: "POST-MISSION DEBRIEF", details: "Midday: Brunch.\nEvening: Final Transmission + Soft Entertainment", id: 5 }
-              ].map((section) => (
-                <div key={section.date} className="group flex flex-col items-center text-center">
-                  <div className="flex items-center gap-2 mb-2 w-full max-w-[200px]">
-                    <div className="h-[1px] flex-1 bg-[#39FF14]/30" />
-                    <span className="text-[9px] font-bold text-[#39FF14] px-1 uppercase tracking-widest">{section.date}</span>
-                    <div className="h-[1px] flex-1 bg-[#39FF14]/30" />
-                  </div>
-                  <div className="px-6 relative">
+            {/* Scrollable Itinerary - Centered Grid for Wide View */}
+            <div className="flex-1 overflow-y-auto hide-scrollbar bg-[radial-gradient(circle_at_center,_#1a0033_10%,_#000000_90%)]">
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8 p-4">
+                {[
+                  { date: "THU AUG 27", label: "THE ARRIVAL", details: "Rolling infiltration begins.", hasMap: true, id: 2 },
+                  { date: "FRI AUG 28", label: "THE PSYCHE-FEASTIA", details: "Midday: Off-World Excursion.\n6PM: Ceremonial Feast", id: 3 },
+                  { date: "SAT AUG 29", label: "ATMOSPHERIC TRANSIT", details: "6PM: Ride into the sky.", id: 4 },
+                  { date: "SUN AUG 30", label: "POST-MISSION DEBRIEF", details: "Midday: Brunch.\nEvening: Final Transmission.", id: 5 }
+                ].map((section) => (
+                  <div key={section.date} className="group flex flex-col items-center text-center">
+                    <span className="text-[9px] font-bold text-[#39FF14] px-1 uppercase tracking-[0.3em] mb-1">{section.date}</span>
                     <div className="text-lg font-bold tracking-tight text-white mb-1" onMouseEnter={() => scrambleRefs.current[section.date]?.triggerHover()}>
                       {loadStep >= section.id && (
                         <PatternScramble 
@@ -186,23 +172,23 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
                         />
                       )}
                     </div>
-                    <p className="text-white/50 text-xs leading-relaxed max-w-[220px] mx-auto">{section.details}</p>
+                    <p className="text-white/40 text-[11px] leading-tight max-w-[200px]">{section.details}</p>
                     {section.hasMap && (
-                      <button onClick={() => setShowMap(true)} className="mt-4 group/map flex flex-col items-center gap-1 text-[10px] text-[#00ffff] hover:text-[#39FF14] transition-colors w-full">
-                        <span className="border border-[#00ffff]/40 px-2 py-0.5 font-bold uppercase tracking-widest text-[8px]">GROUND ZERO</span>
-                        <span className="opacity-40 font-mono tracking-widest text-[7px] animate-pulse">[ VIEW S&G COORDINATES ]</span>
+                      <button onClick={() => setShowMap(true)} className="mt-2 text-[9px] text-[#00ffff] hover:text-[#39FF14] transition-colors border-b border-[#00ffff]/20">
+                        [ ACCESS COORDS ]
                       </button>
                     )}
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
 
-            <div className="absolute bottom-16 left-0 right-0 p-4 bg-transparent flex flex-col items-center">
-              <button onClick={onClose} className="text-[10px] uppercase text-white/20 hover:text-white transition-colors font-mono tracking-widest mb-1">
+            {/* Footer Area */}
+            <div className="mt-4 flex flex-col items-center opacity-40 hover:opacity-100 transition-opacity">
+              <button onClick={onClose} className="text-[10px] uppercase text-white hover:text-[#FF00FF] transition-colors tracking-[0.5em]">
                 [ Dismiss ]
               </button>
-              <div className="text-[8px] text-[#39FF14]/30 uppercase tracking-[0.3em]">
+              <div className="text-[7px] text-[#39FF14] uppercase tracking-[0.4em] mt-1">
                 Transmission End
               </div>
             </div>
@@ -213,10 +199,8 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
       <style>{`
         .hide-scrollbar::-webkit-scrollbar { width: 0px; display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        @keyframes noise-grain { 0%, 100% { transform: translate(0,0); } 50% { transform: translate(-1%, 2%); } }
-        .animate-noise-grain { animation: noise-grain 0.15s steps(2) infinite; }
-        @keyframes modal-entry { 0% { opacity: 0; transform: scale(0.92); } 100% { opacity: 1; transform: scale(1); } }
-        .animate-modal-entry { animation: modal-entry 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes modal-entry { 0% { opacity: 0; transform: scale(1.1); filter: blur(20px); } 100% { opacity: 1; transform: scale(1); filter: blur(0px); } }
+        .animate-modal-entry { animation: modal-entry 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
       `}</style>
     </div>
   );
