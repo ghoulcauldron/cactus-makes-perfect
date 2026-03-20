@@ -68,13 +68,12 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
 
   if (!isOpen) return null;
 
-  // Unified Geometry for Mobile & Desktop
+  // Taller on mobile (85vh) to prevent content cut-off
+  const MODAL_SIZE = "w-[95vw] max-w-[850px] h-[85vh] md:h-[65vh]";
   const OVAL_CLIP = "ellipse(48% 40% at 50% 50%)";
-  const MODAL_SIZE = "w-[95vw] max-w-[850px] h-[70vh] md:h-[65vh]";
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2 pointer-events-auto overflow-hidden font-mono">
-      {/* BACKDROP */}
       <div 
         className="absolute inset-0 bg-[#0a001a]/85 backdrop-blur-xl transition-opacity duration-700 cursor-zoom-out" 
         onClick={() => (showMap ? setShowMap(false) : onClose())} 
@@ -87,10 +86,7 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
           onClick={() => setShowMap(false)}
         >
           <div className={`relative ${MODAL_SIZE} group`}>
-            {/* EXTERNAL GLOWS */}
             <div className="absolute -inset-10 bg-[#39FF14]/15 blur-[80px] rounded-full animate-pulse pointer-events-none" />
-            <div className="absolute -inset-20 bg-[#00ffff]/10 blur-[100px] rounded-full pointer-events-none" />
-
             <div 
               className="w-full h-full relative overflow-hidden bg-black shadow-[0_0_80px_rgba(0,255,255,0.4)]"
               style={{ clipPath: OVAL_CLIP }}
@@ -109,7 +105,6 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
                 </Marker>
               </Map>
 
-              {/* Glowing Infected Border (SVG Overlay) */}
               <svg className="absolute inset-0 w-full h-full pointer-events-none z-[60]">
                 <ellipse cx="50%" cy="50%" rx="48%" ry="40%" fill="none" stroke="#39FF14" strokeWidth="1" className="opacity-40" />
               </svg>
@@ -127,8 +122,6 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
 
       {/* --- MAIN WIDE OVAL MODAL --- */}
       <div className={`relative ${MODAL_SIZE} flex flex-col items-center justify-center animate-modal-entry`}>
-        
-        {/* EXTERNAL GLOWS (S&G Green + Cyan Aura) */}
         <div className="absolute -inset-10 bg-[#39FF14]/15 blur-[80px] rounded-full animate-pulse pointer-events-none" />
         <div className="absolute -inset-20 bg-[#00ffff]/10 blur-[100px] rounded-full pointer-events-none" />
 
@@ -137,14 +130,12 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
           style={{ clipPath: OVAL_CLIP }}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Glowing Infected Border (SVG Overlay) */}
           <svg className="absolute inset-0 w-full h-full pointer-events-none z-[60]">
             <ellipse cx="50%" cy="50%" rx="48%" ry="40%" fill="none" stroke="#39FF14" strokeWidth="1" className="opacity-40" />
           </svg>
           
-          <div className="relative flex flex-col bg-black border border-white/10 w-full h-full overflow-hidden text-white pt-10 pb-10 px-6 md:px-20">
+          <div className="relative flex flex-col bg-black border border-white/10 w-full h-full overflow-hidden text-white pt-20 pb-20 px-6 md:px-20 md:pt-10 md:pb-10">
             
-            {/* Header Area */}
             <div className="border-b border-[#00ffff]/20 bg-gradient-to-b from-[#1a0033]/30 to-black flex flex-col items-center py-4 mb-2">
               <div onMouseEnter={() => scrambleRefs.current['header']?.triggerHover()}>
                 <div className="text-[10px] tracking-[0.5em] mb-1 text-[#00ffff] text-center uppercase opacity-80">
@@ -163,18 +154,17 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
               </div>
             </div>
 
-            {/* Scrollable Itinerary */}
             <div className="flex-1 overflow-y-auto hide-scrollbar bg-[radial-gradient(circle_at_center,_#1a0033_10%,_#000000_90%)]">
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6 md:gap-y-8 p-4">
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4 md:gap-y-8 p-4">
                 {[
                   { date: "THU AUG 27", label: "THE ARRIVAL", details: "Rolling infiltration begins.", hasMap: true, id: 2 },
-                  { date: "FRI AUG 28", label: "THE PSYCHE-FEASTIA", details: "Midday: Off-World Excursion\n\n6PM: Ceremonial Feast", id: 3 },
+                  { date: "FRI AUG 28", label: "THE PSYCHE-FEASTIA", details: "Midday: Off-World Excursion\n6PM: Ceremonial Feast", id: 3 },
                   { date: "SAT AUG 29", label: "ATMOSPHERIC TRANSIT", details: "6PM: Ride into the sky.", id: 4 },
-                  { date: "SUN AUG 30", label: "POST-MISSION DEBRIEF", details: "Midday: Brunch.\n\nEvening: Final Transmission", id: 5 }
+                  { date: "SUN AUG 30", label: "POST-MISSION DEBRIEF", details: "Midday: Brunch.\nEvening: Final Transmission", id: 5 }
                 ].map((section) => (
                   <div key={section.date} className="group flex flex-col items-center text-center">
                     <span className="text-[9px] font-bold text-[#39FF14] px-1 uppercase tracking-[0.3em] mb-1">{section.date}</span>
-                    <div className="text-lg font-bold tracking-tight text-white mb-1" onMouseEnter={() => scrambleRefs.current[section.date]?.triggerHover()}>
+                    <div className="text-lg font-bold tracking-tight text-white mb-0.5" onMouseEnter={() => scrambleRefs.current[section.date]?.triggerHover()}>
                       {loadStep >= section.id && (
                         <PatternScramble 
                           ref={(el) => { if (el) scrambleRefs.current[section.date] = el; }}
@@ -196,9 +186,12 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
               </div>
             </div>
 
-            {/* Footer Area */}
+            {/* Ghost Footer - Background removed */}
             <div className="mt-4 flex flex-col items-center opacity-40 hover:opacity-100 transition-opacity">
-              <button onClick={onClose} className="text-[10px] uppercase text-white hover:text-[#FF00FF] transition-colors tracking-[0.5em]">
+              <button 
+                onClick={onClose} 
+                className="text-[10px] uppercase text-white hover:text-[#FF00FF] transition-colors tracking-[0.5em] bg-transparent border-none p-0 cursor-pointer outline-none"
+              >
                 [ Dismiss ]
               </button>
               <div className="text-[7px] text-[#39FF14] uppercase tracking-[0.4em] mt-1">
