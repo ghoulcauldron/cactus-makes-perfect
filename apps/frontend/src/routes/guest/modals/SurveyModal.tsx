@@ -318,8 +318,9 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
           </Canvas>
         </div>
 
-      {/* --- TARGETED PATCH: HORIZONTAL MISSION HUD RESTRUCTURE --- */}
-      <div className="relative z-10 flex flex-col h-full p-6 md:p-10">
+      {/* --- TARGETED PATCH: FIXED MODAL STRUCTURE & HORIZONTAL EVENT GRID --- */}
+      <div className="relative z-10 flex flex-col h-full p-6 md:p-10 overflow-hidden">
+        {/* HEADER & INSTRUCTIONS */}
         <div className="flex flex-col items-center shrink-0 mb-6">
           <div className="text-[10px] tracking-[0.5em] mb-1 text-[#00ffff] text-center uppercase" onMouseEnter={() => scrambleRefs.current['operation']?.triggerHover()}>
             <PatternScramble ref={(el) => { if (el) scrambleRefs.current['operation'] = el; }} text="/// OPERATION: 20 YEAR DARE ///" {...CYBERPUNK_THEME} startTrigger={true} />
@@ -335,7 +336,7 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
             </button>
 
             {/* 1. Arrival Date Selector */}
-            <div className="w-full flex flex-col items-center mb-10">
+            <div className="w-full flex flex-col items-center mb-6">
               <p className="text-[11px] text-white/50 tracking-[0.2em] uppercase mb-4">1. Select Arrival Date</p>
               <div className="flex flex-wrap justify-center gap-4">
                 {['thursday', 'friday', 'saturday', 'sunday'].map((day) => (
@@ -358,7 +359,7 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
           </div>
         </div>
 
-        {/* 2. Event Attendance Horizontal Grid */}
+        {/* 2. EVENT ATTENDANCE HORIZONTAL GRID */}
         <div className="flex-grow overflow-y-auto hide-scrollbar px-2">
           <div className="flex flex-col md:flex-row md:flex-wrap justify-center gap-8 md:gap-x-12">
             {[
@@ -368,7 +369,6 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
               { date: "SUN AUG 30", key: 'sunday', title: "Post-Mission Debrief", keys: ['sunday_brunch', 'sunday_movie'] }
             ].map((section) => (
               <div key={section.date} className="flex flex-col items-center text-center min-w-[200px] md:max-w-[240px]">
-                {/* Static Date Display (Different Style) */}
                 <span className="text-[9px] font-mono text-[#39FF14]/60 tracking-[0.3em] mb-1 uppercase">
                   {section.date}
                 </span>
@@ -377,7 +377,7 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
                 </div>
 
                 {section.desc && (
-                  <p className="text-white/30 text-[9px] italic leading-tight uppercase min-h-[24px]">
+                  <p className="text-white/30 text-[9px] italic leading-tight uppercase min-h-[24px] mb-2">
                     {section.desc}
                   </p>
                 )}
@@ -408,13 +408,16 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
           </div>
         </div>
 
-          <div className="mt-8 pt-6 border-t border-white/10 flex flex-col items-center shrink-0">
-            <button onClick={handleSave} disabled={state.isSaving || !state.isHydrated} className={`text-xs uppercase font-bold tracking-[0.5em] px-12 py-3 border-2 transition-all ${state.isSaved ? 'bg-[#39FF14] text-black border-[#39FF14]' : state.isSaving ? 'bg-white/10 text-white/50 border-white/20' : 'bg-transparent text-[#39FF14] border-[#39FF14]/40 hover:bg-[#39FF14] hover:text-black shadow-[0_0_20px_rgba(57,255,20,0.1)]'}`}>
-              {state.isSaving ? "/// TRANSMITTING ///" : state.isSaved ? "DATA UPLOADED ✓" : state.hasExistingRecord ? "[ RE-TRANSMIT DATA ]" : "[ TRANSMIT DATA ]"}
-            </button>
-            <button onClick={onClose} className="mt-4 text-[9px] uppercase text-white/30 hover:text-white transition-colors tracking-[0.4em] bg-transparent">[ Close Terminal ]</button>
-          </div>
+        {/* FOOTER CONTROLS */}
+        <div className="mt-6 pt-6 border-t border-white/10 flex flex-col items-center shrink-0">
+          <button onClick={handleSave} disabled={state.isSaving || !state.isHydrated} className={`text-xs uppercase font-bold tracking-[0.5em] px-12 py-3 border-2 transition-all ${state.isSaved ? 'bg-[#39FF14] text-black border-[#39FF14]' : state.isSaving ? 'bg-white/10 text-white/50 border-white/20' : 'bg-transparent text-[#39FF14] border-[#39FF14]/40 hover:bg-[#39FF14] hover:text-black shadow-[0_0_20px_rgba(57,255,20,0.1)]'}`}>
+            {state.isSaving ? "/// TRANSMITTING ///" : state.isSaved ? "DATA UPLOADED ✓" : state.hasExistingRecord ? "[ RE-TRANSMIT DATA ]" : "[ TRANSMIT DATA ]"}
+          </button>
+          <button onClick={onClose} className="mt-4 text-[9px] uppercase text-white/30 hover:text-white transition-colors tracking-[0.4em] bg-transparent">
+            [ Close Terminal ]
+          </button>
         </div>
+      </div>
       </div>
 
       <style>{`
