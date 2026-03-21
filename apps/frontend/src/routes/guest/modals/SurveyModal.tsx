@@ -318,105 +318,74 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
           </Canvas>
         </div>
 
-{/* --- UI RESTRUCTURE: TARGETED PATCH --- */}
-        <div className="relative z-10 flex flex-col h-full p-6 md:p-10 overflow-hidden">
-          
-          {/* Header Area */}
+        <div className="relative z-10 flex flex-col h-full p-6 md:p-10">
           <div className="flex flex-col items-center shrink-0 mb-6">
             <div className="text-[10px] tracking-[0.5em] mb-1 text-[#00ffff] text-center uppercase" onMouseEnter={() => scrambleRefs.current['operation']?.triggerHover()}>
                <PatternScramble ref={(el) => { if (el) scrambleRefs.current['operation'] = el; }} text="/// OPERATION: 20 YEAR DARE ///" {...CYBERPUNK_THEME} startTrigger={true} />
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tighter italic uppercase text-center leading-none mb-6">
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tighter italic uppercase text-center leading-none mb-6">
                Mission <span className="text-[#39FF14]">Briefing</span>
             </h2>
             
-            <div className="flex flex-col items-center w-full max-w-2xl">
+            <div className="flex flex-col items-center border border-[#00ffff]/20 bg-black/60 p-4 rounded-lg w-full max-w-xl backdrop-blur-md">
               <p className="text-[10px] text-[#00ffff] tracking-[0.3em] uppercase font-bold mb-2">Target Window: AUG 27 — AUG 31</p>
-              <button onClick={() => setShowMap(true)} className="text-[10px] text-[#39FF14] hover:bg-[#39FF14] hover:text-black transition-all border border-[#39FF14]/40 px-8 py-2 bg-black/50 tracking-widest uppercase shadow-[0_0_15px_rgba(57,255,20,0.2)] mb-8">
+              <p className="text-[9px] text-white/70 text-center uppercase leading-relaxed mb-4">1. Select Arrival Date // 2. Confirm Event Attendance // 3. Transmit Data</p>
+              <button onClick={() => setShowMap(true)} className="text-[10px] text-[#39FF14] hover:bg-[#39FF14] hover:text-black transition-all border border-[#39FF14]/40 px-8 py-2 bg-black/50 tracking-widest uppercase shadow-[0_0_15px_rgba(57,255,20,0.2)]">
                 [ AREA MAP ]
               </button>
-
-              {/* 1. Select Arrival Date */}
-              <div className="w-full flex flex-col items-center mb-8">
-                <p className="text-[11px] text-white/50 tracking-[0.2em] uppercase mb-4 font-bold italic">1. Select Arrival Date</p>
-                <div className="flex flex-wrap justify-center gap-4">
-                  {['thursday', 'friday', 'saturday', 'sunday'].map((day) => (
-                    <button 
-                      key={day}
-                      onClick={() => setArrival(day as any)} 
-                      className={`text-[10px] font-bold px-4 py-2 uppercase tracking-[0.2em] border transition-all ${
-                        state.arrival_day === day 
-                          ? '!bg-[#39FF14] !text-black border-[#39FF14] shadow-[0_0_15px_#39FF14]' 
-                          : 'text-white/40 border-white/10 hover:border-[#39FF14]/40 hover:text-white'
-                      }`}
-                    >
-                      {day.slice(0, 3)} AUG {day === 'thursday' ? '27' : day === 'friday' ? '28' : day === 'saturday' ? '29' : '30'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* 2. Confirm Event Attendance */}
-              <p className="text-[11px] text-white/50 tracking-[0.2em] uppercase mb-6 font-bold italic">2. Confirm Event Attendance</p>
             </div>
           </div>
 
-          {/* Event Itinerary: Vertical Day Stack / Horizontal Buttons */}
-          <div className="flex-grow overflow-y-auto hide-scrollbar px-4">
-            <div className="flex flex-col space-y-12 py-4 max-w-4xl mx-auto">
+          <div className="flex-grow overflow-y-auto hide-scrollbar px-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-x-16 p-4">
               {[
                 { date: "THU AUG 27", key: 'thursday', title: "The Arrival", desc: "Infiltration window opens" },
                 { date: "FRI AUG 28", key: 'friday', title: "Psyche-Feastia", keys: ['friday_meowwolf', 'friday_dinner'] },
                 { date: "SAT AUG 29", key: 'saturday', title: "Atmospheric Transit", keys: ['saturday_railway'] },
                 { date: "SUN AUG 30", key: 'sunday', title: "Post-Mission Debrief", keys: ['sunday_brunch', 'sunday_movie'] }
               ].map((section) => (
-                <div key={section.date} className="flex flex-col md:flex-row items-center md:items-start text-center md:text-left border-b border-white/5 pb-10 last:border-0">
-                  
-                  {/* Vertical Day Labels */}
-                  <div className="flex flex-col items-center md:items-start min-w-[220px] mb-6 md:mb-0">
-                    <span className="text-[10px] font-mono text-[#39FF14]/60 tracking-[0.4em] mb-1 uppercase font-bold">
-                      {section.date}
-                    </span>
-                    <div className="text-2xl font-bold tracking-tight text-white uppercase opacity-90" onMouseEnter={() => scrambleRefs.current[section.key]?.triggerHover()}>
-                      <PatternScramble ref={(el) => { if (el) scrambleRefs.current[section.key] = el; }} text={section.title} {...CYBERPUNK_THEME} startTrigger={true} />
-                    </div>
+                <div key={section.date} className="flex flex-col items-center text-center">
+                  <button 
+                    onClick={() => setArrival(section.key as any)} 
+                    className={`text-[10px] font-bold px-4 py-1.5 uppercase tracking-[0.3em] mb-3 border transition-all ${
+                      state.arrival_day === section.key 
+                        ? '!bg-[#39FF14] !text-black border-[#39FF14] shadow-[0_0_15px_#39FF14]' 
+                        : 'text-white/40 border-white/10 hover:border-[#39FF14]/40 hover:text-white'
+                    }`}
+                  >
+                    {section.date}
+                  </button>
+                  {/* --- TARGETED PATCH: RESTORE DESC + INSTANT EVENT TOGGLE --- */}
+                  <div className="text-xl font-bold tracking-tight text-white mb-3 uppercase" onMouseEnter={() => scrambleRefs.current[section.key]?.triggerHover()}>
+                    <PatternScramble ref={(el) => { if (el) scrambleRefs.current[section.key] = el; }} text={section.title} {...CYBERPUNK_THEME} startTrigger={true} />
                   </div>
 
-                  {/* Horizontal Button Container */}
-                  <div className="flex-grow flex flex-col md:flex-row items-center justify-center md:justify-start gap-4 md:pl-12">
-                    {section.desc && (
-                      <p className="text-white/30 text-[11px] italic leading-tight uppercase tracking-wider">
-                        {section.desc}
-                      </p>
-                    )}
+                  {/* RESTORED: Infiltration window / mission notes */}
+                  {section.desc && <p className="text-white/40 text-[10px] italic leading-tight uppercase mb-4">{section.desc}</p>}
 
-                    {section.keys && (
-                      <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                        {section.keys.map(k => (
-                          <button 
-                            key={k} 
-                            onClick={() => setState(s => ({ ...s, [k]: !s[k as keyof typeof s], isSaved: false }))} 
-                            className={`min-w-[200px] text-[9px] py-2.5 px-4 border transition-all uppercase tracking-widest ${
-                              state[k as keyof typeof state] 
-                                ? '!bg-[#00ffff] !text-black border-[#00ffff] shadow-[0_0_15px_rgba(0,255,255,0.3)]' 
-                                : 'text-white/40 border-white/10 hover:border-[#00ffff]/40 hover:text-white'
-                            }`}
-                          >
-                            {k.includes('meowwolf') ? "Midday: Off-World Excursion" : 
-                             k.includes('dinner') ? "6PM: Ceremonial Feast" : 
-                             k.includes('railway') ? "6PM: Ride into the sky" : 
-                             k.includes('brunch') ? "Midday: Brunch." : 
-                             "Evening: Final Transmission"}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                  {section.keys && <div className="space-y-2 w-full max-w-[200px]">
+                    {section.keys.map(k => (
+                      <button 
+                        key={k} 
+                        onClick={() => setState(s => ({ ...s, [k]: !s[k as keyof typeof s], isSaved: false }))} 
+                        className={`block w-full text-[10px] py-2.5 border transition-all uppercase ${
+                          state[k as keyof typeof state] 
+                            ? '!bg-[#00ffff] !text-black border-[#00ffff]' 
+                            : 'text-white/40 border-white/10 hover:border-[#00ffff]/40 hover:text-white'
+                        }`}
+                      >
+                        {k.includes('meowwolf') ? "Midday: Off-World Excursion" : 
+                        k.includes('dinner') ? "6PM: Ceremonial Feast" : 
+                        k.includes('railway') ? "6PM: Ride into the sky" : 
+                        k.includes('brunch') ? "Midday: Brunch." : 
+                        "Evening: Final Transmission"}
+                      </button>
+                    ))}
+                  </div>}
                 </div>
               ))}
             </div>
           </div>
-          {/* END PATCH AREA */}
 
           <div className="mt-8 pt-6 border-t border-white/10 flex flex-col items-center shrink-0">
             <button onClick={handleSave} disabled={state.isSaving || !state.isHydrated} className={`text-xs uppercase font-bold tracking-[0.5em] px-12 py-3 border-2 transition-all ${state.isSaved ? 'bg-[#39FF14] text-black border-[#39FF14]' : state.isSaving ? 'bg-white/10 text-white/50 border-white/20' : 'bg-transparent text-[#39FF14] border-[#39FF14]/40 hover:bg-[#39FF14] hover:text-black shadow-[0_0_20px_rgba(57,255,20,0.1)]'}`}>
