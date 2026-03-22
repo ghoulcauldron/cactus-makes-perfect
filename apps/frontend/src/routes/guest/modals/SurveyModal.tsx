@@ -358,7 +358,7 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
                   </div>
                 </div>
 
-                <p className="text-[11px] text-[#00ffff] tracking-[0.2em] uppercase mb-8 italic font-bold">2. Confirm Event Attendance</p>
+                <p className="text-[11px] text-[#00ffff] tracking-[0.2em] uppercase mt-12 mb-8 italic font-bold">2. Confirm Event Attendance</p>
               </div>
             </div>
 
@@ -382,7 +382,7 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
                     <span className="text-[10px] font-mono text-[#39FF14]/60 tracking-[0.4em] mb-1 uppercase font-bold">
                       {section.date}
                     </span>
-                    <div className="text-2xl font-bold tracking-tight text-[#00ffff] uppercase opacity-90" onMouseEnter={() => scrambleRefs.current[section.key]?.triggerHover()}>
+                    <div className="text-2xl font-bold tracking-tight text-white/90 uppercase opacity-90" onMouseEnter={() => scrambleRefs.current[section.key]?.triggerHover()}>
                       <PatternScramble ref={(el) => { if (el) scrambleRefs.current[section.key] = el; }} text={section.title} {...CYBERPUNK_THEME} startTrigger={true} />
                     </div>
                   </div>
