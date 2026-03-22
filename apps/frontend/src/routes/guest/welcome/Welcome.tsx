@@ -31,7 +31,7 @@ export default function Welcome() {
       {/* SCENE LAYERS */}
       <div className={`infected-scene transition-all duration-[2000ms] absolute inset-0 w-full h-full ${showScene ? 'opacity-100 scale-105' : 'opacity-0 scale-100'}`}>
         <img src={assets.background} alt="" className="absolute inset-0 w-full h-full object-cover object-bottom z-0" />
-        <img src={assets.rocksMain} alt="" className="absolute inset-0 w-full h-full object-cover object-bottom z-10" />
+        <img src={assets.rocksMain} alt="" className="absolute inset-0 w-full h-full object-cover object-bottom z-10" style={{ filter: 'hue-rotate(180deg) saturate(1.5)' }}/>
         <img src={assets.alienBack} alt="" className="absolute inset-0 w-full h-full object-cover object-bottom z-20" />
         
         {/* UFO - Removed the nested invert(1) here */}
