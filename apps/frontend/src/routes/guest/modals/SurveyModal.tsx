@@ -387,7 +387,7 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
                     </div>
                   </div>
 
-                  <div className="flex-grow flex flex-col md:flex-row items-center justify-center md:justify-start gap-4 md:pl-12">
+                  <div className="flex-grow flex flex-col md:flex-row items-center justify-center md:justify-start gap-4 md:pl-24">
                     {section.desc && (
                       <p className="text-white/80 text-[11px] italic leading-tight uppercase tracking-wider pt-2">
                         {section.desc}
