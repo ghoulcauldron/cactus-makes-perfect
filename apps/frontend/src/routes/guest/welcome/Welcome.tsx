@@ -39,10 +39,10 @@ export default function Welcome() {
           src={assets.ufo}
           alt="UFO"
           className="absolute inset-0 w-full h-full object-cover object-bottom z-40 animate-pulse"
-          style={{ filter: 'hue-rotate(290deg) saturate(1.8) drop-shadow(0 0 25px #00ffff)' }}
+          style={{ filter: 'hue-rotate(180deg) saturate(1.5) drop-shadow(0 0 25px #00ffff)' }}
         />
         
-        <img src={assets.rocksFG} alt="" className="absolute inset-0 w-full h-full object-cover object-bottom z-50" style={{ filter: 'hue-rotate(290deg) saturate(1.8)' }}/>
+        <img src={assets.rocksFG} alt="" className="absolute inset-0 w-full h-full object-cover object-bottom z-50" style={{ filter: 'hue-rotate(180deg) saturate(1.5)' }}/>
         <img src={assets.aliensFront} alt="" className="absolute inset-0 w-full h-full object-cover object-bottom z-[60]" />
       </div>
 
@@ -68,11 +68,11 @@ export default function Welcome() {
       )}
 
       <style>{`
-        .infected-scene {
-          /* Separates the scene into a "neutral" base before color injection */
-          filter: sepia(1) saturate(1.8) hue-rotate(210deg) contrast(1.5) brightness(0.65);
-          /* hue-rotate(210deg) targets deep indigo from a sepia base */
-        }
+      .infected-scene {
+        /* Restores the requested invert effect while shifting the resulting tones */
+        filter: invert(1) hue-rotate(30deg) contrast(1.4) brightness(0.7);
+        /* hue-rotate(30deg) after invert(1) pushes the resulting palette into deep indigo */
+      }
         /* REFINED GROW ANIMATION */
         @keyframes modal-entry {
           0% { 
