@@ -24,7 +24,7 @@ const UFOMarker = ({ onClick }: { onClick: () => void }) => (
     <div className="absolute w-2 h-2 bg-white rounded-full shadow-[0_0_10px_white]" />
     
     {/* Label with Liquid Styling */}
-    <div className="absolute -bottom-10 whitespace-nowrap font-mono bg-white/10 backdrop-blur-md border border-[#00ffff]/40 text-[#00ffff] px-3 py-3 rounded-full text-[9px] uppercase tracking-[0.2em] hover:bg-[#00ffff] hover:text-black transition-all duration-700 shadow-[0_0_20px_rgba(0,255,255,0.2)] z-[70]">
+    <div className="absolute -bottom-10 whitespace-nowrap font-mono bg-white/10 backdrop-blur-md border border-[#00ffff]/40 text-[#00ffff] px-2 py-3 rounded-full text-[9px] uppercase tracking-[0.2em] hover:bg-[#00ffff] hover:text-black transition-all duration-700 shadow-[0_0_20px_rgba(0,255,255,0.2)] z-[70]">
       DOS HERMANAS COMPOUND
     </div>
   </div>
@@ -401,7 +401,7 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
             </div>
 
             {/* Event Itinerary - Part of the same scroll unit */}
-            <div className="flex flex-col space-y-12 max-w-4xl mx-auto pb-10">
+            <div className="flex-grow flex flex-col md:flex-row items-center md:items-start text-center md:text-left pb-10 relative">
               {/* --- TARGETED PATCH: GLOWING SEPARATOR & DESC PADDING --- */}
               {[
                 { date: "THU AUG 27", key: 'thursday', title: "The Arrival", desc: "Infiltration window opens" },
@@ -433,12 +433,14 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
                     )}
 
                     {section.keys && (
-                      <div className="flex flex-col gap-3 w-full md:w-auto">
+                      /* Changed items-center (inherited) to items-start to lock left alignment */
+                      <div className="flex flex-col items-start gap-3 w-full md:w-auto">
                         {section.keys.map(k => (
                           <button 
                             key={k} 
                             onClick={() => setState(s => ({ ...s, [k]: !s[k as keyof typeof s], isSaved: false }))} 
-                            className={`min-w-[200px] md:min-w-[260px] text-[9px] py-3 px-6 rounded-full border transition-all duration-700 uppercase tracking-[0.3em] ${
+                            /* Added text-left and adjusted padding to ensure text starts at the same spot */
+                            className={`min-w-[200px] md:min-w-[260px] text-[9px] py-3 px-8 text-left rounded-full border transition-all duration-700 uppercase tracking-[0.3em] ${
                               state[k as keyof typeof state] 
                                 ? '!bg-[#00ffff] !text-black border-[#00ffff] shadow-[0_0_25px_rgba(0,255,255,0.5)]' 
                                 : 'text-white/40 border-white/5 bg-white/5 hover:border-white/20 hover:text-white'
