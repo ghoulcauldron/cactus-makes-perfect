@@ -24,7 +24,7 @@ const UFOMarker = ({ onClick }: { onClick: () => void }) => (
     <div className="absolute w-2 h-2 bg-white rounded-full shadow-[0_0_10px_white]" />
     
     {/* Label with Liquid Styling */}
-    <div className="absolute -bottom-10 whitespace-nowrap text-[#00ffff] text-[10px] font-mono tracking-[0.2em] bg-[#020617]/80 backdrop-blur-md px-3 py-1 border border-[#00ffff]/30 rounded-full uppercase z-50 transition-all group-hover:border-[#00ffff] group-hover:shadow-[0_0_15px_rgba(0,255,255,0.4)]">
+    <div className="absolute bottom-[20%] left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-md border border-[#00ffff]/40 text-[#00ffff] px-8 py-2 rounded-full text-[10px] uppercase tracking-[0.4em] hover:bg-[#00ffff] hover:text-black transition-all duration-700 shadow-[0_0_20px_rgba(0,255,255,0.2)] z-[70]">
       S&G: DOS HERMANAS COMPOUND
     </div>
   </div>
