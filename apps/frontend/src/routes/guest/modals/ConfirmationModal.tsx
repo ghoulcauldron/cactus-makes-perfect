@@ -7,7 +7,7 @@ interface ConfirmationModalProps {
   onCancel: () => void;
   data: {
     arrival_day: string | null;
-    events: string[];
+    events: { title: string; time: string; date: string }[]; // Updated type
   };
 }
 
@@ -45,16 +45,22 @@ export default function ConfirmationModal({ isOpen, onConfirm, onCancel, data }:
 
             <div className="bg-white/5 rounded-2xl p-6 border border-white/5 backdrop-blur-md">
               <p className="text-[9px] text-[#00ffff]/40 uppercase tracking-[0.3em] mb-4 text-center">Neural Imprints</p>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {data.events.length > 0 ? (
                   data.events.map((e, i) => (
-                    <div key={i} className="text-white/90 text-[10px] uppercase tracking-widest flex items-center justify-center">
-                      <span className="w-1 h-1 bg-[#00ffff] rounded-full mr-3 shadow-[0_0_8px_#00ffff]" />
-                      <PatternScramble 
-                        text={e} 
-                        {...CYBERPUNK_THEME} 
-                        startTrigger={isOpen} 
-                      />
+                    <div key={i} className="flex flex-col items-center justify-center text-center group">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[8px] text-[#39FF14] font-bold tracking-[.2em] animate-biopulse-green">{e.date}</span>
+                        <span className="text-[8px] text-white/30 tracking-widest">//</span>
+                        <span className="text-[8px] text-[#00ffff] font-bold tracking-[.2em] animate-biopulse-cyan">{e.time}</span>
+                      </div>
+                      <div className="text-white text-[10px] uppercase tracking-[0.3em] font-light flex items-center">
+                        <PatternScramble 
+                          text={e.title} 
+                          {...CYBERPUNK_THEME} 
+                          startTrigger={isOpen} 
+                        />
+                      </div>
                     </div>
                   ))
                 ) : (
@@ -88,6 +94,23 @@ export default function ConfirmationModal({ isOpen, onConfirm, onCancel, data }:
         }
         .animate-float {
           animation: float 6s ease-in-out infinite;
+        }
+        
+        /* NEW: Bioluminescent Pulse Animations */
+        @keyframes biopulse-green {
+          0%, 100% { opacity: 0.5; text-shadow: 0 0 0px rgba(57, 255, 20, 0); }
+          50% { opacity: 1; text-shadow: 0 0 8px rgba(57, 255, 20, 0.8); }
+        }
+        @keyframes biopulse-cyan {
+          0%, 100% { opacity: 0.5; text-shadow: 0 0 0px rgba(0, 255, 255, 0); }
+          50% { opacity: 1; text-shadow: 0 0 8px rgba(0, 255, 255, 0.8); }
+        }
+        .animate-biopulse-green {
+          animation: biopulse-green 4s ease-in-out infinite;
+        }
+        .animate-biopulse-cyan {
+          animation: biopulse-cyan 4s ease-in-out infinite;
+          animation-delay: 2s; /* Offset for organic breathing feel */
         }
       `}</style>
     </div>

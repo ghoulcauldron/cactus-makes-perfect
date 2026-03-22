@@ -96,12 +96,12 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
   const [showConfirm, setShowConfirm] = useState(false);
 
   const confirmedEvents = useMemo(() => {
-    const events: string[] = [];
-    if (state.friday_meowwolf) events.push("Meow Wolf Excursion");
-    if (state.friday_dinner) events.push("Ceremonial Feast");
-    if (state.saturday_railway) events.push("Sky Railway Mission");
-    if (state.sunday_brunch) events.push("Debrief Brunch");
-    if (state.sunday_movie) events.push("Final Transmission Movie");
+    const events: { title: string; time: string; date: string }[] = [];
+    if (state.friday_meowwolf) events.push({ date: "FRI AUG 28", time: "MIDDAY", title: "OFF-WORLD EXCURSION" });
+    if (state.friday_dinner) events.push({ date: "FRI AUG 28", time: "6PM", title: "CEREMONIAL FEAST" });
+    if (state.saturday_railway) events.push({ date: "SAT AUG 29", time: "6PM", title: "RIDE INTO THE SKY" });
+    if (state.sunday_brunch) events.push({ date: "SUN AUG 30", time: "MIDDAY", title: "BRUNCH." });
+    if (state.sunday_movie) events.push({ date: "SUN AUG 30", time: "EVENING", title: "FINAL TRANSMISSION" });
     return events;
   }, [state]);
 
