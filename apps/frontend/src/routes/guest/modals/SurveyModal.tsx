@@ -11,16 +11,20 @@ import ConfirmationModal from "./ConfirmationModal";
 const MAPBOX_TOKEN = "pk.eyJ1IjoiZ2hvdWxjYXVsZHJvbiIsImEiOiJjbW14Z2ZubzcxMnN0MnBvcXdxYmppdDJyIn0.OQ4TP1JJkN3Gx0aEf77FmQ";
 const CUSTOM_STYLE = "mapbox://styles/ghoulcauldron/cmmxjbezx003t01rx6fvi5z7r";
 
-// --- UFO MARKER COMPONENT ---
-const UFOMarker = () => (
-  <div className="relative flex items-center justify-center">
+{/* --- TARGETED PATCH: BIOLUMINESCENT MARKER --- */}
+const UFOMarker = ({ onClick }: { onClick: () => void }) => (
+  <div className="relative flex items-center justify-center cursor-pointer group" onClick={onClick}>
+    {/* Bioluminescent Beam */}
     <div 
-      className="absolute bottom-1 w-12 h-32 bg-gradient-to-t from-[#39FF14]/50 to-transparent blur-sm animate-pulse" 
+      className="absolute bottom-1 w-12 h-32 bg-gradient-to-t from-[#00ffff]/40 to-transparent blur-md animate-pulse" 
       style={{ clipPath: 'polygon(25% 0%, 75% 0%, 100% 100%, 0% 100%)', transformOrigin: 'bottom' }} 
     />
-    <div className="w-4 h-4 bg-[#39FF14] rounded-full shadow-[0_0_15px_#39FF14] animate-ping" />
-    <div className="absolute w-2 h-2 bg-white rounded-full" />
-    <div className="absolute -bottom-8 whitespace-nowrap text-[#39FF14] text-[9px] font-mono tracking-tighter bg-black/80 px-2 border border-[#39FF14]/30 uppercase z-50">
+    {/* Pulse Core */}
+    <div className="w-4 h-4 bg-[#00ffff] rounded-full shadow-[0_0_25px_#00ffff] animate-ping" />
+    <div className="absolute w-2 h-2 bg-white rounded-full shadow-[0_0_10px_white]" />
+    
+    {/* Label with Liquid Styling */}
+    <div className="absolute -bottom-10 whitespace-nowrap text-[#00ffff] text-[10px] font-mono tracking-[0.2em] bg-[#020617]/80 backdrop-blur-md px-3 py-1 border border-[#00ffff]/30 rounded-full uppercase z-50 transition-all group-hover:border-[#00ffff] group-hover:shadow-[0_0_15px_rgba(0,255,255,0.4)]">
       S&G: DOS HERMANAS COMPOUND
     </div>
   </div>
@@ -94,6 +98,7 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
   const hasFlownRef = useRef(false);
   const scrambleRefs = useRef<Record<string, PatternScrambleHandle | null>>({});
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showMarkerTooltip, setShowMarkerTooltip] = useState(false);
 
   const confirmedEvents = useMemo(() => {
     const events: { title: string; time: string; date: string }[] = [];
@@ -267,69 +272,67 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2 pointer-events-auto overflow-hidden font-mono">
       <div className="absolute inset-0 bg-[#0a001a]/90 backdrop-blur-xl transition-opacity duration-700" onClick={() => (showMap ? setShowMap(false) : onClose())} />
       
-    {/* --- OVAL MAP OVERLAY (BIGGER + OUTER GLOW) --- */}
-    {showMap && (
-      <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 animate-map-pop" onClick={() => setShowMap(false)}>
+  {/* --- TARGETED PATCH: ORGANIC OVAL MAP UI --- */}
+  {showMap && (
+    <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 animate-map-pop" onClick={() => setShowMap(false)}>
+      <div className="relative w-[98vw] max-w-[1000px] h-[80vh] group">
         
-        {/* 1. Relative Wrapper for the entire map area */}
-        <div className="relative w-[98vw] max-w-[1000px] h-[80vh] group">
-          
-          {/* 2. THE RESET BUBBLE (Nesting it here keeps it outside the oval clip) */}
+        {/* Bioluminescent Outer Glow */}
+        <div className="absolute -inset-10 bg-[#00ffff]/10 blur-[80px] rounded-full animate-pulse pointer-events-none" />
+
+        {/* The Clipped Oval Container */}
+        <div 
+          className="w-full h-full relative overflow-hidden bg-[#020617] border border-white/20 shadow-[0_0_100px_rgba(0,255,255,0.2)] rounded-[100px]" 
+          style={{ clipPath: 'ellipse(48% 42% at 50% 50%)' }} 
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Map 
+            ref={mapRef}
+            {...viewState}
+            onMove={(evt) => setViewState(evt.viewState)}
+            mapboxAccessToken={MAPBOX_TOKEN} 
+            mapStyle={CUSTOM_STYLE} 
+            style={{ width: '100%', height: '100%' }}
+            antialias={true}
+            maxPitch={85}
+            terrain={{ source: 'mapbox-dem', exaggeration: 1.5 }}
+          > 
+            {showUFOMarker && (
+              <Marker longitude={-105.944936} latitude={35.689511} anchor="bottom">
+                <UFOMarker onClick={() => setShowMarkerTooltip(!showMarkerTooltip)} />
+              </Marker>
+            )}
+
+            {/* Interactive Tooltip Overlay */}
+            {showMarkerTooltip && (
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-32 z-[80] bg-[#020617]/90 backdrop-blur-xl border border-[#00ffff]/30 p-4 rounded-3xl min-w-[200px] shadow-[0_0_40px_rgba(0,255,255,0.2)] animate-modal-entry">
+                <p className="text-[#00ffff] text-[9px] tracking-[0.3em] uppercase mb-2 border-b border-[#00ffff]/20 pb-1">Coordinates_Locked</p>
+                <p className="text-white/80 text-[10px] leading-relaxed uppercase italic">
+                  Dos Hermanas: S&G Command Base.<br/>
+                  Elevation: 7,200ft<br/>
+                  Primary Landing Zone for Arrival Sequences.
+                </p>
+                <button onClick={() => setShowMarkerTooltip(false)} className="mt-3 text-[#39FF14] text-[8px] tracking-widest uppercase hover:text-white transition-colors">[ DISMISS ]</button>
+              </div>
+            )}
+          </Map>
+
+          {/* Liquid Edge Glow */}
+          <svg className="absolute inset-0 w-full h-full pointer-events-none z-[60]">
+            <ellipse cx="50%" cy="50%" rx="48%" ry="42%" fill="none" stroke="#00ffff" strokeWidth="1" className="opacity-30" />
+          </svg>
+
+          {/* Terminate Feed Button (Bioluminescent Style) */}
           <button 
-            onClick={(e) => {
-              e.stopPropagation(); // Prevents closing the map when clicking the bubble
-              resetView();
-            }}
-            aria-label="Reset Map View"
-            className="absolute top-[8%] right-[4%] z-[110] w-10 h-10 md:w-12 md:h-12 rounded-full bg-black/60 border border-[#39FF14]/40 text-[#39FF14] flex items-center justify-center backdrop-blur-md shadow-[0_0_20px_rgba(57,255,20,0.3)] hover:bg-[#39FF14] hover:text-black transition-all active:scale-90 group-hover:opacity-100 opacity-0 md:opacity-100"
+            onClick={() => setShowMap(false)} 
+            className="absolute bottom-[20%] left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-md border border-[#00ffff]/40 text-[#00ffff] px-8 py-2 rounded-full text-[10px] uppercase tracking-[0.4em] hover:bg-[#00ffff] hover:text-black transition-all duration-700 shadow-[0_0_20px_rgba(0,255,255,0.2)] z-[70]"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 md:h-6 md:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
+            TERMINATE_FEED
           </button>
-
-          {/* 3. The Glow Layer */}
-          <div className="absolute -inset-10 bg-[#39FF14]/20 blur-[60px] rounded-full animate-pulse pointer-events-none" />
-
-          {/* 4. The Clipped Oval Container */}
-          <div 
-            className="w-full h-full relative overflow-hidden bg-black border-2 border-[#00ffff]/40 shadow-[0_0_100px_rgba(0,255,255,0.4)]" 
-            style={{ clipPath: 'ellipse(48% 42% at 50% 50%)' }} 
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Map 
-              ref={mapRef}
-              {...viewState}
-              onMove={(evt) => setViewState(evt.viewState)}
-              mapboxAccessToken={MAPBOX_TOKEN} 
-              mapStyle={CUSTOM_STYLE} 
-              style={{ width: '100%', height: '100%' }}
-              antialias={true}
-              maxPitch={85}
-              terrain={{ source: 'mapbox-dem', exaggeration: 1.5 }}
-            > 
-              {showUFOMarker && (
-                <Marker longitude={-105.944936} latitude={35.689511} anchor="bottom">
-                  <UFOMarker />
-                </Marker>
-              )}
-            </Map>
-
-            {/* Infected Edge Glow */}
-            <svg className="absolute inset-0 w-full h-full pointer-events-none z-[60]">
-              <ellipse cx="50%" cy="50%" rx="48%" ry="42%" fill="none" stroke="#39FF14" strokeWidth="2" className="opacity-40" />
-            </svg>
-
-            <button 
-              onClick={() => setShowMap(false)} 
-              className="absolute bottom-[20%] left-1/2 -translate-x-1/2 bg-black border border-[#00ffff] text-[#00ffff] px-6 py-2 text-[10px] uppercase tracking-widest hover:bg-[#00ffff] hover:text-black transition-all z-[70]"
-            >
-              TERMINATE_FEED
-            </button>
-          </div>
         </div>
       </div>
-    )}
+    </div>
+  )}
 
       {/* --- RECTANGULAR SURVEY MODAL --- */}
       <div 
@@ -354,7 +357,7 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
             <div className="flex flex-col items-center mb-8 shrink-0">
               {/* --- TARGETED PATCH: ETHEREAL HEADER --- */}
               <div className="text-[10px] tracking-[0.8em] mb-2 text-[#00ffff]/60 text-center uppercase" onMouseEnter={() => scrambleRefs.current['operation']?.triggerHover()}>
-                <PatternScramble ref={(el) => { if (el) scrambleRefs.current['operation'] = el; }} text="/// SYNAPTIC_LINK_ESTABLISHED ///" {...CYBERPUNK_THEME} startTrigger={true} />
+                <PatternScramble ref={(el) => { if (el) scrambleRefs.current['operation'] = el; }} text="/// SYNAPTIC_LINK_ESTABLISHED: 20 YEAR DARE ///" {...CYBERPUNK_THEME} startTrigger={true} />
               </div>
               <h2 className="text-4xl md:text-5xl font-light tracking-[0.2em] italic uppercase text-center leading-none mb-8 text-white">
                 Mission <span className="text-[#39FF14] drop-shadow-[0_0_15px_rgba(57,255,20,0.4)]">Briefing</span>
