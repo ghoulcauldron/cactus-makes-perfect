@@ -395,7 +395,7 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
                     )}
 
                     {section.keys && (
-                      <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                      <div className="flex flex-col gap-3 w-full md:w-auto">
                         {section.keys.map(k => (
                           <button 
                             key={k} 
@@ -410,7 +410,7 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
                             k.includes('dinner') ? "6PM: Ceremonial Feast" : 
                             k.includes('railway') ? "6PM: Ride into the sky" : 
                             k.includes('brunch') ? "Midday: Brunch." : 
-                            "Evening: Final Transmission + Soft Entertainment"}
+                            "Evening: Final Transmission"}
                           </button>
                         ))}
                       </div>
