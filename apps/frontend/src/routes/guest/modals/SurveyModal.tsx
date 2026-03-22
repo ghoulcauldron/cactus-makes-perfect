@@ -358,7 +358,7 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
                   </div>
                 </div>
 
-                <p className="text-[11px] text-[#00ffff] tracking-[0.2em] uppercase mt-12 mb-8 italic font-bold">2. Confirm Event Attendance</p>
+                <p className="text-[11px] text-[#00ffff] tracking-[0.2em] uppercase mt-12 mb-2 italic font-bold">2. Confirm Event Attendance</p>
               </div>
             </div>
 
@@ -410,7 +410,7 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
                             k.includes('dinner') ? "6PM: Ceremonial Feast" : 
                             k.includes('railway') ? "6PM: Ride into the sky" : 
                             k.includes('brunch') ? "Midday: Brunch." : 
-                            "Evening: Final Transmission"}
+                            "Evening: Final Transmission + Soft Entertainment"}
                           </button>
                         ))}
                       </div>
