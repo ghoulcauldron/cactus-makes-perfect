@@ -400,22 +400,24 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
               </div>
             </div>
 
-            {/* Event Itinerary - Part of the same scroll unit */}
-            <div className="flex-grow flex flex-col md:flex-row items-center md:items-start text-center md:text-left pb-10 relative">
-              {/* --- TARGETED PATCH: GLOWING SEPARATOR & DESC PADDING --- */}
+            {/* --- TARGETED PATCH: VERTICAL DAY STACK FIX --- */}
+            {/* Remove the outer row-wrapper that was causing the horizontal line-up */}
+            <div className="flex flex-col space-y-12 max-w-4xl mx-auto pb-10">
               {[
                 { date: "THU AUG 27", key: 'thursday', title: "The Arrival", desc: "Infiltration window opens" },
                 { date: "FRI AUG 28", key: 'friday', title: "Psyche-Feastia", keys: ['friday_meowwolf', 'friday_dinner'] },
                 { date: "SAT AUG 29", key: 'saturday', title: "Atmospheric Transit", keys: ['saturday_railway'] },
                 { date: "SUN AUG 30", key: 'sunday', title: "Post-Mission Debrief", keys: ['sunday_brunch', 'sunday_movie'] }
               ].map((section, idx, arr) => (
+                /* This container correctly handles the side-by-side layout for EACH day */
                 <div key={section.date} className="flex flex-col md:flex-row items-center md:items-start text-center md:text-left pb-10 relative">
                   
-                  {/* Glowing Separator Line (Only between items) */}
+                  {/* Glowing Separator Line */}
                   {idx < arr.length - 1 && (
                     <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent blur-[1px]" />
                   )}
 
+                  {/* Left Column: Date & Title */}
                   <div className="flex flex-col items-center md:items-start min-w-[220px] mb-6 md:mb-0">
                     <span className="text-[10px] font-mono text-[#39FF14]/60 tracking-[0.4em] mb-1 uppercase font-bold">
                       {section.date}
@@ -425,7 +427,8 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
                     </div>
                   </div>
 
-                  <div className="flex-grow flex flex-col md:flex-row items-center justify-center md:justify-start gap-4 md:pl-24">
+                  {/* Right Column: Padded Button Stack */}
+                  <div className="flex-grow flex flex-col items-center justify-center md:items-start md:justify-start gap-4 md:pl-24">
                     {section.desc && (
                       <p className="text-white/80 text-[11px] italic leading-tight uppercase tracking-wider pt-2">
                         {section.desc}
@@ -433,13 +436,11 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
                     )}
 
                     {section.keys && (
-                      /* Changed items-center (inherited) to items-start to lock left alignment */
                       <div className="flex flex-col items-start gap-3 w-full md:w-auto">
                         {section.keys.map(k => (
                           <button 
                             key={k} 
                             onClick={() => setState(s => ({ ...s, [k]: !s[k as keyof typeof s], isSaved: false }))} 
-                            /* Added text-left and adjusted padding to ensure text starts at the same spot */
                             className={`min-w-[200px] md:min-w-[260px] text-[9px] py-3 px-8 text-left rounded-full border transition-all duration-700 uppercase tracking-[0.3em] ${
                               state[k as keyof typeof state] 
                                 ? '!bg-[#00ffff] !text-black border-[#00ffff] shadow-[0_0_25px_rgba(0,255,255,0.5)]' 
