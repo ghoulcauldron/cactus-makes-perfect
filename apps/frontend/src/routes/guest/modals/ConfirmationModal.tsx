@@ -16,37 +16,40 @@ export default function ConfirmationModal({ isOpen, onConfirm, onCancel, data }:
 
   return (
     <div className="fixed inset-0 z-[11000] flex items-center justify-center p-4 font-mono">
-      {/* Heavy backdrop to isolate the final decision */}
-      <div className="absolute inset-0 bg-black/95 backdrop-blur-md" onClick={onCancel} />
+      {/* Deep Void Backdrop with a hint of Bioluminescence */}
+      <div className="absolute inset-0 bg-[#020617]/95 backdrop-blur-2xl" onClick={onCancel} />
       
-      <div className="relative w-full max-w-md bg-black border-2 border-[#39FF14] shadow-[0_0_50px_rgba(57,255,20,0.2)] p-8 overflow-hidden">
-        {/* Animated Scanning Line */}
-        <div className="absolute top-0 left-0 w-full h-[2px] bg-[#39FF14] opacity-50 animate-scan-fast z-0" />
+      {/* Organic "Living Chrome" Container */}
+      <div className="relative w-full max-w-md bg-gradient-to-br from-white/10 to-transparent border border-white/20 rounded-[40px] shadow-[0_0_100px_rgba(0,255,255,0.1)] p-10 overflow-hidden backdrop-blur-xl">
         
+        {/* Floating Ethereal Orbs (The Abyss style) */}
+        <div className="absolute top-[-10%] left-[-10%] w-40 h-40 bg-[#00ffff]/10 blur-[80px] rounded-full animate-pulse" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-40 h-40 bg-[#39FF14]/10 blur-[80px] rounded-full animate-pulse" />
+
         <div className="relative z-10">
-          <h3 className="text-[#39FF14] text-xs tracking-[0.6em] uppercase mb-8 border-b border-[#39FF14]/30 pb-2">
+          <h3 className="text-[#00ffff] text-[10px] tracking-[0.8em] uppercase mb-10 text-center opacity-80">
             <PatternScramble 
-              text="Final Verification" 
+              text="SYNAPTIC_VERIFICATION" 
               {...CYBERPUNK_THEME} 
               startTrigger={isOpen} 
             />
           </h3>
 
-          <div className="space-y-6 mb-10">
-            <div>
-              <p className="text-[10px] text-white/40 uppercase mb-1">Arrival Window:</p>
-              <p className="text-[#00ffff] text-sm uppercase tracking-widest font-bold">
-                {data.arrival_day ? `${data.arrival_day} Aug 2026` : "Not Selected"}
+          <div className="space-y-8 mb-12">
+            <div className="text-center">
+              <p className="text-[9px] text-[#39FF14]/40 uppercase tracking-[0.3em] mb-2">Arrival Vector</p>
+              <p className="text-white text-lg uppercase tracking-[0.2em] font-light italic">
+                {data.arrival_day ? `${data.arrival_day} Aug 2026` : "Pending..."}
               </p>
             </div>
 
-            <div>
-              <p className="text-[10px] text-white/40 uppercase mb-2">Confirmed Operations:</p>
-              <div className="space-y-1">
+            <div className="bg-white/5 rounded-2xl p-6 border border-white/5 backdrop-blur-md">
+              <p className="text-[9px] text-[#00ffff]/40 uppercase tracking-[0.3em] mb-4 text-center">Neural Imprints</p>
+              <div className="space-y-3">
                 {data.events.length > 0 ? (
                   data.events.map((e, i) => (
-                    <div key={i} className="text-white text-[10px] uppercase tracking-tighter flex items-center">
-                      <span className="text-[#39FF14] mr-2">▶</span> 
+                    <div key={i} className="text-white/90 text-[10px] uppercase tracking-widest flex items-center justify-center">
+                      <span className="w-1 h-1 bg-[#00ffff] rounded-full mr-3 shadow-[0_0_8px_#00ffff]" />
                       <PatternScramble 
                         text={e} 
                         {...CYBERPUNK_THEME} 
@@ -55,36 +58,36 @@ export default function ConfirmationModal({ isOpen, onConfirm, onCancel, data }:
                     </div>
                   ))
                 ) : (
-                  <p className="text-white/20 text-[10px] italic">No operations confirmed.</p>
+                  <p className="text-white/20 text-[10px] italic text-center uppercase tracking-widest">No Signal Detected</p>
                 )}
               </div>
             </div>
           </div>
 
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-4">
             <button 
               onClick={onConfirm}
-              className="w-full bg-[#39FF14] text-black py-4 text-xs font-bold uppercase tracking-[0.4em] hover:bg-white transition-colors"
+              className="w-full bg-white/90 text-black py-4 rounded-full text-[10px] font-bold uppercase tracking-[0.5em] hover:bg-[#00ffff] hover:shadow-[0_0_30px_rgba(0,255,255,0.6)] transition-all duration-700"
             >
-              [ Finalize Transmission ]
+              [ COMMENCE_LINK ]
             </button>
             <button 
               onClick={onCancel}
-              className="w-full border border-white/20 text-white/50 py-3 text-[9px] uppercase tracking-widest hover:text-white hover:border-white/40 transition-all"
+              className="w-full text-white/30 py-2 text-[8px] uppercase tracking-[0.4em] hover:text-white transition-all"
             >
-              Abort & Modify
+              DISCONNECT_FEED
             </button>
           </div>
         </div>
       </div>
 
       <style>{`
-        @keyframes scan-fast {
-          0% { transform: translateY(0); }
-          100% { transform: translateY(400px); }
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-10px); }
         }
-        .animate-scan-fast {
-          animation: scan-fast 2s linear infinite;
+        .animate-float {
+          animation: float 6s ease-in-out infinite;
         }
       `}</style>
     </div>
