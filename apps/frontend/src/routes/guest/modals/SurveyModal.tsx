@@ -6,6 +6,7 @@ import Map, { Marker } from "react-map-gl";
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { PatternScramble, type PatternScrambleHandle } from "../../../components/UI/PatternScramble";
 import { CYBERPUNK_THEME } from "../../../constants/themes";
+import ConfirmationModal from "./ConfirmationModal";
 
 const MAPBOX_TOKEN = "pk.eyJ1IjoiZ2hvdWxjYXVsZHJvbiIsImEiOiJjbW14Z2ZubzcxMnN0MnBvcXdxYmppdDJyIn0.OQ4TP1JJkN3Gx0aEf77FmQ";
 const CUSTOM_STYLE = "mapbox://styles/ghoulcauldron/cmmxjbezx003t01rx6fvi5z7r";
@@ -92,6 +93,17 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
   const mapRef = useRef<any>(null);
   const hasFlownRef = useRef(false);
   const scrambleRefs = useRef<Record<string, PatternScrambleHandle | null>>({});
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const confirmedEvents = useMemo(() => {
+    const events: string[] = [];
+    if (state.friday_meowwolf) events.push("Meow Wolf Excursion");
+    if (state.friday_dinner) events.push("Ceremonial Feast");
+    if (state.saturday_railway) events.push("Sky Railway Mission");
+    if (state.sunday_brunch) events.push("Debrief Brunch");
+    if (state.sunday_movie) events.push("Final Transmission Movie");
+    return events;
+  }, [state]);
 
   {/* --- TARGETED PATCH: INITIAL VIEWSTATE --- */}
   const [viewState, setViewState] = useState({
@@ -208,7 +220,18 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
       }
     }, [showMap]);
 
-  const handleSave = async () => {
+// This function now just opens the confirmation check
+  const triggerSaveSequence = () => {
+    if (!state.arrival_day) {
+      alert("ERROR: Arrival sequence not initialized.");
+      return;
+    }
+    setShowConfirm(true);
+  };
+
+  // This function is called ONLY after you click confirm in the new modal
+  const executeFinalSave = async () => {
+    setShowConfirm(false);
     const guestId = localStorage.getItem("guest_user_id");
     setState(prev => ({ ...prev, isSaving: true, isSaved: false }));
     try {
@@ -423,11 +446,24 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
 
           {/* Footer Area - Anchored and Non-Scrollable */}
           <div className="mt-auto pt-6 pb-6 border-t border-white/10 flex flex-col items-center shrink-0 bg-black/80 backdrop-blur-sm relative z-20">
-            <button onClick={handleSave} disabled={state.isSaving || !state.isHydrated} className={`text-xs uppercase font-bold tracking-[0.5em] px-12 py-3 border-2 transition-all ${state.isSaved ? 'bg-[#39FF14] text-black border-[#39FF14]' : state.isSaving ? 'bg-white/10 text-white/50 border-white/20' : 'bg-transparent text-[#39FF14] border-[#39FF14]/40 hover:bg-[#39FF14] hover:text-black shadow-[0_0_20px_rgba(57,255,20,0.1)]'}`}>
+            <button 
+              onClick={triggerSaveSequence} // Changed from handleSave
+              disabled={state.isSaving || !state.isHydrated} 
+              className={`text-xs uppercase font-bold tracking-[0.5em] px-12 py-3 border-2 transition-all ${state.isSaved ? 'bg-[#39FF14] text-black border-[#39FF14]' : state.isSaving ? 'bg-white/10 text-white/50 border-white/20' : 'bg-transparent text-[#39FF14] border-[#39FF14]/40 hover:bg-[#39FF14] hover:text-black shadow-[0_0_20px_rgba(57,255,20,0.1)]'}`}
+            >
               {state.isSaving ? "/// TRANSMITTING ///" : state.isSaved ? "DATA UPLOADED ✓" : state.hasExistingRecord ? "[ RE-TRANSMIT DATA ]" : "[ TRANSMIT DATA ]"}
             </button>
             <button onClick={onClose} className="mt-4 text-[9px] uppercase text-white/30 hover:text-white transition-colors tracking-[0.4em] bg-transparent">[ Close Terminal ]</button>
           </div>
+          <ConfirmationModal 
+          isOpen={showConfirm}
+          onCancel={() => setShowConfirm(false)}
+          onConfirm={executeFinalSave}
+          data={{
+            arrival_day: state.arrival_day,
+            events: confirmedEvents
+          }}
+        />
         </div>
       </div>
 
