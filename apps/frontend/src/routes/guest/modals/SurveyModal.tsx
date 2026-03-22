@@ -24,8 +24,8 @@ const UFOMarker = ({ onClick }: { onClick: () => void }) => (
     <div className="absolute w-2 h-2 bg-white rounded-full shadow-[0_0_10px_white]" />
     
     {/* Label with Liquid Styling */}
-    <div className="absolute bottom-[20%] left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-md border border-[#00ffff]/40 text-[#00ffff] px-8 py-2 rounded-full text-[10px] uppercase tracking-[0.4em] hover:bg-[#00ffff] hover:text-black transition-all duration-700 shadow-[0_0_20px_rgba(0,255,255,0.2)] z-[70]">
-      S&G: DOS HERMANAS COMPOUND
+    <div className="absolute bottom-[20%] left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-md border border-[#00ffff]/40 text-[#00ffff] px-8 py-2 rounded-full text-[9px] uppercase tracking-[0.4em] hover:bg-[#00ffff] hover:text-black transition-all duration-700 shadow-[0_0_20px_rgba(0,255,255,0.2)] z-[70]">
+      DOS HERMANAS COMPOUND
     </div>
   </div>
 );
@@ -272,15 +272,19 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2 pointer-events-auto overflow-hidden font-mono">
       <div className="absolute inset-0 bg-[#0a001a]/90 backdrop-blur-xl transition-opacity duration-700" onClick={() => (showMap ? setShowMap(false) : onClose())} />
       
-  {/* --- TARGETED PATCH: ORGANIC OVAL MAP UI --- */}
+  {/* --- TARGETED PATCH: SONAR OVAL & TEAL MARKER --- */}
   {showMap && (
     <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 animate-map-pop" onClick={() => setShowMap(false)}>
       <div className="relative w-[98vw] max-w-[1000px] h-[80vh] group">
         
-        {/* Bioluminescent Outer Glow */}
+        {/* 1. Bioluminescent Outer Glow */}
         <div className="absolute -inset-10 bg-[#00ffff]/10 blur-[80px] rounded-full animate-pulse pointer-events-none" />
 
-        {/* The Clipped Oval Container */}
+        {/* 2. SONAR WAVES: Three overlapping pulses */}
+        <div className="absolute inset-0 border-2 border-[#00ffff]/20 rounded-[100px] animate-sonar pointer-events-none" style={{ clipPath: 'ellipse(48% 42% at 50% 50%)' }} />
+        <div className="absolute inset-0 border-2 border-[#00ffff]/10 rounded-[100px] animate-sonar pointer-events-none [animation-delay:2s]" style={{ clipPath: 'ellipse(48% 42% at 50% 50%)' }} />
+
+        {/* 3. The Clipped Oval Container */}
         <div 
           className="w-full h-full relative overflow-hidden bg-[#020617] border border-white/20 shadow-[0_0_100px_rgba(0,255,255,0.2)] rounded-[100px]" 
           style={{ clipPath: 'ellipse(48% 42% at 50% 50%)' }} 
@@ -303,29 +307,33 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
               </Marker>
             )}
 
-            {/* Interactive Tooltip Overlay */}
+            {/* Interactive Tooltip: Glass-morphic readout */}
             {showMarkerTooltip && (
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-32 z-[80] bg-[#020617]/90 backdrop-blur-xl border border-[#00ffff]/30 p-4 rounded-3xl min-w-[200px] shadow-[0_0_40px_rgba(0,255,255,0.2)] animate-modal-entry">
-                <p className="text-[#00ffff] text-[9px] tracking-[0.3em] uppercase mb-2 border-b border-[#00ffff]/20 pb-1">Coordinates_Locked</p>
-                <p className="text-white/80 text-[10px] leading-relaxed uppercase italic">
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-32 z-[80] bg-[#020617]/90 backdrop-blur-xl border border-[#00ffff]/30 p-5 rounded-[30px] min-w-[240px] shadow-[0_0_40px_rgba(0,255,255,0.2)] animate-modal-entry">
+                <div className="flex items-center gap-2 mb-3 border-b border-[#00ffff]/20 pb-2">
+                  <div className="w-1.5 h-1.5 bg-[#00ffff] rounded-full animate-ping" />
+                  <p className="text-[#00ffff] text-[9px] tracking-[0.4em] uppercase font-bold">Coordinates_Locked</p>
+                </div>
+                <p className="text-white/90 text-[10px] leading-relaxed uppercase tracking-wider italic">
                   Dos Hermanas: S&G Command Base.<br/>
+                  443 W San Francisco St, Santa Fe, NM<br/>
                   Elevation: 7,200ft<br/>
-                  Primary Landing Zone for Arrival Sequences.
+                  Status: <span className="text-[#39FF14]">Arrival_Ready</span>
                 </p>
-                <button onClick={() => setShowMarkerTooltip(false)} className="mt-3 text-[#39FF14] text-[8px] tracking-widest uppercase hover:text-white transition-colors">[ DISMISS ]</button>
+                <button onClick={() => setShowMarkerTooltip(false)} className="mt-4 w-full py-2 bg-white/5 border border-white/10 rounded-full text-[#39FF14] text-[8px] tracking-[0.3em] uppercase hover:bg-white/10 transition-all">[ DISMISS ]</button>
               </div>
             )}
           </Map>
 
-          {/* Liquid Edge Glow */}
+          {/* Liquid Edge Highlight */}
           <svg className="absolute inset-0 w-full h-full pointer-events-none z-[60]">
-            <ellipse cx="50%" cy="50%" rx="48%" ry="42%" fill="none" stroke="#00ffff" strokeWidth="1" className="opacity-30" />
+            <ellipse cx="50%" cy="50%" rx="48%" ry="42%" fill="none" stroke="white" strokeWidth="0.5" className="opacity-20" />
           </svg>
 
-          {/* Terminate Feed Button (Bioluminescent Style) */}
+          {/* Terminate Feed: Matching Survey Modal Pod Style */}
           <button 
             onClick={() => setShowMap(false)} 
-            className="absolute bottom-[20%] left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-md border border-[#00ffff]/40 text-[#00ffff] px-8 py-2 rounded-full text-[10px] uppercase tracking-[0.4em] hover:bg-[#00ffff] hover:text-black transition-all duration-700 shadow-[0_0_20px_rgba(0,255,255,0.2)] z-[70]"
+            className="absolute bottom-[18%] left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-md border border-[#00ffff]/40 text-[#00ffff] px-10 py-3 rounded-full text-[10px] uppercase tracking-[0.5em] hover:bg-[#00ffff] hover:text-black transition-all duration-700 shadow-[0_0_30px_rgba(0,255,255,0.3)] z-[70]"
           >
             TERMINATE_FEED
           </button>
@@ -511,6 +519,13 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
         .animate-map-pop { animation: map-pop 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         @keyframes modal-entry { 0% { opacity: 0; transform: scale(1.02); } 100% { opacity: 1; transform: scale(1); } }
         .animate-modal-entry { animation: modal-entry 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes sonar-wave {
+          0% { transform: scale(1); opacity: 0.5; }
+          100% { transform: scale(1.15); opacity: 0; }
+        }
+        .animate-sonar {
+          animation: sonar-wave 4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
       `}</style>
     </div>
   );
