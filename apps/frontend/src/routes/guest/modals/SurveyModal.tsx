@@ -332,7 +332,10 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
     )}
 
       {/* --- RECTANGULAR SURVEY MODAL --- */}
-      <div className={`relative w-full max-w-[850px] h-[85vh] md:h-[75vh] bg-black border border-[#00ffff]/30 rounded-xl shadow-[0_0_80px_rgba(0,0,0,0.9)] overflow-hidden flex flex-col transition-all duration-500 ${showMap ? 'opacity-0 scale-90 pointer-events-none' : 'opacity-100 scale-100'}`} onClick={(e) => e.stopPropagation()}>
+      <div 
+        className={`relative w-full max-w-[850px] h-[85vh] md:h-[75vh] bg-[#020617]/40 border border-white/20 rounded-[60px] shadow-[0_0_100px_rgba(0,255,255,0.15)] overflow-hidden flex flex-col transition-all duration-700 backdrop-blur-2xl ${showMap ? 'opacity-0 scale-90 pointer-events-none' : 'opacity-100 scale-100'}`} 
+        onClick={(e) => e.stopPropagation()}
+      >
         
         {/* Nebula Layer */}
         <div className="absolute inset-0 pointer-events-none opacity-60">
@@ -349,17 +352,18 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
             
             {/* Header Area */}
             <div className="flex flex-col items-center mb-8 shrink-0">
-              <div className="text-[10px] tracking-[0.5em] mb-1 text-white/80 text-center uppercase" onMouseEnter={() => scrambleRefs.current['operation']?.triggerHover()}>
-                 <PatternScramble ref={(el) => { if (el) scrambleRefs.current['operation'] = el; }} text="/// OPERATION: 20 YEAR DARE ///" {...CYBERPUNK_THEME} startTrigger={true} />
+              {/* --- TARGETED PATCH: ETHEREAL HEADER --- */}
+              <div className="text-[10px] tracking-[0.8em] mb-2 text-[#00ffff]/60 text-center uppercase" onMouseEnter={() => scrambleRefs.current['operation']?.triggerHover()}>
+                <PatternScramble ref={(el) => { if (el) scrambleRefs.current['operation'] = el; }} text="/// SYNAPTIC_LINK_ESTABLISHED ///" {...CYBERPUNK_THEME} startTrigger={true} />
               </div>
-              <h2 className="text-4xl md:text-5xl font-bold tracking-tighter italic uppercase text-center leading-none mb-6">
-                 Mission <span className="text-[#39FF14]">Briefing</span>
+              <h2 className="text-4xl md:text-5xl font-light tracking-[0.2em] italic uppercase text-center leading-none mb-8 text-white">
+                Mission <span className="text-[#39FF14] drop-shadow-[0_0_15px_rgba(57,255,20,0.4)]">Briefing</span>
               </h2>
-              
+
               <div className="flex flex-col items-center w-full max-w-2xl">
-                <p className="text-[10px] text-[#00ffff] tracking-[0.3em] uppercase font-bold mb-2">Target Window: AUG 27 — AUG 31</p>
-                <button onClick={() => setShowMap(true)} className="text-[10px] text-[#39FF14] hover:bg-[#39FF14] hover:text-black transition-all border border-[#39FF14]/40 px-8 py-2 bg-black/50 tracking-widest uppercase mb-8 shadow-[0_0_15px_rgba(57,255,20,0.2)]">
-                  [ AREA MAP ]
+                <p className="text-[10px] text-[#39FF14]/50 tracking-[0.5em] uppercase font-light mb-4">Target Window: AUG 27 — AUG 31</p>
+                <button onClick={() => setShowMap(true)} className="text-[10px] text-[#00ffff] hover:bg-[#00ffff] hover:text-black transition-all border border-[#00ffff]/30 px-12 py-3 bg-white/5 rounded-full tracking-[0.4em] uppercase shadow-[0_0_30px_rgba(0,255,255,0.1)] mb-10">
+                  [ VIEW_VECTOR_MAP ]
                 </button>
 
                 <div className="w-full flex flex-col items-center mb-6">
@@ -369,10 +373,10 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
                       <button 
                         key={day}
                         onClick={() => setArrival(day as any)} 
-                        className={`text-[10px] font-bold px-4 py-2 uppercase tracking-[0.2em] border transition-all ${
+                        className={`text-[10px] font-bold px-6 py-2 rounded-full uppercase tracking-[0.2em] border transition-all duration-500 ${
                           state.arrival_day === day 
-                            ? '!bg-[#39FF14] !text-black border-[#39FF14] shadow-[0_0_15px_#39FF14]' 
-                            : 'text-white/40 border-white/10 hover:border-[#39FF14]/40 hover:text-white'
+                            ? '!bg-white !text-black border-white shadow-[0_0_20px_white]' 
+                            : 'text-white/30 border-white/10 hover:border-[#00ffff]/40 hover:text-white bg-white/5'
                         }`}
                       >
                         {day.slice(0, 3)} AUG {day === 'thursday' ? '27' : day === 'friday' ? '28' : day === 'saturday' ? '29' : '30'}
@@ -398,7 +402,7 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
                   
                   {/* Glowing Separator Line (Only between items) */}
                   {idx < arr.length - 1 && (
-                    <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#00ffff]/20 to-transparent shadow-[0_0_8px_rgba(0,255,255,0.3)]" />
+                    <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent blur-[1px]" />
                   )}
 
                   <div className="flex flex-col items-center md:items-start min-w-[220px] mb-6 md:mb-0">
@@ -423,10 +427,10 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
                           <button 
                             key={k} 
                             onClick={() => setState(s => ({ ...s, [k]: !s[k as keyof typeof s], isSaved: false }))} 
-                            className={`min-w-[200px] text-[9px] py-2.5 px-4 border transition-all uppercase tracking-widest ${
+                            className={`min-w-[200px] md:min-w-[260px] text-[9px] py-3 px-6 rounded-full border transition-all duration-700 uppercase tracking-[0.3em] ${
                               state[k as keyof typeof state] 
-                                ? '!bg-[#00ffff] !text-black border-[#00ffff] shadow-[0_0_15px_rgba(0,255,255,0.3)]' 
-                                : 'text-white/40 border-white/10 hover:border-[#00ffff]/40 hover:text-white'
+                                ? '!bg-[#00ffff] !text-black border-[#00ffff] shadow-[0_0_25px_rgba(0,255,255,0.5)]' 
+                                : 'text-white/40 border-white/5 bg-white/5 hover:border-white/20 hover:text-white'
                             }`}
                           >
                             {k.includes('meowwolf') ? "Midday: Off-World Excursion" : 
@@ -447,11 +451,24 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
           {/* Footer Area - Anchored and Non-Scrollable */}
           <div className="mt-auto pt-6 pb-6 border-t border-white/10 flex flex-col items-center shrink-0 bg-black/80 backdrop-blur-sm relative z-20">
             <button 
-              onClick={triggerSaveSequence} // Changed from handleSave
+              onClick={triggerSaveSequence}
               disabled={state.isSaving || !state.isHydrated} 
-              className={`text-xs uppercase font-bold tracking-[0.5em] px-12 py-3 border-2 transition-all ${state.isSaved ? 'bg-[#39FF14] text-black border-[#39FF14]' : state.isSaving ? 'bg-white/10 text-white/50 border-white/20' : 'bg-transparent text-[#39FF14] border-[#39FF14]/40 hover:bg-[#39FF14] hover:text-black shadow-[0_0_20px_rgba(57,255,20,0.1)]'}`}
+              className={`group relative overflow-hidden text-xs uppercase font-bold tracking-[0.5em] px-16 py-4 rounded-full border transition-all duration-1000 ${
+                state.isSaved 
+                  ? 'bg-white text-black border-white shadow-[0_0_30px_white]' 
+                  : state.isSaving 
+                    ? 'bg-white/10 text-white/50 border-white/20' 
+                    : 'bg-white/5 text-white border-white/20 hover:border-[#00ffff] hover:text-[#00ffff] hover:shadow-[0_0_40px_rgba(0,255,255,0.3)]'
+              }`}
             >
-              {state.isSaving ? "/// TRANSMITTING ///" : state.isSaved ? "DATA UPLOADED ✓" : state.hasExistingRecord ? "[ RE-TRANSMIT DATA ]" : "[ TRANSMIT DATA ]"}
+              {/* The Liquid Shimmer Layer */}
+              {!state.isSaving && !state.isSaved && (
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-1000 animate-mercury pointer-events-none" />
+              )}
+              
+              <span className="relative z-10">
+                {state.isSaving ? "/// TRANSMITTING ///" : state.isSaved ? "DATA_LINK_ESTABLISHED" : state.hasExistingRecord ? "[ RE-TRANSMIT_DATA ]" : "[ COMMENCE_LINK ]"}
+              </span>
             </button>
             <button onClick={onClose} className="mt-4 text-[9px] uppercase text-white/30 hover:text-white transition-colors tracking-[0.4em] bg-transparent">[ Close Terminal ]</button>
           </div>
@@ -470,6 +487,23 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
       <style>{`
         .hide-scrollbar::-webkit-scrollbar { width: 0px; display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* NEW: Liquid Metal Shimmer Logic */
+        @keyframes mercury-shimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+        .animate-mercury {
+          background: linear-gradient(
+            90deg, 
+            rgba(255,255,255,0) 0%, 
+            rgba(255,255,255,0.8) 50%, 
+            rgba(255,255,255,0) 100%
+          );
+          background-size: 200% 100%;
+          animation: mercury-shimmer 3s infinite linear;
+        }
+
         @keyframes map-pop { 0% { opacity: 0; transform: scale(0.85) translateY(20px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
         .animate-map-pop { animation: map-pop 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         @keyframes modal-entry { 0% { opacity: 0; transform: scale(1.02); } 100% { opacity: 1; transform: scale(1); } }
