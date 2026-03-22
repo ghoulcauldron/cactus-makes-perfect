@@ -318,72 +318,71 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
           </Canvas>
         </div>
 
-{/* --- TARGETED PATCH: RESTORE EVENT RENDERING --- */}
-        <div className="relative z-10 flex flex-col h-full p-6 md:p-10 overflow-hidden">
+{/* --- TARGETED PATCH: UNIFIED SCROLLABLE HUD --- */}
+        <div className="relative z-10 flex flex-col h-full overflow-hidden">
           
-          {/* 1. Header & Consolidated Instructions */}
-          <div className="flex flex-col items-center shrink-0 mb-6">
-            <div className="text-[10px] tracking-[0.5em] mb-1 text-[#00ffff] text-center uppercase" onMouseEnter={() => scrambleRefs.current['operation']?.triggerHover()}>
-               <PatternScramble ref={(el) => { if (el) scrambleRefs.current['operation'] = el; }} text="/// OPERATION: 20 YEAR DARE ///" {...CYBERPUNK_THEME} startTrigger={true} />
-            </div>
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tighter italic uppercase text-center leading-none mb-6">
-               Mission <span className="text-[#39FF14]">Briefing</span>
-            </h2>
+          {/* Main Scrollable Unit */}
+          <div className="flex-grow overflow-y-auto hide-scrollbar p-6 md:p-10">
             
-            <div className="flex flex-col items-center w-full max-w-2xl">
-              <p className="text-[10px] text-[#00ffff] tracking-[0.3em] uppercase font-bold mb-2">Target Window: AUG 27 — AUG 31</p>
-              <button onClick={() => setShowMap(true)} className="text-[10px] text-[#39FF14] hover:bg-[#39FF14] hover:text-black transition-all border border-[#39FF14]/40 px-8 py-2 bg-black/50 tracking-widest uppercase mb-8 shadow-[0_0_15px_rgba(57,255,20,0.2)]">
-                [ AREA MAP ]
-              </button>
-
-              <div className="w-full flex flex-col items-center mb-6">
-                <p className="text-[11px] text-white/50 tracking-[0.2em] uppercase mb-4 italic font-bold">1. Select Arrival Date</p>
-                <div className="flex flex-wrap justify-center gap-4">
-                  {['thursday', 'friday', 'saturday', 'sunday'].map((day) => (
-                    <button 
-                      key={day}
-                      onClick={() => setArrival(day as any)} 
-                      className={`text-[10px] font-bold px-4 py-2 uppercase tracking-[0.2em] border transition-all ${
-                        state.arrival_day === day 
-                          ? '!bg-[#39FF14] !text-black border-[#39FF14] shadow-[0_0_15px_#39FF14]' 
-                          : 'text-white/40 border-white/10 hover:border-[#39FF14]/40 hover:text-white'
-                      }`}
-                    >
-                      {day.slice(0, 3)} AUG {day === 'thursday' ? '27' : day === 'friday' ? '28' : day === 'saturday' ? '29' : '30'}
-                    </button>
-                  ))}
-                </div>
+            {/* Header Area */}
+            <div className="flex flex-col items-center mb-8 shrink-0">
+              <div className="text-[10px] tracking-[0.5em] mb-1 text-[#00ffff] text-center uppercase" onMouseEnter={() => scrambleRefs.current['operation']?.triggerHover()}>
+                 <PatternScramble ref={(el) => { if (el) scrambleRefs.current['operation'] = el; }} text="/// OPERATION: 20 YEAR DARE ///" {...CYBERPUNK_THEME} startTrigger={true} />
               </div>
+              <h2 className="text-4xl md:text-5xl font-bold tracking-tighter italic uppercase text-center leading-none mb-6">
+                 Mission <span className="text-[#39FF14]">Briefing</span>
+              </h2>
+              
+              <div className="flex flex-col items-center w-full max-w-2xl">
+                <p className="text-[10px] text-[#00ffff] tracking-[0.3em] uppercase font-bold mb-2">Target Window: AUG 27 — AUG 31</p>
+                <button onClick={() => setShowMap(true)} className="text-[10px] text-[#39FF14] hover:bg-[#39FF14] hover:text-black transition-all border border-[#39FF14]/40 px-8 py-2 bg-black/50 tracking-widest uppercase mb-8 shadow-[0_0_15px_rgba(57,255,20,0.2)]">
+                  [ AREA MAP ]
+                </button>
 
-              <p className="text-[11px] text-white/50 tracking-[0.2em] uppercase mb-6 italic font-bold">2. Confirm Event Attendance</p>
+                <div className="w-full flex flex-col items-center mb-6">
+                  <p className="text-[11px] text-[#00ffff] tracking-[0.2em] uppercase mb-4 italic font-bold">1. Select Arrival Date</p>
+                  <div className="flex flex-wrap justify-center gap-4">
+                    {['thursday', 'friday', 'saturday', 'sunday'].map((day) => (
+                      <button 
+                        key={day}
+                        onClick={() => setArrival(day as any)} 
+                        className={`text-[10px] font-bold px-4 py-2 uppercase tracking-[0.2em] border transition-all ${
+                          state.arrival_day === day 
+                            ? '!bg-[#39FF14] !text-black border-[#39FF14] shadow-[0_0_15px_#39FF14]' 
+                            : 'text-white/40 border-white/10 hover:border-[#39FF14]/40 hover:text-white'
+                        }`}
+                      >
+                        {day.slice(0, 3)} AUG {day === 'thursday' ? '27' : day === 'friday' ? '28' : day === 'saturday' ? '29' : '30'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-[#00ffff] tracking-[0.2em] uppercase mb-8 italic font-bold">2. Confirm Event Attendance</p>
+              </div>
             </div>
-          </div>
 
-          {/* 2. Scrollable Itinerary - Re-stacked Vertically */}
-          <div className="flex-grow overflow-y-auto hide-scrollbar px-4">
-            <div className="flex flex-col space-y-10 py-4 max-w-4xl mx-auto">
+            {/* Event Itinerary - Part of the same scroll unit */}
+            <div className="flex flex-col space-y-12 max-w-4xl mx-auto pb-10">
               {[
                 { date: "THU AUG 27", key: 'thursday', title: "The Arrival", desc: "Infiltration window opens" },
                 { date: "FRI AUG 28", key: 'friday', title: "Psyche-Feastia", keys: ['friday_meowwolf', 'friday_dinner'] },
                 { date: "SAT AUG 29", key: 'saturday', title: "Atmospheric Transit", keys: ['saturday_railway'] },
                 { date: "SUN AUG 30", key: 'sunday', title: "Post-Mission Debrief", keys: ['sunday_brunch', 'sunday_movie'] }
               ].map((section) => (
-                <div key={section.date} className="flex flex-col md:flex-row items-center md:items-start text-center md:text-left border-b border-white/5 pb-8 last:border-0">
-                  
-                  {/* Left: Static Date Info */}
-                  <div className="flex flex-col items-center md:items-start min-w-[220px] mb-4 md:mb-0">
+                <div key={section.date} className="flex flex-col md:flex-row items-center md:items-start text-center md:text-left border-b border-white/5 pb-10 last:border-0">
+                  <div className="flex flex-col items-center md:items-start min-w-[220px] mb-6 md:mb-0">
                     <span className="text-[10px] font-mono text-[#39FF14]/60 tracking-[0.4em] mb-1 uppercase font-bold">
                       {section.date}
                     </span>
-                    <div className="text-2xl font-bold tracking-tight text-white uppercase opacity-90" onMouseEnter={() => scrambleRefs.current[section.key]?.triggerHover()}>
+                    <div className="text-2xl font-bold tracking-tight text-[#00ffff] uppercase opacity-90" onMouseEnter={() => scrambleRefs.current[section.key]?.triggerHover()}>
                       <PatternScramble ref={(el) => { if (el) scrambleRefs.current[section.key] = el; }} text={section.title} {...CYBERPUNK_THEME} startTrigger={true} />
                     </div>
                   </div>
 
-                  {/* Right: Horizontal Buttons / Details */}
                   <div className="flex-grow flex flex-col md:flex-row items-center justify-center md:justify-start gap-4 md:pl-12">
                     {section.desc && (
-                      <p className="text-white/30 text-[11px] italic leading-tight uppercase tracking-wider">
+                      <p className="text-white/80 text-[11px] italic leading-tight uppercase tracking-wider">
                         {section.desc}
                       </p>
                     )}
@@ -415,7 +414,8 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
             </div>
           </div>
 
-          <div className="mt-8 pt-6 border-t border-white/10 flex flex-col items-center shrink-0">
+          {/* Footer Area - Anchored and Non-Scrollable */}
+          <div className="mt-auto pt-6 pb-6 border-t border-white/10 flex flex-col items-center shrink-0 bg-black/80 backdrop-blur-sm relative z-20">
             <button onClick={handleSave} disabled={state.isSaving || !state.isHydrated} className={`text-xs uppercase font-bold tracking-[0.5em] px-12 py-3 border-2 transition-all ${state.isSaved ? 'bg-[#39FF14] text-black border-[#39FF14]' : state.isSaving ? 'bg-white/10 text-white/50 border-white/20' : 'bg-transparent text-[#39FF14] border-[#39FF14]/40 hover:bg-[#39FF14] hover:text-black shadow-[0_0_20px_rgba(57,255,20,0.1)]'}`}>
               {state.isSaving ? "/// TRANSMITTING ///" : state.isSaved ? "DATA UPLOADED ✓" : state.hasExistingRecord ? "[ RE-TRANSMIT DATA ]" : "[ TRANSMIT DATA ]"}
             </button>
