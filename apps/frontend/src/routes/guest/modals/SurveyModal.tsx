@@ -326,7 +326,7 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
             
             {/* Header Area */}
             <div className="flex flex-col items-center mb-8 shrink-0">
-              <div className="text-[10px] tracking-[0.5em] mb-1 text-[#00ffff] text-center uppercase" onMouseEnter={() => scrambleRefs.current['operation']?.triggerHover()}>
+              <div className="text-[10px] tracking-[0.5em] mb-1 text-white/80 text-center uppercase" onMouseEnter={() => scrambleRefs.current['operation']?.triggerHover()}>
                  <PatternScramble ref={(el) => { if (el) scrambleRefs.current['operation'] = el; }} text="/// OPERATION: 20 YEAR DARE ///" {...CYBERPUNK_THEME} startTrigger={true} />
               </div>
               <h2 className="text-4xl md:text-5xl font-bold tracking-tighter italic uppercase text-center leading-none mb-6">
@@ -364,13 +364,20 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
 
             {/* Event Itinerary - Part of the same scroll unit */}
             <div className="flex flex-col space-y-12 max-w-4xl mx-auto pb-10">
+              {/* --- TARGETED PATCH: GLOWING SEPARATOR & DESC PADDING --- */}
               {[
                 { date: "THU AUG 27", key: 'thursday', title: "The Arrival", desc: "Infiltration window opens" },
                 { date: "FRI AUG 28", key: 'friday', title: "Psyche-Feastia", keys: ['friday_meowwolf', 'friday_dinner'] },
                 { date: "SAT AUG 29", key: 'saturday', title: "Atmospheric Transit", keys: ['saturday_railway'] },
                 { date: "SUN AUG 30", key: 'sunday', title: "Post-Mission Debrief", keys: ['sunday_brunch', 'sunday_movie'] }
-              ].map((section) => (
-                <div key={section.date} className="flex flex-col md:flex-row items-center md:items-start text-center md:text-left border-b border-white/5 pb-10 last:border-0">
+              ].map((section, idx, arr) => (
+                <div key={section.date} className="flex flex-col md:flex-row items-center md:items-start text-center md:text-left pb-10 relative">
+                  
+                  {/* Glowing Separator Line (Only between items) */}
+                  {idx < arr.length - 1 && (
+                    <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#00ffff]/20 to-transparent shadow-[0_0_8px_rgba(0,255,255,0.3)]" />
+                  )}
+
                   <div className="flex flex-col items-center md:items-start min-w-[220px] mb-6 md:mb-0">
                     <span className="text-[10px] font-mono text-[#39FF14]/60 tracking-[0.4em] mb-1 uppercase font-bold">
                       {section.date}
@@ -382,7 +389,7 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
 
                   <div className="flex-grow flex flex-col md:flex-row items-center justify-center md:justify-start gap-4 md:pl-12">
                     {section.desc && (
-                      <p className="text-white/80 text-[11px] italic leading-tight uppercase tracking-wider">
+                      <p className="text-white/80 text-[11px] italic leading-tight uppercase tracking-wider pt-2">
                         {section.desc}
                       </p>
                     )}
@@ -400,10 +407,10 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
                             }`}
                           >
                             {k.includes('meowwolf') ? "Midday: Off-World Excursion" : 
-                             k.includes('dinner') ? "6PM: Ceremonial Feast" : 
-                             k.includes('railway') ? "6PM: Ride into the sky" : 
-                             k.includes('brunch') ? "Midday: Brunch." : 
-                             "Evening: Final Transmission"}
+                            k.includes('dinner') ? "6PM: Ceremonial Feast" : 
+                            k.includes('railway') ? "6PM: Ride into the sky" : 
+                            k.includes('brunch') ? "Midday: Brunch." : 
+                            "Evening: Final Transmission"}
                           </button>
                         ))}
                       </div>
