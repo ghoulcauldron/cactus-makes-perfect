@@ -38,8 +38,8 @@ return `
         <table width="600" border="0" cellpadding="0" cellspacing="0" class="force-card-bg" style="max-width: 600px; width: 100%; background-color: ${darkerPurple}; border: 1px solid ${electricGreen}; border-radius: 40px; overflow: hidden; text-align: left;" role="presentation">
           
           <tr>
-            <td bgcolor="${darkerPurple}" class="force-green-bg" style="background-color: ${darkerPurple}; color: ${electricGreen}; padding: 12px 24px; font-weight: bold; font-family: 'Courier New', Courier, monospace; text-transform: uppercase; font-size: 13px; letter-spacing: 3px;">
-              /// MISSION_MANIFEST_V3 ///
+            <td bgcolor="${darkerPurple}" class="force-green-bg" style="background-color: ${darkerPurple}; color: #000000; padding: 12px 24px; font-weight: bold; font-family: 'Courier New', Courier, monospace; text-transform: uppercase; font-size: 13px; letter-spacing: 3px;">
+              /// MISSION_MANIFEST_V2 ///
             </td>
           </tr>
 
