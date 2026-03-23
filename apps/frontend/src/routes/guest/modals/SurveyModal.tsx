@@ -309,19 +309,59 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
 
             {/* Interactive Tooltip: Glass-morphic readout */}
             {showMarkerTooltip && (
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-32 z-[80] bg-[#020617]/90 backdrop-blur-xl border border-[#00ffff]/30 p-5 rounded-[30px] min-w-[240px] shadow-[0_0_40px_rgba(0,255,255,0.2)] animate-modal-entry">
-                <div className="flex items-center gap-2 mb-3 border-b border-[#00ffff]/20 pb-2">
-                  <div className="w-1.5 h-1.5 bg-[#00ffff] rounded-full animate-ping" />
-                  <p className="text-[#00ffff] text-[9px] tracking-[0.4em] uppercase font-bold">Coordinates_Locked</p>
+              <>
+                {/* 1. CLICK-AWAY LAYER: Invisible backdrop to catch clicks outside the tooltip */}
+                <div 
+                  className="absolute inset-0 z-[75] bg-transparent cursor-default" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowMarkerTooltip(false);
+                  }}
+                />
+
+                {/* 2. THE TOOLTIP: Adaptive positioning */}
+                <div 
+                  className={`
+                    absolute z-[80] 
+                    /* Mobile: Dead center of the oval */
+                    top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 
+                    /* Desktop: Positioned above the marker */
+                    md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-32
+                    
+                    bg-[#020617]/95 backdrop-blur-2xl border border-[#00ffff]/40 
+                    p-6 rounded-[30px] w-[85vw] max-w-[280px] 
+                    shadow-[0_0_50px_rgba(0,255,255,0.3)] 
+                    animate-modal-entry pointer-events-auto
+                  `}
+                  onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the tooltip
+                >
+                  <div className="flex items-center gap-2 mb-4 border-b border-[#00ffff]/20 pb-2">
+                    <div className="w-1.5 h-1.5 bg-[#00ffff] rounded-full animate-ping" />
+                    <p className="text-[#00ffff] text-[9px] tracking-[0.4em] uppercase font-bold">Coordinates_Locked</p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <p className="text-white/90 text-[11px] leading-relaxed uppercase tracking-wider font-bold">
+                      Dos Hermanas Compound
+                    </p>
+                    <p className="text-white/70 text-[10px] leading-relaxed uppercase tracking-wide italic">
+                      443 W San Francisco St<br/>
+                      Santa Fe, NM 87501
+                    </p>
+                    <div className="pt-2 flex flex-col gap-1">
+                      <p className="text-[#39FF14] text-[9px] tracking-[0.2em]">ELEVATION: 7,200FT</p>
+                      <p className="text-[#39FF14] text-[9px] tracking-[0.2em]">STATUS: ARRIVAL_READY</p>
+                    </div>
+                  </div>
+
+                  <button 
+                    onClick={() => setShowMarkerTooltip(false)} 
+                    className="mt-6 w-full py-2 bg-[#00ffff]/10 border border-[#00ffff]/30 rounded-full text-[#00ffff] text-[8px] tracking-[0.3em] uppercase hover:bg-[#00ffff] hover:text-black transition-all"
+                  >
+                    [ CLOSE_LINK ]
+                  </button>
                 </div>
-                <p className="text-white/90 text-[10px] leading-relaxed uppercase tracking-wider italic">
-                  Dos Hermanas: S&G Command Base.<br/>
-                  443 W San Francisco St, Santa Fe, NM<br/>
-                  Elevation: 7,200ft<br/>
-                  Status: <span className="text-[#39FF14]">Arrival_Ready</span>
-                </p>
-                <button onClick={() => setShowMarkerTooltip(false)} className="mt-4 w-full py-2 bg-white/5 border border-white/10 rounded-full text-[#39FF14] text-[8px] tracking-[0.3em] uppercase hover:bg-white/10 transition-all">[ DISMISS ]</button>
-              </div>
+              </>
             )}
           </Map>
 
