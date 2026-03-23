@@ -4,7 +4,7 @@ export function renderSurveyTemplate(code, inviteUrl) {
   // Use the transparent PNG URL you generated earlier
 const bgImgUrl = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/alienASCII.png";
 
-  return `
+return `
     <!DOCTYPE html>
     <html>
     <head>
@@ -31,6 +31,12 @@ const bgImgUrl = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/pub
           padding-bottom: 4px;
           margin-bottom: 8px;
         }
+        /* Glass-morphism helper for text readability */
+        .content-overlay {
+          background-color: rgba(0, 0, 0, 0.6) !important;
+          border-radius: 20px;
+          padding: 20px;
+        }
       </style>
     </head>
     <body style="margin:0; padding:0; background-color:#020617;">
@@ -48,10 +54,21 @@ const bgImgUrl = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/pub
                     <tr>
                       <td align="center" style="font-family: 'Courier New', Courier, monospace;">
                         <h1 style="color: #00ffff; font-size: 12px; letter-spacing: 6px; margin-bottom: 30px;">/// MISSION_MANIFEST_V2 ///</h1>
-                        <p style="color: #ffffff; font-size: 18px; font-weight: bold; margin-bottom: 10px;">THE FREQUENCY HAS SHIFTED.</p>
-                        <p style="color: #ffffff; margin-bottom: 40px; line-height: 1.6; opacity: 0.8;">Your presence has been detected. Final system calibration requires your neural imprint data.</p>
                         
-                        <table width="100%" border="0" cellpadding="0" cellspacing="20" style="margin-bottom: 40px; background: rgba(0, 255, 255, 0.05); border-radius: 20px;">
+                        <div class="content-overlay" style="margin-bottom: 30px;">
+                          <p style="color: #ffffff; font-size: 18px; font-weight: bold; margin-bottom: 15px;">THE FREQUENCY HAS SHIFTED.</p>
+                          <div style="color: #ffffff; line-height: 1.6; font-size: 13px; text-align: center;">
+                            <p>We’re excited to have you join the mission.</p>
+                            <p style="opacity: 0.8;">
+                              Please review the schedule below and confirm your arrival date + participation by following the link.<br>
+                              Deadline: APRIL 1<br>
+                              (The link will stay active.)
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <table width="100%" border="0" cellpadding="0" cellspacing="20" 
+                               style="margin-bottom: 40px; background: rgba(0, 0, 0, 0.6); border-radius: 20px; border: 1px solid rgba(0, 255, 255, 0.1);">
                           <tr>
                             <td width="50%" valign="top" class="itinerary-text">
                               <div class="day-label">THU AUG 27</div>
