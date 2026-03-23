@@ -3,7 +3,7 @@
 export function renderSurveyTemplate(code, inviteUrl) {
   const bgImgUrl = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/alienASCII2.png";
 
-  return `
+return `
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
 <head>
@@ -20,81 +20,85 @@ export function renderSurveyTemplate(code, inviteUrl) {
       background-image: linear-gradient(#000000, #000000) !important;
     }
     .force-card-bg {
-      background-color: #0a0a0a !important;
-      background-image: linear-gradient(#0a0a0a, #0a0a0a) !important;
+      background-color: #050505 !important;
+      background-image: linear-gradient(#050505, #050505) !important;
+    }
+    .force-cyan-bg {
+      background-color: #00ffff !important;
+      background-image: linear-gradient(#00ffff, #00ffff) !important;
     }
   </style>
 </head>
-<body class="force-black-bg" style="margin: 0; padding: 0; background-color: #000000; background-image: linear-gradient(#000000, #000000); color: #45CC2D; font-family: 'Courier New', Courier, monospace;">
+<body class="force-black-bg" style="margin: 0; padding: 0; background-color: #000000; background-image: linear-gradient(#000000, #000000); color: #ffffff; font-family: 'Courier New', Courier, monospace;">
   
   <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" class="force-black-bg" style="background-color: #000000; background-image: linear-gradient(#000000, #000000); width: 100%;">
     <tr>
       <td align="center" style="padding: 40px 20px;">
         
-        <table width="600" border="0" cellpadding="0" cellspacing="0" bgcolor="#0a0a0a" class="force-card-bg" style="max-width: 600px; width: 100%; background-color: #0a0a0a; background-image: linear-gradient(#0a0a0a, #0a0a0a); border: 2px solid #45CC2D; text-align: left;" role="presentation">
+        <table width="600" border="0" cellpadding="0" cellspacing="0" bgcolor="#050505" class="force-card-bg" style="max-width: 600px; width: 100%; background-color: #050505; background-image: linear-gradient(#050505, #050505); border: 1px solid #00ffff; border-radius: 40px; overflow: hidden; text-align: left;" role="presentation">
           
           <tr>
-            <td bgcolor="#45CC2D" style="background-color: #45CC2D; color: #000000; padding: 10px 20px; font-weight: bold; font-family: 'Courier New', Courier, monospace; text-transform: uppercase; font-size: 14px; letter-spacing: 2px;">
+            <td bgcolor="#00ffff" class="force-cyan-bg" style="background-color: #00ffff; background-image: linear-gradient(#00ffff, #00ffff); color: #000000; padding: 12px 24px; font-weight: bold; font-family: 'Courier New', Courier, monospace; text-transform: uppercase; font-size: 13px; letter-spacing: 3px;">
               /// MISSION_MANIFEST_V2 ///
             </td>
           </tr>
 
           <tr>
-            <td background="${bgImgUrl}" style="background-image: url('${bgImgUrl}'); background-repeat: no-repeat; background-position: center 30px; background-size: 300px; padding: 30px; font-family: 'Courier New', Courier, monospace; font-size: 14px; line-height: 1.6; color: #45CC2D;">
+            <td background="${bgImgUrl}" style="background-image: url('${bgImgUrl}'); background-repeat: no-repeat; background-position: center 40px; background-size: 320px; padding: 40px 30px; font-family: 'Courier New', Courier, monospace; font-size: 14px; line-height: 1.6; color: #ffffff;">
               
-              <p style="margin: 0 0 16px 0; font-weight: bold; color: #45CC2D; text-transform: uppercase; font-size: 18px;">
+              <p style="margin: 0 0 16px 0; font-weight: bold; color: #00ffff; text-transform: uppercase; font-size: 18px; letter-spacing: 1px;">
                 THE FREQUENCY HAS SHIFTED.
               </p>
 
-              <p style="margin: 0 0 16px 0; color: #45CC2D;">
+              <p style="margin: 0 0 16px 0; color: #ffffff;">
                 We’re excited to have you join the mission.
               </p>
               
-              <p style="margin: 0 0 16px 0; color: #45CC2D;">
+              <p style="margin: 0 0 24px 0; color: #ffffff; opacity: 0.9;">
                 Please review the schedule below and confirm your arrival date + participation by following the link.<br/>
-                <strong>Deadline: APRIL 1</strong><br/>
-                (The link will stay active.)
+                <strong style="color: #00ffff;">Deadline: APRIL 1</strong><br/>
+                <span style="font-size: 11px; opacity: 0.7;">(The link will stay active.)</span>
               </p>
 
               <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin: 24px 0;" role="presentation">
                 <tr>
-                  <td width="50%" valign="top" style="padding-right: 10px; border-right: 1px dashed #45CC2D;">
-                    <p style="margin: 0; font-weight: bold; font-size: 12px; color: #45CC2D;">THU AUG 27</p>
-                    <p style="margin: 0 0 12px 0; font-size: 11px;">THE ARRIVAL<br/>Infiltration opens</p>
+                  <td width="50%" valign="top" style="padding-right: 15px; border-right: 1px dashed #cf4aff;">
+                    <p style="margin: 0; font-weight: bold; font-size: 12px; color: #00ffff; letter-spacing: 1px;">THU AUG 27</p>
+                    <p style="margin: 2px 0 14px 0; font-size: 11px; color: #cf4aff; font-weight: bold;">THE ARRIVAL</p>
+                    <p style="margin: 0 0 12px 0; font-size: 11px; opacity: 0.8;">Infiltration window opens</p>
                     
-                    <p style="margin: 0; font-weight: bold; font-size: 12px; color: #45CC2D;">FRI AUG 28</p>
-                    <p style="margin: 0; font-size: 11px;">PSYCHE-FEASTIA<br/>Midday: Excursion<br/>6PM: Feast</p>
+                    <p style="margin: 0; font-weight: bold; font-size: 12px; color: #00ffff; letter-spacing: 1px;">FRI AUG 28</p>
+                    <p style="margin: 2px 0 4px 0; font-size: 11px; color: #cf4aff; font-weight: bold;">PSYCHE-FEASTIA</p>
+                    <p style="margin: 0; font-size: 11px; opacity: 0.8;">Midday: Off-World Excursion<br/>6PM: Communal Feast</p>
                   </td>
-                  <td width="50%" valign="top" style="padding-left: 10px;">
-                    <p style="margin: 0; font-weight: bold; font-size: 12px; color: #45CC2D;">SAT AUG 29</p>
-                    <p style="margin: 0 0 12px 0; font-size: 11px;">ATMOSPHERIC TRANSIT<br/>6PM: Ride the sky</p>
+                  <td width="50%" valign="top" style="padding-left: 15px;">
+                    <p style="margin: 0; font-weight: bold; font-size: 12px; color: #00ffff; letter-spacing: 1px;">SAT AUG 29</p>
+                    <p style="margin: 2px 0 4px 0; font-size: 11px; color: #cf4aff; font-weight: bold;">ATMOSPHERIC TRANSIT</p>
+                    <p style="margin: 0 0 14px 0; font-size: 11px; opacity: 0.8;">6PM: Ride into the sky</p>
                     
-                    <p style="margin: 0; font-weight: bold; font-size: 12px; color: #45CC2D;">SUN AUG 30</p>
-                    <p style="margin: 0; font-size: 11px;">POST-MISSION DEBRIEF<br/>Midday: Brunch</p>
+                    <p style="margin: 0; font-weight: bold; font-size: 12px; color: #00ffff; letter-spacing: 1px;">SUN AUG 30</p>
+                    <p style="margin: 2px 0 4px 0; font-size: 11px; color: #cf4aff; font-weight: bold;">POST-MISSION DEBRIEF</p>
+                    <p style="margin: 0; font-size: 11px; opacity: 0.8;">Midday: Brunch<br/>6PM: Soft Entertainment</p>
                   </td>
                 </tr>
               </table>
 
-              <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" role="presentation">
+              <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin: 24px 0;" role="presentation">
                 <tr>
-                  <td align="center" style="border: 1px dashed #45CC2D; background-color: #000000; background-image: linear-gradient(#000000, #000000); padding: 15px; color: #45CC2D; font-weight: bold; font-size: 18px; letter-spacing: 3px; font-family: 'Courier New', Courier, monospace;">
+                  <td align="center" style="border: 1px dashed #00ffff; background-color: #000000; background-image: linear-gradient(#000000, #000000); padding: 18px; color: #00ffff; font-weight: bold; font-size: 20px; letter-spacing: 4px; font-family: 'Courier New', Courier, monospace;">
                     CODE: ${code}
                   </td>
                 </tr>
               </table>
 
-              <p style="margin: 0 0 16px 0; color: #45CC2D; font-weight: bold;">
-                ACTION REQUIRED: Confirm by APRIL 1
-              </p>
-
-              <p style="margin: 30px 0 0 0; color: #45CC2D;">
+              <p style="margin: 0 0 30px 0; color: #ffffff; font-style: italic; font-size: 13px; text-align: center;">
                 Be excellent to each other 👽
               </p>
 
-              <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin-top: 30px;" role="presentation">
+              <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation">
                 <tr>
                   <td align="center">
-                    <a href="${inviteUrl}" style="background-color: #45CC2D; color: #000000; text-decoration: none; padding: 12px 24px; font-weight: bold; text-transform: uppercase; font-size: 14px; border: 1px solid #45CC2D; display: inline-block; font-family: 'Courier New', Courier, monospace;">
+                    <a href="${inviteUrl}" class="force-cyan-bg" style="background-color: #00ffff; background-image: linear-gradient(#00ffff, #00ffff); color: #000000; text-decoration: none; padding: 16px 40px; font-weight: bold; text-transform: uppercase; font-size: 14px; border-radius: 50px; display: inline-block; font-family: 'Courier New', Courier, monospace; letter-spacing: 2px;">
                       ACTIVATE_FEED
                     </a>
                   </td>
@@ -105,7 +109,7 @@ export function renderSurveyTemplate(code, inviteUrl) {
           </tr>
           
           <tr>
-            <td style="border-top: 1px solid #45CC2D; padding: 10px 20px; font-size: 10px; text-transform: uppercase; color: #45CC2D; opacity: 0.7; font-family: 'Courier New', Courier, monospace;">
+            <td style="border-top: 1px solid #1a1a1a; padding: 15px 30px; font-size: 10px; text-transform: uppercase; color: #00ffff; opacity: 0.5; font-family: 'Courier New', Courier, monospace; letter-spacing: 1px;">
               SECURE LINE: ENCRYPTED // MISSION: AREA_51_SURVEY<br/>
               EYES ONLY. DO NOT REPLY.
             </td>
