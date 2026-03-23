@@ -12,39 +12,32 @@ return `
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="x-apple-disable-message-reformatting">
   <style>
-    /* Force Dark Mode override */
-    @media (prefers-color-scheme: dark) {
-      .keep-white { color: #ffffff !important; }
-      .keep-cyan { color: #00ffff !important; }
-    }
-    
-    body { margin: 0; padding: 0; width: 100% !important; background-color: #020617 !important; }
+    body { margin: 0; padding: 0; width: 100% !important; background-color: #000000 !important; }
     
     .force-black-bg {
       background-color: #000000 !important;
       background-image: linear-gradient(#000000, #000000) !important;
     }
-    .force-void-bg {
-      background-color: #020617 !important;
-      background-image: linear-gradient(#020617, #020617) !important;
-    }
-    /* SOLID HEX instead of RGBA to prevent iOS inversion */
-    .force-overlay-bg {
-      background-color: #111827 !important;
-      background-image: linear-gradient(#111827, #111827) !important;
-    }
+    
     .force-cyan-bg {
       background-color: #00ffff !important;
       background-image: linear-gradient(#00ffff, #00ffff) !important;
     }
+
+    /* Target Gmail/iOS specifically to prevent text dimming */
+    @media (prefers-color-scheme: dark) {
+      .keep-white { color: #ffffff !important; }
+      .keep-cyan { color: #00ffff !important; }
+    }
   </style>
 </head>
-<body class="force-void-bg" style="margin: 0; padding: 0; background-color: #020617;">
-  <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" class="force-void-bg" style="width: 100%; background-color: #020617;">
+<body class="force-black-bg" style="margin: 0; padding: 0; background-color: #000000; background-image: linear-gradient(#000000, #000000);">
+  
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" class="force-black-bg" style="width: 100%; background-color: #000000;">
     <tr>
       <td align="center" style="padding: 40px 20px;">
         
-        <table width="600" border="0" cellpadding="0" cellspacing="0" class="force-black-bg" style="max-width: 600px; width: 100%; background-color: #000000; border: 1px solid #1e293b; border-radius: 40px; overflow: hidden;" role="presentation">
+        <table width="600" border="0" cellpadding="0" cellspacing="0" class="force-black-bg" style="max-width: 600px; width: 100%; background-color: #000000; border: 1px solid #00ffff; border-radius: 40px; overflow: hidden;" role="presentation">
           <tr>
             <td align="center" valign="top" background="${bgImgUrl}" style="background-image: url('${bgImgUrl}'); background-repeat: no-repeat; background-position: center 60px; background-size: 400px; padding: 60px 40px;">
               
@@ -53,40 +46,36 @@ return `
                   <td align="center" style="font-family: 'Courier New', Courier, monospace;">
                     
                     <h1 style="color: #00ffff !important; font-size: 12px; letter-spacing: 6px; margin: 0 0 30px 0; text-transform: uppercase;">/// MISSION_MANIFEST_V2 ///</h1>
-                    <p style="color: #ffffff !important; font-size: 18px; font-weight: bold; margin: 0 0 10px 0;">THE FREQUENCY HAS SHIFTED.</p>
+                    <p style="color: #ffffff !important; font-size: 18px; font-weight: bold; margin: 0 0 10px 0; text-transform: uppercase;">THE FREQUENCY HAS SHIFTED.</p>
 
-                    <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom: 30px;">
-                      <tr>
-                        <td class="force-overlay-bg" style="background-color: #111827; border-radius: 20px; padding: 25px; text-align: center;">
-                          <p style="color: #ffffff !important; margin: 0 0 10px 0; font-size: 14px; font-weight: bold;">We’re excited to have you join the mission.</p>
-                          <p style="color: #ffffff !important; margin: 0; font-size: 13px; line-height: 1.6;">
-                            Please review the schedule below and confirm your arrival date + participation by following the link.<br/>
-                            <span style="color: #00ffff !important; font-weight: bold;">Deadline: APRIL 1</span><br/>
-                            (The link will stay active.)
-                          </p>
-                        </td>
-                      </tr>
-                    </table>
+                    <div style="color: #ffffff !important; margin: 0 0 40px 0; line-height: 1.6; font-size: 14px; text-align: center;">
+                      <p style="margin: 0 0 10px 0;">We’re excited to have you join the mission.</p>
+                      <p style="margin: 0; font-size: 13px;">
+                        Please review the schedule below and confirm your arrival date + participation by following the link.<br/>
+                        <span style="color: #00ffff !important; font-weight: bold;">Deadline: APRIL 1</span><br/>
+                        (The link will stay active.)
+                      </p>
+                    </div>
 
-                    <table width="100%" border="0" cellpadding="20" cellspacing="0" role="presentation" class="force-overlay-bg" style="margin-bottom: 40px; background-color: #111827; border-radius: 20px; border: 1px solid #1e293b;">
+                    <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom: 40px;">
                       <tr>
-                        <td width="50%" valign="top" style="text-align: left; font-family: 'Courier New', Courier, monospace; font-size: 11px; line-height: 1.5;">
-                          <div style="color: #00ffff !important; font-weight: bold; letter-spacing: 2px; border-bottom: 1px solid #1e293b; padding-bottom: 4px; margin-bottom: 8px;">THU AUG 27</div>
-                          <div style="font-weight: bold; color: #cf4aff !important; margin-bottom: 4px;">THE ARRIVAL</div>
-                          <div style="color: #ffffff !important;">Infiltration window opens</div>
+                        <td width="50%" valign="top" style="padding-right: 15px; text-align: left; font-family: 'Courier New', Courier, monospace; font-size: 11px; line-height: 1.5;">
+                          <div style="color: #00ffff !important; font-weight: bold; letter-spacing: 2px; border-bottom: 1px solid #00ffff; padding-bottom: 4px; margin-bottom: 8px;">THU AUG 27</div>
+                          <div style="font-weight: bold; color: #ffffff !important; margin-bottom: 4px;">THE ARRIVAL</div>
+                          <div style="color: #00ffff !important;">Infiltration window opens</div>
                           <br/>
-                          <div style="color: #00ffff !important; font-weight: bold; letter-spacing: 2px; border-bottom: 1px solid #1e293b; padding-bottom: 4px; margin-bottom: 8px;">FRI AUG 28</div>
-                          <div style="font-weight: bold; color: #cf4aff !important; margin-bottom: 4px;">PSYCHE-FEASTIA</div>
-                          <div style="color: #ffffff !important;">Midday: Off-World Excursion<br/>6PM: Ceremonial Feast</div>
+                          <div style="color: #00ffff !important; font-weight: bold; letter-spacing: 2px; border-bottom: 1px solid #00ffff; padding-bottom: 4px; margin-bottom: 8px;">FRI AUG 28</div>
+                          <div style="font-weight: bold; color: #ffffff !important; margin-bottom: 4px;">PSYCHE-FEASTIA</div>
+                          <div style="color: #00ffff !important;">Midday: Off-World Excursion<br/>6PM: Ceremonial Feast</div>
                         </td>
-                        <td width="50%" valign="top" style="text-align: left; font-family: 'Courier New', Courier, monospace; font-size: 11px; line-height: 1.5;">
-                          <div style="color: #00ffff !important; font-weight: bold; letter-spacing: 2px; border-bottom: 1px solid #1e293b; padding-bottom: 4px; margin-bottom: 8px;">SAT AUG 29</div>
-                          <div style="font-weight: bold; color: #cf4aff !important; margin-bottom: 4px;">ATMOSPHERIC TRANSIT</div>
-                          <div style="color: #ffffff !important;">6PM: Ride into the sky</div>
+                        <td width="50%" valign="top" style="padding-left: 15px; text-align: left; font-family: 'Courier New', Courier, monospace; font-size: 11px; line-height: 1.5;">
+                          <div style="color: #00ffff !important; font-weight: bold; letter-spacing: 2px; border-bottom: 1px solid #00ffff; padding-bottom: 4px; margin-bottom: 8px;">SAT AUG 29</div>
+                          <div style="font-weight: bold; color: #ffffff !important; margin-bottom: 4px;">ATMOSPHERIC TRANSIT</div>
+                          <div style="color: #00ffff !important;">6PM: Ride into the sky</div>
                           <br/>
-                          <div style="color: #00ffff !important; font-weight: bold; letter-spacing: 2px; border-bottom: 1px solid #1e293b; padding-bottom: 4px; margin-bottom: 8px;">SUN AUG 30</div>
-                          <div style="font-weight: bold; color: #cf4aff !important; margin-bottom: 4px;">POST-MISSION DEBRIEF</div>
-                          <div style="color: #ffffff !important;">Midday: Brunch<br/>Evening: Soft Entertainment</div>
+                          <div style="color: #00ffff !important; font-weight: bold; letter-spacing: 2px; border-bottom: 1px solid #00ffff; padding-bottom: 4px; margin-bottom: 8px;">SUN AUG 30</div>
+                          <div style="font-weight: bold; color: #ffffff !important; margin-bottom: 4px;">POST-MISSION DEBRIEF</div>
+                          <div style="color: #00ffff !important;">Midday: Brunch<br/>Evening: Soft Entertainment</div>
                         </td>
                       </tr>
                     </table>
@@ -104,8 +93,8 @@ return `
                       </table>
                     </div>
 
-                    <div style="border-top: 1px solid #1e293b; padding-top: 30px;">
-                       <span style="color: #00ffff !important; font-size: 12px; font-weight: bold; letter-spacing: 4px; display: block; margin-bottom: 10px;">CODE: ${code}</span>
+                    <div style="border-top: 1px solid #00ffff; padding-top: 30px;">
+                       <span style="color: #00ffff !important; font-size: 14px; font-weight: bold; letter-spacing: 4px; display: block; margin-bottom: 10px;">CODE: ${code}</span>
                        <p style="color: #ffffff !important; font-style: italic; font-size: 13px; margin: 0; font-weight: bold;">Be excellent to each other 👽</p>
                     </div>
 
