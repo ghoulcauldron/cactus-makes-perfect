@@ -13,7 +13,7 @@ export function renderSurveyTemplate(code, inviteUrl) {
   const fadedRadioactive = "#5ed540"; // Secondary/dimmed text
   
   // ACCENTS
-  const softCyan = "#bcfeff";     // "Glow" Blue (keeping as a data-accent)
+  const softCyan = "#16cace";     // "Glow" Blue (keeping as a data-accent)
   const mutedMagenta = "#cf4aff"; // Your working anchor
 
 return `
