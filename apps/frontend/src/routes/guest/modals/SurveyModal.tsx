@@ -312,21 +312,20 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
               )}
             </Map>
 
-            {/* 4. TOOLTIP: Now outside the <Map> component but inside the oval container. 
-                This ensures 'absolute' positioning is relative to the oval UI, not geographical coordinates.
-            */}
+              {/* 4. TOOLTIP: Anchored to the center of the viewport/oval on mobile */}
             {showMarkerTooltip && (
               <div 
                 className={`
                   absolute z-[100]
-                  /* MOBILE: Dead center of the oval */
-                  top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
-                  /* DESKTOP: Float specifically above the marker location */
-                  md:top-[calc(50%-140px)] md:left-1/2
+                  /* MOBILE: Force absolute center of the oval container */
+                  top-[50%] left-[50%] -translate-x-1/2 -translate-y-1/2
                   
-                  bg-[#020617]/95 backdrop-blur-2xl border border-[#00ffff]/40 
-                  p-6 rounded-[30px] w-[85vw] max-w-[280px] 
-                  shadow-[0_0_50px_rgba(0,255,255,0.4)] 
+                  /* DESKTOP: Re-align to float above the marker (center-ish of map) */
+                  md:top-auto md:bottom-[60%] md:left-1/2 md:-translate-y-0
+                  
+                  bg-[#020617]/95 backdrop-blur-3xl border border-[#00ffff]/40 
+                  p-6 rounded-[30px] w-[88vw] max-w-[280px] 
+                  shadow-[0_0_60px_rgba(0,255,255,0.4)] 
                   animate-modal-entry pointer-events-auto
                 `}
                 onClick={(e) => e.stopPropagation()}
