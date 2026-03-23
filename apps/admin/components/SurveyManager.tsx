@@ -176,29 +176,8 @@ return (
             </div>
           </div>
 
-          {/* ROW 2: SEARCH FILTER (REINSTATED) */}
-          <div className="relative max-w-md">
-            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#45CC2D]/40" />
-            <input 
-              type="text" 
-              placeholder="FILTER BY NAME OR EMAIL..." 
-              value={searchQuery} 
-              onChange={(e) => setSearchQuery(e.target.value)} 
-              className="w-full bg-neutral-900/50 border border-[#45CC2D]/30 pl-10 pr-4 py-2 text-xs text-[#45CC2D] placeholder-[#45CC2D]/30 outline-none focus:border-[#45CC2D] transition-all uppercase tracking-widest"
-            />
-            {searchQuery && (
-              <button 
-                onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#45CC2D]/40 hover:text-[#45CC2D]"
-              >
-                <XMarkIcon className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-
           {/* LOGISTICS METRICS RIBBON */}
           <div className="flex flex-wrap gap-x-8 gap-y-4 pt-4 border-t border-[#45CC2D]/10">
-            {/* Arrival Day Cluster */}
             <div className="flex gap-4">
               {tallies.arrivals.map(([day, count]) => (
                 <div key={day} className="flex flex-col">
@@ -207,11 +186,7 @@ return (
                 </div>
               ))}
             </div>
-
-            {/* Vertical Divider */}
             <div className="hidden sm:block w-px h-8 bg-[#45CC2D]/20"></div>
-
-            {/* Event Cluster */}
             <div className="flex gap-5 overflow-x-auto scrollbar-hide pb-1">
               {tallies.events.map((ev) => (
                 <div key={ev.label} className="flex flex-col min-w-[32px]">
@@ -281,7 +256,22 @@ return (
         <div className="p-4 border-b border-[#45CC2D]/30 bg-[#45CC2D] text-black flex items-center justify-between">
           <span className="text-xs font-bold uppercase tracking-widest">Survey Intelligence</span>
         </div>
-        <div className="p-4 space-y-2">
+
+        {/* REINSTATED SEARCH FILTER */}
+        <div className="p-2 bg-black/40 border-b border-[#45CC2D]/20 shrink-0">
+          <div className="relative">
+            <MagnifyingGlassIcon className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#45CC2D]/40" />
+            <input 
+              type="text" 
+              placeholder="FILTER NODES..." 
+              value={searchQuery} 
+              onChange={(e) => setSearchQuery(e.target.value)} 
+              className="w-full bg-neutral-900/50 border border-[#45CC2D]/30 pl-8 pr-2 py-2 text-[10px] text-[#45CC2D] placeholder-[#45CC2D]/30 outline-none focus:border-[#45CC2D] uppercase tracking-widest transition-all" 
+            />
+          </div>
+        </div>
+
+        <div className="p-4 space-y-2 flex-1 overflow-y-auto scrollbar-hide">
           <div className="flex justify-between items-center p-3 border border-[#45CC2D]/30 bg-black">
             <span className="text-[10px] font-bold uppercase opacity-60">Total Cohort (YES/MAYBE)</span>
             <span className="text-sm font-black">39</span>
