@@ -1061,7 +1061,9 @@ app.get("/api/v1/admin/guest/:id/activity", requireAdminAuth, async (req, res) =
 
     for (const row of emails || []) {
       rawEvents.push({
-        kind: "email_sent",
+        // FIX: Map the 'survey' type to the 'survey_sent' kind 
+        // so the frontend memo can find it.
+        kind: row.type === "survey" ? "survey_sent" : "email_sent", 
         occurred_at: row.sent_at || row.created_at,
         meta: {
           subject: row.subject,

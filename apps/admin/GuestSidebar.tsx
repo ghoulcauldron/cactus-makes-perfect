@@ -243,7 +243,13 @@ export default function GuestSidebar({ guest, onClose, onUpdate }: GuestSidebarP
   }, [activity]);
 
   const latestSurvey = useMemo(() => {
-    return activity.find(a => a.kind === "survey_sent" || a.kind === "survey_resent");
+    if (!activity) return null;
+    return activity.find(a => 
+      a.kind === "survey_sent" || 
+      a.kind === "survey_resent" ||
+      // Fallback: check metadata if kind is generic
+      (a.kind === "email_sent" && a.meta?.type === "survey")
+    );
   }, [activity]);
 
   const surveySentAt = latestSurvey?.occurred_at || null;
