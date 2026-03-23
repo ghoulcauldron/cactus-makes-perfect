@@ -8,7 +8,7 @@ import { SignJWT } from "jose";
 import { v4 as uuidv4 } from "uuid";
 import nodemailer from "nodemailer";
 import cors from "cors";
-import { renderSurveyTemplate } from "../admin/utils/renderSurveyTemplate.js";
+
 // Load backend-local .env file
 import dotenv from "dotenv";
 dotenv.config();
@@ -350,25 +350,148 @@ app.post("/api/v1/admin/invites/send", async (req, res) => {
     const { token, code, expires_at } = tokenRow;
 
     const inviteUrl = `${PUBLIC_URL}/invite?token=${encodeURIComponent(token)}`;
-    const subject = "/// NEURAL_IMPRINT_REQUIRED: OPERATION_20_YEAR_DARE ///";
+    const subject = "🌵 PROJECT: CACTUS MAKES PERFECT (Operation: 20 Year Dare) 🌵";
 
     // --- 3. Template rendering (HARDENED: Table Shell + Gradient Hack) ---
 
     // Format expires_at for email templates
     const expiresDate = new Date(expires_at);
+    const formattedExpires = expiresDate.toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
 
-    // NEW BIOLUMINESCENT SURVEY TEMPLATE
-        let html = renderSurveyTemplate(code, inviteUrl);
+    // HARDENED + DEEP GRADIENT HACK TEMPLATE
+    let html = `
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
+  <style>
+    :root { color-scheme: light dark; supported-color-schemes: light dark; }
+    body { margin: 0; padding: 0; width: 100% !important; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; background-color: #000000 !important; }
+    
+    /* THE HACK: Apply this class to ANYTHING that must stay black/dark */
+    .force-black-bg {
+      background-color: #000000 !important;
+      background-image: linear-gradient(#000000, #000000) !important;
+    }
+    .force-card-bg {
+      background-color: #0a0a0a !important;
+      background-image: linear-gradient(#0a0a0a, #0a0a0a) !important;
+    }
+  </style>
+</head>
+<body class="force-black-bg" style="margin: 0; padding: 0; background-color: #000000; background-image: linear-gradient(#000000, #000000); color: #45CC2D; font-family: 'Courier New', Courier, monospace;">
+  
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" class="force-black-bg" style="background-color: #000000; background-image: linear-gradient(#000000, #000000); width: 100%;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        
+        <table width="600" border="0" cellpadding="0" cellspacing="0" bgcolor="#0a0a0a" class="force-card-bg" style="max-width: 600px; width: 100%; background-color: #0a0a0a; background-image: linear-gradient(#0a0a0a, #0a0a0a); border: 2px solid #45CC2D; text-align: left;" role="presentation">
+          
+          <tr>
+            <td bgcolor="#45CC2D" style="background-color: #45CC2D; color: #000000; padding: 10px 20px; font-weight: bold; font-family: 'Courier New', Courier, monospace; text-transform: uppercase; font-size: 14px; letter-spacing: 2px;">
+              /// INCOMING TRANSMISSION ///
+            </td>
+          </tr>
 
-        let text = `
-    THE FREQUENCY HAS SHIFTED.
-    Your presence has been detected. Neural imprint data required.
+          <tr>
+            <td style="padding: 30px; font-family: 'Courier New', Courier, monospace; font-size: 14px; line-height: 1.6; color: #45CC2D;">
+              
+              <p style="margin: 0 0 16px 0; font-weight: bold; color: #45CC2D;">
+                IN THE YEAR 2006, CONTACT WAS MADE.<br/>
+                TWO TRAJECTORIES ALIGNED.
+              </p>
 
-    YOUR CODE: ${code}
-    PORTAL LINK: ${inviteUrl}
+              <p style="margin: 0 0 16px 0; color: #45CC2D;"><strong>EARTH DWELLERS.</strong></p>
+              
+              <p style="margin: 0 0 16px 0; color: #45CC2D;">
+                It would be our greatest pleasure if you would join us to witness this next phase of our evolution.
+              </p>
+              
+              <p style="margin: 0 0 16px 0; color: #45CC2D;">
+                The link below is your portal to the next galaxy. 
+                Activate the link, input your clearance code, and press "=" to proceed.
+              </p>
 
-    S&G
-        `.trim();
+              <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" role="presentation">
+                <tr>
+                  <td align="center" style="border: 1px dashed #45CC2D; background-color: #000000; background-image: linear-gradient(#000000, #000000); padding: 15px; color: #45CC2D; font-weight: bold; font-size: 18px; letter-spacing: 3px; font-family: 'Courier New', Courier, monospace;">
+                    CODE: ${code}
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin: 0 0 16px 0; color: #45CC2D;">
+                <strong>DIRECTIVE:</strong> Confirm your coordinates by ${formattedExpires}. 
+                Precise data is required for resource allocation and system calibration.
+              </p>
+
+              <p style="margin: 30px 0 0 0; color: #45CC2D;">
+                Awaiting your signal.
+              </p>
+              
+              <p style="margin: 10px 0 0 0; color: #45CC2D;">
+                BIG LOVE,<br/>
+                S&G
+              </p>
+
+              <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin-top: 30px;" role="presentation">
+                <tr>
+                  <td align="center">
+                    <a href="${inviteUrl}" style="background-color: #45CC2D; color: #000000; text-decoration: none; padding: 12px 24px; font-weight: bold; text-transform: uppercase; font-size: 14px; border: 1px solid #45CC2D; display: inline-block; font-family: 'Courier New', Courier, monospace;">
+                      ACTIVATE PORTAL
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+          
+          <tr>
+            <td style="border-top: 1px solid #45CC2D; padding: 10px 20px; font-size: 10px; text-transform: uppercase; color: #45CC2D; opacity: 0.7; font-family: 'Courier New', Courier, monospace;">
+              SECURE LINE: ENCRYPTED // ID: ${guest_id.split('-')[0]}<br/>
+              EYES ONLY. DO NOT REPLY.
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `;
+
+    // Plain text fallback
+    let text = `
+IN THE YEAR 2006, CONTACT WAS MADE.
+TWO TRAJECTORIES ALIGNED.
+
+EARTH DWELLERS.
+
+It would be our greatest pleasure if you would join us to witness this next phase of our evolution.
+
+The link below is your portal to the next galaxy. 
+Activate the link, input your clearance code, and press "=" to proceed.
+
+YOUR CODE: ${code}
+PORTAL LINK: ${inviteUrl}
+
+DIRECTIVE: Confirm your coordinates by ${formattedExpires}. 
+Precise data is required for resource allocation and system calibration.
+
+Awaiting your signal.
+
+BIG LOVE,
+S&G
+    `.trim();
 
     // 4. Send email
     await sendEmail({

@@ -3,6 +3,7 @@ import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headless
 import { ChevronUpDownIcon, CheckIcon } from '@heroicons/react/20/solid';
 import { sendAdminInvite, sendAdminNudge } from "../api/client";
 import { renderInviteTemplate } from "../utils/renderInviteTemplate";
+import { renderSurveyTemplate } from "../utils/renderSurveyTemplate";
 
 type Mode = "invite" | "nudge";
 type InviteTemplate = "default" | "friendly";
@@ -136,7 +137,7 @@ export default function SendCommunicationModal({
   // --- PREVIEW GENERATION ---
   function getPreviewHtml() {
     if (mode === "invite") {
-      return renderInviteTemplate(inviteTemplate, subject, "", "");
+      return renderSurveyTemplate("123456", "#");
     }
     if (nudgeStyle === "area51") {
       return generateArea51Html(nudgeMessage || "(No message content entered...)");
