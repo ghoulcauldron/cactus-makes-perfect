@@ -247,7 +247,7 @@ export default function GuestSidebar({ guest, onClose, onUpdate }: GuestSidebarP
     return activity.find(a => 
       a.kind === "survey_sent" || 
       a.kind === "survey_resent" ||
-      // Fallback: check metadata if kind is generic
+      // Fallback check in case the kind remains generic but meta identifies the phase
       (a.kind === "email_sent" && a.meta?.type === "survey")
     );
   }, [activity]);
