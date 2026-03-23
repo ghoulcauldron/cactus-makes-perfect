@@ -8,9 +8,9 @@ export function renderSurveyTemplate(code, inviteUrl) {
   const darkerPurple = "#2a0142";
   
   // THE GREEN-SCALE SPECTRUM (Replacing all white/gray)
-  const electricGreen = "#39ff14"; // Primary punch / Heads
-  const terminalMoss = "#a5ff8a";   // Body text (tinted green-white)
-  const fadedRadioactive = "#66b353"; // Secondary/dimmed text
+  const electricGreen = "#5be942"; // Primary punch / Heads
+  const terminalMoss = "#70f049";   // Body text (tinted green-white)
+  const fadedRadioactive = "#5ed540"; // Secondary/dimmed text
   
   // ACCENTS
   const softCyan = "#bcfeff";     // "Glow" Blue (keeping as a data-accent)
@@ -38,7 +38,7 @@ return `
         <table width="600" border="0" cellpadding="0" cellspacing="0" class="force-card-bg" style="max-width: 600px; width: 100%; background-color: ${darkerPurple}; border: 1px solid ${electricGreen}; border-radius: 40px; overflow: hidden; text-align: left;" role="presentation">
           
           <tr>
-            <td bgcolor="${electricGreen}" class="force-green-bg" style="background-color: ${electricGreen}; color: #000000; padding: 12px 24px; font-weight: bold; font-family: 'Courier New', Courier, monospace; text-transform: uppercase; font-size: 13px; letter-spacing: 3px;">
+            <td bgcolor="${electricGreen}" class="force-green-bg" style="background-color: ${electricGreen}; color: #343434; padding: 12px 24px; font-weight: bold; font-family: 'Courier New', Courier, monospace; text-transform: uppercase; font-size: 13px; letter-spacing: 3px;">
               /// MISSION_MANIFEST_V3 ///
             </td>
           </tr>

@@ -8,9 +8,9 @@ export function renderSurveyTemplate(code: string, inviteUrl: string) {
   const darkerPurple = "#2a0142";
   
   // THE GREEN-SCALE SPECTRUM (Replacing all white/gray)
-  const electricGreen = "#39ff14"; // Primary punch / Heads
-  const terminalMoss = "#a5ff8a";   // Body text (tinted green-white)
-  const fadedRadioactive = "#66b353"; // Secondary/dimmed text
+  const electricGreen = "#5be942"; // Primary punch / Heads
+  const terminalMoss = "#70f049";   // Body text (tinted green-white)
+  const fadedRadioactive = "#5ed540"; // Secondary/dimmed text
   
   // ACCENTS
   const softCyan = "#bcfeff";     // "Glow" Blue (keeping as a data-accent)
