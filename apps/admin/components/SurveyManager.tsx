@@ -43,8 +43,21 @@ export default function SurveyManager() {
 
   useEffect(() => { refreshData(); }, []);
 
+  // 1. Process "Sent" status into the data mapping
+  const processedData = useMemo(() => {
+    // Create a Set of guest IDs who have been sent a survey
+    const sentIds = new Set(
+      activity.filter(a => a.kind === 'survey_sent').map(a => a.guest_id)
+    );
+
+    return data.map(guest => ({
+      ...guest,
+      is_sent: sentIds.has(guest.id)
+    }));
+  }, [data, activity]);
+
   const filteredAndSortedData = useMemo(() => {
-    let result = [...data];
+    let result = [...processedData];
 
     // 1. Filter by RSVP Status (Confirmed vs All Potentials)
     if (rsvpFilter === "CONFIRMED_ONLY") {
@@ -67,14 +80,19 @@ export default function SurveyManager() {
       );
     }
 
-    // 4. Sort: Responded First, then by Name
+    // 4. Sort: Responded First, then Sent/Idle, then Name
     return result.sort((a, b) => {
       const aRes = !!a.event_responses;
       const bRes = !!b.event_responses;
       if (aRes !== bRes) return aRes ? -1 : 1;
+      
+      const aSent = a.is_sent;
+      const bSent = b.is_sent;
+      if (aSent !== bSent) return aSent ? -1 : 1;
+
       return `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`);
     });
-  }, [data, searchQuery, rsvpFilter, responseFilter]);
+  }, [processedData, searchQuery, rsvpFilter, responseFilter]);
 
   // Sidebar Metrics Logic - Now reflects only 'yes' or 'maybe' guests
   const stats = useMemo(() => {
@@ -93,6 +111,7 @@ export default function SurveyManager() {
       sentButNoResp: Array.from(sentIds).filter(id => !respondedIds.has(id))
     };
   }, [data, activity]);
+  
 
   if (loading) return <div className="p-12 text-[#45CC2D] font-mono animate-pulse uppercase text-center">Scanning Response Matrix...</div>;
 
@@ -171,6 +190,18 @@ export default function SurveyManager() {
                     </div>
                     <div className="text-[8px] opacity-40 truncate max-w-[150px]">{row.email}</div>
                   </td>
+
+                  {/* NEW STATUS COLUMN */}
+                  <td className="p-3 text-center border-l border-[#45CC2D]/10">
+                    {row.event_responses ? (
+                      <span className="text-[9px] bg-[#45CC2D] text-black px-1.5 py-0.5 font-bold uppercase tracking-tighter">DONE</span>
+                    ) : row.is_sent ? (
+                      <span className="text-[9px] border border-red-500 text-red-500 px-1.5 py-0.5 font-bold uppercase tracking-tighter animate-pulse">IDLE</span>
+                    ) : (
+                      <span className="text-[9px] border border-[#45CC2D]/30 text-[#45CC2D]/40 px-1.5 py-0.5 font-bold uppercase tracking-tighter">READY</span>
+                    )}
+                  </td>
+                  
                   <td className="p-3 text-center border-l border-[#45CC2D]/10">
                     <span className="text-[10px] font-bold uppercase opacity-80">
                       {row.event_responses?.arrival_day?.slice(0,3) || '---'}
