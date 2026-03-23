@@ -49,6 +49,15 @@ export default function SurveyManager() {
       const guestEmails = emails.filter(e => e.guest_id === guest.id && e.type === 'survey');
       const guestActivity = activity.filter(a => a.guest_id === guest.id);
       
+      // DEBUG LOG: ONLY for guests you know are being mislabeled
+      if (guest.last_name === "TARGET_NAME") {
+        console.log(`Telemetry for ${guest.last_name}:`, {
+          email_count: guestEmails.length,
+          auth_events: guestActivity.filter(a => a.kind === "auth_success").length,
+          has_response_row: !!guest.event_responses
+        });
+      }
+
       const isSent = guestEmails.length > 0;
       const hasAuth = guestActivity.some(a => a.kind === "auth_success");
       const hasSubmitted = !!guest.event_responses;
