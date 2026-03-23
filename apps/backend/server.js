@@ -8,6 +8,7 @@ import { SignJWT } from "jose";
 import { v4 as uuidv4 } from "uuid";
 import nodemailer from "nodemailer";
 import cors from "cors";
+import { renderSurveyTemplate } from "./utils/renderSurveyTemplate.js";
 
 // Load backend-local .env file
 import dotenv from "dotenv";
