@@ -244,15 +244,25 @@ export default function GuestSidebar({ guest, onClose, onUpdate }: GuestSidebarP
 
   const latestSurvey = useMemo(() => {
     if (!activity || activity.length === 0) return null;
-    // Look for our specific survey kinds OR the raw email log entry marked as survey
+    
+    // Scans the normalized activity array for ANY record indicating a survey dispatch
     return activity.find(a => 
       a.kind === "survey_sent" || 
-      a.kind === "survey_resent" ||
+      a.kind === "survey_resent" || 
+      a.kind === "admin_invite_resent" || // Fallback for admin-triggered resends
       (a.kind === "email_sent" && a.meta?.type === "survey")
     );
   }, [activity]);
 
   const surveySentAt = latestSurvey?.occurred_at || null;
+
+  console.log("SIDEBAR_ACTIVITY_LOG:", activity.map(a => ({ kind: a.kind, type: a.meta?.type })));
+  console.log("DEBUG_SURVEY_DATA:", {
+    rawLatestSurvey: latestSurvey,
+    surveySentAt: surveySentAt,
+    typeOfSentAt: typeof surveySentAt,
+    isTruthy: !!surveySentAt
+  });
 
   return (
     <div className="w-full lg:w-[420px] bg-black text-[#45CC2D] font-mono h-full flex flex-col border-l border-[#45CC2D]">
