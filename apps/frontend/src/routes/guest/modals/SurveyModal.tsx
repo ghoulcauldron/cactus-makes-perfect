@@ -110,7 +110,8 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
     isHydrated: false,
     isSaving: false,
     isSaved: false,
-    hasExistingRecord: false
+    hasExistingRecord: false,
+    validationError: false
   });
 
   const [showMap, setShowMap] = useState(false);
@@ -247,11 +248,12 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
     }, [showMap]);
 
 // This function now just opens the confirmation check
-  const triggerSaveSequence = () => {
-    if (!state.arrival_day) {
-      alert("ERROR: Arrival sequence not initialized.");
-      return;
-    }
+    const triggerSaveSequence = () => {
+    if (!state.arrival_day || confirmedEvents.length === 0) {
+          setState(prev => ({ ...prev, validationError: true }));
+          return;
+        }
+
     setShowConfirm(true);
   };
 
@@ -284,7 +286,7 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
   };
 
   const setArrival = (day: 'thursday' | 'friday' | 'saturday' | 'sunday') => {
-    setState(prev => ({ ...prev, arrival_day: prev.arrival_day === day ? null : day, isSaved: false }));
+    setState(prev => ({ ...prev, arrival_day: prev.arrival_day === day ? null : day, isSaved: false, validationError: false }));
   };
 
   if (!isOpen) return null;
@@ -457,7 +459,7 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
                         {section.keys.map(k => (
                           <button 
                             key={k} 
-                            onClick={() => setState(s => ({ ...s, [k]: !s[k as keyof typeof s], isSaved: false }))} 
+                            onClick={() => setState(s => ({ ...s, [k]: !s[k as keyof typeof s], isSaved: false, validationError: false }))} 
                             className={`w-full max-w-[320px] text-[9px] py-3 px-8 text-left rounded-full border transition-all duration-700 uppercase tracking-[0.3em] ${
                               state[k as keyof typeof state] 
                                 ? '!bg-[#00ffff] !text-black border-[#00ffff] shadow-[0_0_25px_rgba(0,255,255,0.5)]' 
@@ -481,6 +483,28 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
 
           {/* Footer Area - Anchored and Non-Scrollable */}
           <div className="mt-auto pt-6 pb-6 border-t border-white/10 flex flex-col items-center shrink-0 bg-black/80 backdrop-blur-sm relative z-20">
+
+            {/* --- TARGETED PATCH: DYNAMIC NATURE-OF-ERROR REVEAL --- */}
+            {state.validationError && (
+              <div className="mb-6 flex flex-col items-center animate-in fade-in zoom-in duration-500">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-ping" />
+                  <p className="text-[10px] text-red-500 font-mono tracking-[0.4em] uppercase font-bold">
+                    Terminal_Block: Missing Mission Parameters
+                  </p>
+                </div>
+                <div className="bg-red-500/10 border border-red-500/20 px-4 py-1.5 rounded-full">
+                  <p className="text-[9px] text-red-400/80 font-mono tracking-[0.2em] uppercase italic">
+                    Status: {!state.arrival_day && confirmedEvents.length === 0 
+                      ? "Infiltration_Date & Event_Trajectories [OFFLINE]" 
+                      : !state.arrival_day 
+                        ? "Arrival_Window [UNSPECIFIED]" 
+                        : "Mission_Objectives [NOT_SELECTED]"}
+                  </p>
+                </div>
+              </div>
+            )}
+
             <button 
               onClick={triggerSaveSequence}
               disabled={state.isSaving || !state.isHydrated} 
