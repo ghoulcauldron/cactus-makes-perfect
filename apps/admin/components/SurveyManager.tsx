@@ -46,33 +46,39 @@ export default function SurveyManager() {
 
   const processedData = useMemo(() => {
     return data.map(guest => {
-      const guestEmails = emails.filter(e => e.guest_id === guest.id && e.type === 'survey');
-      const guestActivity = activity.filter(a => a.guest_id === guest.id);
+      // Get the latest survey email sent to this guest
+      const lastSurveyEmail = emails
+        .filter(e => e.guest_id === guest.id)
+        .sort((a, b) => new Date(b.sent_at).getTime() - new Date(a.sent_at).getTime())[0];
+
+      // Get the latest auth success for this guest
+      const lastAuth = activity
+        .filter(a => a.guest_id === guest.id)
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
       
-      // DEBUG LOG: ONLY for guests you know are being mislabeled
-      if (guest.last_name === "TARGET_NAME") {
-        console.log(`Telemetry for ${guest.last_name}:`, {
-          email_count: guestEmails.length,
-          auth_events: guestActivity.filter(a => a.kind === "auth_success").length,
-          has_response_row: !!guest.event_responses
-        });
-      }
-
-      const isSent = guestEmails.length > 0;
-      const hasAuth = guestActivity.some(a => a.kind === "auth_success");
+      const isSent = !!lastSurveyEmail;
       const hasSubmitted = !!guest.event_responses;
+      
+      // Chronological Check: Did they login AFTER receiving the survey email?
+      const hasBridgedSurvey = isSent && lastAuth && 
+        new Date(lastAuth.created_at) > new Date(lastSurveyEmail.sent_at);
 
-      // Telemetry Mapping aligned with SQL Audit
-      const isIdle = hasAuth && !hasSubmitted; // Auth exists but no responses
-      const isAwaiting = isSent && !hasAuth && !hasSubmitted; // Sent but no auth/resp
+      /** * DEFINITIVE STATE LOGIC:
+       * 1. DONE: Submitted responses.
+       * 2. IDLE: Logged in AFTER survey email but hasn't submitted.
+       * 3. WAIT: Sent survey email but hasn't logged in yet.
+       * 4. READY: No survey email sent.
+       */
+      const isIdle = hasBridgedSurvey && !hasSubmitted;
+      const isAwaiting = isSent && !hasBridgedSurvey && !hasSubmitted;
 
       return {
         ...guest,
         is_sent: isSent,
         is_idle: isIdle,
         is_awaiting: isAwaiting,
-        has_auth: hasAuth,
-        has_submitted: hasSubmitted
+        has_submitted: hasSubmitted,
+        last_sent_at: lastSurveyEmail?.sent_at
       };
     });
   }, [data, emails, activity]);

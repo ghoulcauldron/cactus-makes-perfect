@@ -1785,7 +1785,6 @@ app.get("/api/v1/admin/lodging/eligible-guests", requireAdminAuth, async (req, r
 // ---- Admin: GET Survey Responses (Filtered by RSVP status) ----
 app.get("/api/v1/admin/surveys", requireAdminAuth, async (req, res) => {
   try {
-    // 1. Fetch guests with positive RSVPs and their survey rows
     const { data: responses, error: rErr } = await supabase
       .from("guests")
       .select(`
@@ -1798,19 +1797,19 @@ app.get("/api/v1/admin/surveys", requireAdminAuth, async (req, res) => {
 
     if (rErr) throw rErr;
 
-    // 2. Fetch survey email logs
-    const { data: emails, error: eErr } = await supabase
+    // Fetch survey email logs with timestamps
+    const { data: emails } = await supabase
       .from("emails_log")
       .select("guest_id, sent_at")
-      .eq("type", "survey");
+      .eq("type", "survey")
+      .order("sent_at", { ascending: false });
 
-    // 3. Fetch specific activity logs for state derivation
-    const { data: activity, error: aErr } = await supabase
+    // Fetch auth activity with timestamps
+    const { data: activity } = await supabase
       .from("user_activity")
       .select("guest_id, kind, created_at")
-      .in("kind", ["auth_success", "event_responses_updated"]);
-
-    if (eErr || aErr) throw (eErr || aErr);
+      .eq("kind", "auth_success")
+      .order("created_at", { ascending: false });
 
     return res.json({ 
       responses: responses || [], 
