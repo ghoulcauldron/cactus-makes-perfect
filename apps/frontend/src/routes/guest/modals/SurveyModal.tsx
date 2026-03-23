@@ -272,115 +272,109 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2 pointer-events-auto overflow-hidden font-mono">
       <div className="absolute inset-0 bg-[#0a001a]/90 backdrop-blur-xl transition-opacity duration-700" onClick={() => (showMap ? setShowMap(false) : onClose())} />
       
-  {/* --- TARGETED PATCH: SONAR OVAL & TEAL MARKER --- */}
-  {showMap && (
-    <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 animate-map-pop" onClick={() => setShowMap(false)}>
-      <div className="relative w-[98vw] max-w-[1000px] h-[80vh] group">
-        
-        {/* 1. Bioluminescent Outer Glow */}
-        <div className="absolute -inset-10 bg-[#00ffff]/10 blur-[80px] rounded-full animate-pulse pointer-events-none" />
+    {/* --- TARGETED PATCH: SONAR OVAL & TEAL MARKER --- */}
+    {showMap && (
+      <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 animate-map-pop" onClick={() => setShowMap(false)}>
+        <div className="relative w-[98vw] max-w-[1000px] h-[80vh] group">
+          
+          {/* 1. Bioluminescent Outer Glow */}
+          <div className="absolute -inset-10 bg-[#00ffff]/10 blur-[80px] rounded-full animate-pulse pointer-events-none" />
 
-        {/* 2. SONAR WAVES: Three overlapping pulses */}
-        <div className="absolute inset-0 border-2 border-[#00ffff]/20 rounded-[100px] animate-sonar pointer-events-none" style={{ clipPath: 'ellipse(48% 42% at 50% 50%)' }} />
-        <div className="absolute inset-0 border-2 border-[#00ffff]/10 rounded-[100px] animate-sonar pointer-events-none [animation-delay:2s]" style={{ clipPath: 'ellipse(48% 42% at 50% 50%)' }} />
+          {/* 2. SONAR WAVES */}
+          <div className="absolute inset-0 border-2 border-[#00ffff]/20 rounded-[100px] animate-sonar pointer-events-none" style={{ clipPath: 'ellipse(48% 42% at 50% 50%)' }} />
+          <div className="absolute inset-0 border-2 border-[#00ffff]/10 rounded-[100px] animate-sonar pointer-events-none [animation-delay:2s]" style={{ clipPath: 'ellipse(48% 42% at 50% 50%)' }} />
 
-        {/* 3. The Clipped Oval Container */}
-        <div 
-          className="w-full h-full relative overflow-hidden bg-[#020617] border border-white/20 shadow-[0_0_100px_rgba(0,255,255,0.2)] rounded-[100px]" 
-          style={{ clipPath: 'ellipse(48% 42% at 50% 50%)' }} 
-          onClick={(e) => e.stopPropagation()}
-        >
-          <Map 
-            ref={mapRef}
-            {...viewState}
-            onMove={(evt) => setViewState(evt.viewState)}
-            mapboxAccessToken={MAPBOX_TOKEN} 
-            mapStyle={CUSTOM_STYLE} 
-            style={{ width: '100%', height: '100%' }}
-            antialias={true}
-            maxPitch={85}
-            terrain={{ source: 'mapbox-dem', exaggeration: 1.5 }}
-          > 
-            {showUFOMarker && (
-              <Marker longitude={-105.944936} latitude={35.689511} anchor="bottom">
-                <UFOMarker onClick={() => setShowMarkerTooltip(!showMarkerTooltip)} />
-              </Marker>
-            )}
-
-            {/* Interactive Tooltip: Glass-morphic readout */}
-            {showMarkerTooltip && (
-              <>
-                {/* 1. CLICK-AWAY LAYER: Invisible backdrop to catch clicks outside the tooltip */}
-                <div 
-                  className="absolute inset-0 z-[75] bg-transparent cursor-default" 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowMarkerTooltip(false);
-                  }}
-                />
-
-                {/* 2. THE TOOLTIP: Adaptive positioning */}
-                <div 
-                  className={`
-                    absolute z-[80] 
-                    /* Mobile: Dead center of the oval */
-                    top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 
-                    /* Desktop: Positioned above the marker */
-                    md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-32
-                    
-                    bg-[#020617]/95 backdrop-blur-2xl border border-[#00ffff]/40 
-                    p-6 rounded-[30px] w-[85vw] max-w-[280px] 
-                    shadow-[0_0_50px_rgba(0,255,255,0.3)] 
-                    animate-modal-entry pointer-events-auto
-                  `}
-                  onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the tooltip
-                >
-                  <div className="flex items-center gap-2 mb-4 border-b border-[#00ffff]/20 pb-2">
-                    <div className="w-1.5 h-1.5 bg-[#00ffff] rounded-full animate-ping" />
-                    <p className="text-[#00ffff] text-[9px] tracking-[0.4em] uppercase font-bold">Coordinates_Locked</p>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <p className="text-white/90 text-[11px] leading-relaxed uppercase tracking-wider font-bold">
-                      Dos Hermanas Compound
-                    </p>
-                    <p className="text-white/70 text-[10px] leading-relaxed uppercase tracking-wide italic">
-                      443 W San Francisco St<br/>
-                      Santa Fe, NM 87501
-                    </p>
-                    <div className="pt-2 flex flex-col gap-1">
-                      <p className="text-[#39FF14] text-[9px] tracking-[0.2em]">ELEVATION: 7,200FT</p>
-                      <p className="text-[#39FF14] text-[9px] tracking-[0.2em]">STATUS: ARRIVAL_READY</p>
-                    </div>
-                  </div>
-
-                  <button 
-                    onClick={() => setShowMarkerTooltip(false)} 
-                    className="mt-6 w-full py-2 bg-[#00ffff]/10 border border-[#00ffff]/30 rounded-full text-[#00ffff] text-[8px] tracking-[0.3em] uppercase hover:bg-[#00ffff] hover:text-black transition-all"
-                  >
-                    [ CLOSE_LINK ]
-                  </button>
-                </div>
-              </>
-            )}
-          </Map>
-
-          {/* Liquid Edge Highlight */}
-          <svg className="absolute inset-0 w-full h-full pointer-events-none z-[60]">
-            <ellipse cx="50%" cy="50%" rx="48%" ry="42%" fill="none" stroke="white" strokeWidth="0.5" className="opacity-20" />
-          </svg>
-
-          {/* Terminate Feed: Matching Survey Modal Pod Style */}
-          <button 
-            onClick={() => setShowMap(false)} 
-            className="absolute bottom-[18%] left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-md border border-[#00ffff]/40 text-[#00ffff] px-10 py-3 rounded-full text-[10px] uppercase tracking-[0.5em] hover:bg-[#00ffff] hover:text-black transition-all duration-700 shadow-[0_0_30px_rgba(0,255,255,0.3)] z-[70]"
+          {/* 3. The Clipped Oval Container */}
+          <div 
+            className="w-full h-full relative overflow-hidden bg-[#020617] border border-white/20 shadow-[0_0_100px_rgba(0,255,255,0.2)] rounded-[100px]" 
+            style={{ clipPath: 'ellipse(48% 42% at 50% 50%)' }} 
+            onClick={(e) => e.stopPropagation()}
           >
-            TERMINATE_FEED
-          </button>
+            <Map 
+              ref={mapRef}
+              {...viewState}
+              onMove={(evt) => setViewState(evt.viewState)}
+              mapboxAccessToken={MAPBOX_TOKEN} 
+              mapStyle={CUSTOM_STYLE} 
+              style={{ width: '100%', height: '100%' }}
+              antialias={true}
+              maxPitch={85}
+              terrain={{ source: 'mapbox-dem', exaggeration: 1.5 }}
+              onClick={() => {
+                // Clicking the map itself (outside the marker) closes the tooltip
+                if (showMarkerTooltip) setShowMarkerTooltip(false);
+              }}
+            > 
+              {showUFOMarker && (
+                <Marker longitude={-105.944936} latitude={35.689511} anchor="bottom">
+                  <UFOMarker onClick={() => setShowMarkerTooltip(!showMarkerTooltip)} />
+                </Marker>
+              )}
+            </Map>
+
+            {/* 4. TOOLTIP: Now outside the <Map> component but inside the oval container. 
+                This ensures 'absolute' positioning is relative to the oval UI, not geographical coordinates.
+            */}
+            {showMarkerTooltip && (
+              <div 
+                className={`
+                  absolute z-[100]
+                  /* MOBILE: Dead center of the oval */
+                  top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
+                  /* DESKTOP: Float specifically above the marker location */
+                  md:top-[calc(50%-140px)] md:left-1/2
+                  
+                  bg-[#020617]/95 backdrop-blur-2xl border border-[#00ffff]/40 
+                  p-6 rounded-[30px] w-[85vw] max-w-[280px] 
+                  shadow-[0_0_50px_rgba(0,255,255,0.4)] 
+                  animate-modal-entry pointer-events-auto
+                `}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center gap-2 mb-4 border-b border-[#00ffff]/20 pb-2">
+                  <div className="w-1.5 h-1.5 bg-[#00ffff] rounded-full animate-ping" />
+                  <p className="text-[#00ffff] text-[9px] tracking-[0.4em] uppercase font-bold">Coordinates_Locked</p>
+                </div>
+                
+                <div className="space-y-2">
+                  <p className="text-white/90 text-[11px] leading-relaxed uppercase tracking-wider font-bold">
+                    Dos Hermanas Compound
+                  </p>
+                  <p className="text-white/70 text-[10px] leading-relaxed uppercase tracking-wide italic">
+                    443 W San Francisco St<br/>
+                    Santa Fe, NM 87501
+                  </p>
+                  <div className="pt-2 flex flex-col gap-1 text-[#39FF14] text-[8px] tracking-[0.2em]">
+                    <p>ELEVATION: 7,200FT</p>
+                    <p>STATUS: ARRIVAL_READY</p>
+                  </div>
+                </div>
+
+                <button 
+                  onClick={() => setShowMarkerTooltip(false)} 
+                  className="mt-6 w-full py-2 bg-[#00ffff]/10 border border-[#00ffff]/30 rounded-full text-[#00ffff] text-[8px] tracking-[0.3em] uppercase hover:bg-[#00ffff] hover:text-black transition-all"
+                >
+                  [ DISMISS_DATA ]
+                </button>
+              </div>
+            )}
+
+            {/* Liquid Edge Highlight */}
+            <svg className="absolute inset-0 w-full h-full pointer-events-none z-[60]">
+              <ellipse cx="50%" cy="50%" rx="48%" ry="42%" fill="none" stroke="white" strokeWidth="0.5" className="opacity-20" />
+            </svg>
+
+            {/* Terminate Feed */}
+            <button 
+              onClick={() => setShowMap(false)} 
+              className="absolute bottom-[18%] left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-md border border-[#00ffff]/40 text-[#00ffff] px-10 py-3 rounded-full text-[10px] uppercase tracking-[0.5em] hover:bg-[#00ffff] hover:text-black transition-all duration-700 shadow-[0_0_30px_rgba(0,255,255,0.3)] z-[70]"
+            >
+              TERMINATE_FEED
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  )}
+    )}
 
       {/* --- RECTANGULAR SURVEY MODAL --- */}
       <div 
