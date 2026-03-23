@@ -243,11 +243,11 @@ export default function GuestSidebar({ guest, onClose, onUpdate }: GuestSidebarP
   }, [activity]);
 
   const latestSurvey = useMemo(() => {
-    if (!activity) return null;
+    if (!activity || activity.length === 0) return null;
+    // Look for our specific survey kinds OR the raw email log entry marked as survey
     return activity.find(a => 
       a.kind === "survey_sent" || 
       a.kind === "survey_resent" ||
-      // Fallback check in case the kind remains generic but meta identifies the phase
       (a.kind === "email_sent" && a.meta?.type === "survey")
     );
   }, [activity]);
@@ -288,14 +288,15 @@ export default function GuestSidebar({ guest, onClose, onUpdate }: GuestSidebarP
             <div>
               <h3 className="text-xs font-bold uppercase tracking-widest mb-2 border-b border-[#45CC2D]/30 pb-1">Survey Status</h3>
               <div className="flex items-center justify-between">
-                <span className={`text-sm ${!surveySentAt ? "text-[#45CC2D]/50" : "text-[#45CC2D]"}`}>
-                  {!surveySentAt ? "NOT SENT" : "SENT"}
+                {/* Using !!surveySentAt forces the date/null into a strict boolean true/false */}
+                <span className={`text-sm ${!!surveySentAt ? "text-[#45CC2D]" : "text-[#45CC2D]/50"}`}>
+                  {!!surveySentAt ? "SENT" : "NOT SENT"}
                 </span>
                 <button 
                   onClick={() => setShowSendModal(true)} 
                   className="border border-[#45CC2D] text-[#45CC2D] px-3 py-1 text-xs hover:bg-[#45CC2D] hover:text-black transition-colors uppercase tracking-wider"
                 >
-                  {!surveySentAt ? "Send Survey" : "Resend Survey"}
+                  {!!surveySentAt ? "Resend Survey" : "Send Survey"}
                 </button>
               </div>
               {surveySentAt && (
