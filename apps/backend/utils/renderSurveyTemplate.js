@@ -2,7 +2,7 @@
 
 export function renderSurveyTemplate(code, inviteUrl) {
   // Use the transparent PNG URL you generated earlier
-  const elvisUrl = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/elvisASCII.png";
+  const bgImgUrl = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/alienASCII.png";
 
   return `
     <!DOCTYPE html>
@@ -25,8 +25,8 @@ export function renderSurveyTemplate(code, inviteUrl) {
                    style="border-radius: 40px; overflow: hidden; background-color: #000000;">
               <tr>
                 <td align="center" valign="middle" 
-                    background="${elvisUrl}" 
-                    style="background-image: url('${elvisUrl}'); background-repeat: no-repeat; background-position: center; background-size: contain; padding: 60px 40px;">
+                    background="${bgImgUrl}" 
+                    style="background-image: url('${bgImgUrl}'); background-repeat: no-repeat; background-position: center; background-size: contain; padding: 60px 40px;">
                   <table width="100%" border="0" cellpadding="0" cellspacing="0">
                     <tr>
                       <td align="center" style="font-family: 'Courier New', Courier, monospace; color: #cf4aff;">

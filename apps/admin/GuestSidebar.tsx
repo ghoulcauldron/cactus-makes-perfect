@@ -178,6 +178,7 @@ export default function GuestSidebar({ guest, onClose, onUpdate }: GuestSidebarP
   const timeline = useMemo(() => {
     if (!activity || activity.length === 0) return [];
     const now = new Date();
+    
     const normalized = activity
       .map((row) => row.payload ?? row)
       .filter((entry) => !!entry.kind)
@@ -192,9 +193,11 @@ export default function GuestSidebar({ guest, onClose, onUpdate }: GuestSidebarP
     );
 
     const groups: Record<string, TimelineGroup> = {};
+    
     sorted.forEach((item) => {
       const date = new Date(item.occurred_at);
       const dayKey = date.toISOString().slice(0, 10);
+      
       if (!groups[dayKey]) {
         groups[dayKey] = {
           dayKey,
@@ -203,6 +206,7 @@ export default function GuestSidebar({ guest, onClose, onUpdate }: GuestSidebarP
           summary: { email_opened: 0, email_clicked: 0 },
         };
       }
+
       if (item.kind === "email_opened") {
         groups[dayKey].summary.email_opened++;
         return;
@@ -211,9 +215,30 @@ export default function GuestSidebar({ guest, onClose, onUpdate }: GuestSidebarP
         groups[dayKey].summary.email_clicked++;
         return;
       }
+
       const kindInfo = kindMap[item.kind] || { Icon: LockClosedIcon, label: item.kind || "Unknown Activity" };
-      groups[dayKey].items.push({ ...item, Icon: kindInfo.Icon, label: kindInfo.label, emphasis: kindInfo.emphasis || false, date });
+      
+      // --- Contextual Label Logic ---
+      let displayLabel = kindInfo.label;
+      
+      // If the event is an authorization success, check if it was triggered by the survey link
+      if (item.kind === "auth_success" || item.kind === "invite_used") {
+        const surveySentBeforeThis = activity.some(a => 
+          (a.kind === "survey_sent" || a.kind === "survey_resent") && 
+          new Date(a.occurred_at || a.created_at) < date
+        );
+        displayLabel = surveySentBeforeThis ? "Survey Link Used" : "Invite Used";
+      }
+
+      groups[dayKey].items.push({ 
+        ...item, 
+        Icon: kindInfo.Icon, 
+        label: displayLabel, 
+        emphasis: kindInfo.emphasis || false, 
+        date 
+      });
     });
+
     return Object.values(groups).sort((a, b) => b.dayKey.localeCompare(a.dayKey));
   }, [activity]);
 
@@ -257,18 +282,20 @@ export default function GuestSidebar({ guest, onClose, onUpdate }: GuestSidebarP
             <div>
               <h3 className="text-xs font-bold uppercase tracking-widest mb-2 border-b border-[#45CC2D]/30 pb-1">Survey Status</h3>
               <div className="flex items-center justify-between">
-                <span className={`text-sm ${!latestSurvey ? "text-[#45CC2D]/50" : "text-[#45CC2D]"}`}>
-                  {!latestSurvey ? "NOT SENT" : "SENT"}
+                <span className={`text-sm ${!surveySentAt ? "text-[#45CC2D]/50" : "text-[#45CC2D]"}`}>
+                  {!surveySentAt ? "NOT SENT" : "SENT"}
                 </span>
                 <button 
                   onClick={() => setShowSendModal(true)} 
                   className="border border-[#45CC2D] text-[#45CC2D] px-3 py-1 text-xs hover:bg-[#45CC2D] hover:text-black transition-colors uppercase tracking-wider"
                 >
-                  {!latestSurvey ? "Send Survey" : "Resend Survey"}
+                  {!surveySentAt ? "Send Survey" : "Resend Survey"}
                 </button>
               </div>
-              {latestSurvey && (
-                <p className="text-[10px] text-[#45CC2D]/60 mt-1">LAST SENT: {new Date(latestSurvey.occurred_at).toLocaleString()}</p>
+              {surveySentAt && (
+                <p className="text-[10px] text-[#45CC2D]/60 mt-1">
+                  LAST SENT: {new Date(surveySentAt).toLocaleString()}
+                </p>
               )}
             </div>
 

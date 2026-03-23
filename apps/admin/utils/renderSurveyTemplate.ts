@@ -1,8 +1,8 @@
 // apps/admin/utils/renderSurveyTemplate.ts
 
 export function renderSurveyTemplate(code: string, inviteUrl: string) {
-  // Ensure this URL matches your Supabase storage path for the Elvis ASCII PNG
-  const elvisUrl = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/elvisASCII.png";
+  // Ensure this URL matches your Supabase storage path for the ASCII PNG
+  const bgImgUrl = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/alienASCII.png";
 
   return `
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -25,8 +25,8 @@ export function renderSurveyTemplate(code: string, inviteUrl: string) {
         <table width="600" border="0" cellpadding="0" cellspacing="0" class="chrome-card" style="max-width: 600px; width: 100%; border-radius: 40px; overflow: hidden; background-color: #000000;">
           <tr>
             <td align="center" valign="middle" 
-                background="${elvisUrl}" 
-                style="background-image: url('${elvisUrl}'); background-repeat: no-repeat; background-position: center; background-size: contain; padding: 80px 40px;">
+                background="${bgImgUrl}" 
+                style="background-image: url('${bgImgUrl}'); background-repeat: no-repeat; background-position: center; background-size: contain; padding: 80px 40px;">
               
               <table width="100%" border="0" cellpadding="0" cellspacing="0">
                 <tr>
