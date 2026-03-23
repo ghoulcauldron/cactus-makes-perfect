@@ -26,15 +26,12 @@ export default function BulkActions({
   const canNudgeGroup = Boolean(currentGroup) && !hasSelection;
   const showComms = hasSelection || canNudgeGroup;
 
-// Update logic to reflect the Survey / Synaptic phase
+  // Determine label based on selection
   const inviteLabel = useMemo(() => {
-    if (!hasSelection) return "Broadcast Survey";
-    
-    // Check if any selected guest has already received a survey dispatch
-    // Note: Ensure your 'admin_guests_view' or fetching logic includes survey status
-    const hasAlreadyReceivedSurvey = selectedGuests.some(g => !!g.survey_sent_at || !!g.survey_sent);
-    
-    return hasAlreadyReceivedSurvey ? "Resend Survey Link" : "Broadcast Survey";
+    if (!hasSelection) return "Send Invite";
+    // If any selected guest has an invited_at timestamp, use "Resend"
+    const hasAlreadyInvited = selectedGuests.some(g => !!g.invited_at);
+    return hasAlreadyInvited ? "Resend Invite" : "Send Invite";
   }, [hasSelection, selectedGuests]);
 
   function close() {
@@ -61,44 +58,44 @@ export default function BulkActions({
 
   if (!showComms) return null;
 
-return (
+  return (
     <div>
-      <div className="relative w-40 font-mono text-[10px]">
+      <div className="relative w-40 font-mono">
         <Listbox value={undefined} onChange={(val: ActionMode) => handleActionInitiated(val)}>
           <ListboxButton 
             disabled={isProcessing}
-            className={`relative w-full cursor-default border border-[#45CC2D] bg-black py-1.5 pl-2 pr-8 text-left uppercase text-[#45CC2D] transition-all 
-              ${isProcessing ? 'opacity-50 cursor-wait' : 'hover:bg-[#45CC2D] hover:text-black'}`}
+            className={`relative w-full cursor-default border border-[#45CC2D] bg-black py-1 pl-2 pr-8 text-left text-[10px] uppercase text-[#45CC2D] transition-all 
+              ${isProcessing ? 'opacity-50 cursor-wait' : 'hover:bg-[#9ae68c] hover:text-black'}`}
           >
             <span className="block truncate font-bold">
-              {isProcessing ? "PROCESSING..." : "COMMS_CMD..."}
+              {isProcessing ? "Processing..." : "Comms..."}
             </span>
             <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-1">
               <ChevronDownIcon className="h-4 w-4" />
             </span>
           </ListboxButton>
           
-          <ListboxOptions className="absolute right-0 z-50 mt-1 max-h-60 w-64 overflow-auto rounded-none bg-[#0a0a0a] border border-[#45CC2D] py-1 shadow-[0_0_30px_rgba(69,204,45,0.2)] focus:outline-none">
-            <div className="px-3 py-2 text-[9px] text-gray-500 uppercase tracking-widest font-bold border-b border-gray-800/50 mb-1">
-              TARGET: {hasSelection ? `${selectedIds.length} RECIPIENTS` : `GROUP_${currentGroup?.toUpperCase()}`}
+          <ListboxOptions className="absolute right-0 z-50 mt-1 max-h-60 w-56 overflow-auto rounded-md bg-[#0a0a0a] border border-[#45CC2D] py-1 shadow-2xl focus:outline-none">
+            <div className="px-3 py-1 text-[10px] text-gray-500 uppercase tracking-widest font-bold border-b border-gray-800/50 mb-1">
+              Target: {hasSelection ? `${selectedIds.length} Selected` : `Group ${currentGroup}`}
             </div>
             
             <ListboxOption 
               value="nudge" 
-              className={({ active }) => `relative cursor-pointer select-none py-2.5 pl-4 pr-4 uppercase transition-colors ${active ? "bg-[#45CC2D] text-black" : "text-[#45CC2D]"}`}
+              className={({ active }) => `relative cursor-pointer select-none py-2 pl-4 pr-4 text-[10px] uppercase transition-colors ${active ? "bg-[#45CC2D] text-black" : "text-[#45CC2D]"}`}
             >
               <div className="flex items-center gap-2">
-                <ChatBubbleLeftRightIcon className="h-3.5 w-3.5" />
-                Neural Nudge
+                <ChatBubbleLeftRightIcon className="h-3 w-3" />
+                Send Nudge
               </div>
             </ListboxOption>
 
             <ListboxOption 
               value="invite" 
-              className={({ active }) => `relative cursor-pointer select-none py-2.5 pl-4 pr-4 uppercase transition-colors ${active ? "bg-[#45CC2D] text-black" : "text-[#45CC2D]"}`}
+              className={({ active }) => `relative cursor-pointer select-none py-2 pl-4 pr-4 text-[10px] uppercase transition-colors ${active ? "bg-[#45CC2D] text-black" : "text-[#45CC2D]"}`}
             >
               <div className="flex items-center gap-2">
-                <PaperAirplaneIcon className="h-3.5 w-3.5" />
+                <PaperAirplaneIcon className="h-3 w-3" />
                 {inviteLabel}
               </div>
             </ListboxOption>

@@ -76,24 +76,33 @@ function formatActivityDate(dateStr: string | null) {
   });
 }
 
-// Inside GuestList.tsx
+/* --- TARGETED PATCH: UNIFIED ACTIVITY DISPLAY LOGIC --- */
 function inferActivityDisplay(g: any) {
-  // 1. Check for RSVP status first (Highest Priority)
+  // PRIORITY 1: Survey Phase Telemetry (Current Campaign)
+  if (g.last_activity_kind === "survey_sent" || g.last_activity_kind === "survey_resent") {
+    return { Icon: PaperAirplaneIcon, label: "Survey Dispatched" };
+  }
+  
+  if (g.last_activity_kind === "event_responses_updated") {
+    return { Icon: CheckCircleIcon, label: "Survey Completed" };
+  }
+
+  // PRIORITY 2: RSVP Status (Legacy Phase 1 Campaign)
   if (g.rsvp_status) {
     const statusLabel = g.rsvp_status.charAt(0).toUpperCase() + g.rsvp_status.slice(1);
     return { Icon: CheckCircleIcon, label: `RSVP: ${statusLabel}` };
   }
   
-  // 2. Map the 'kind' from our new SQL view (Matches 'guest_created', 'invite_sent', etc.)
+  // PRIORITY 3: General system activity (Guest Created, Nudges, etc.)
   if (g.last_activity_kind && kindMap[g.last_activity_kind]) {
     return kindMap[g.last_activity_kind];
   }
   
-  // 3. Ultimate fallback if no activity is recorded yet
+  // FALLBACK: No records detected
   return { Icon: CursorArrowRaysIcon, label: "No Activity" };
 }
 
-type SortField = "name" | "group" | "rsvp" | "activity";
+type SortField = "name" | "group" | "rsvp" | "survey" | "activity";
 type SortDirection = "asc" | "desc";
 type FilterState = "all" | "responded_all" | "responded_yes" | "responded_no" | "responded_pending" | "not_responded_all" | "not_responded_invited" | "not_responded_not_invited";
 
@@ -186,7 +195,8 @@ const sortedGuests = useMemo(() => {
     switch (sortField) {
       case "name": valA = `${a.last_name} ${a.first_name}`.toLowerCase(); valB = `${b.last_name} ${b.first_name}`.toLowerCase(); break;
       case "group": valA = (a.group_label || "").toLowerCase(); valB = (b.group_label || "").toLowerCase(); break;
-      case "rsvp": valA = (a.rsvp_status || "").toLowerCase(); valB = (b.rsvp_status || "").toLowerCase(); break; // FIX
+      case "rsvp": valA = (a.rsvp_status || "").toLowerCase(); valB = (b.rsvp_status || "").toLowerCase(); break;
+      case "survey": valA = a.survey_sent_at ? new Date(a.survey_sent_at).getTime() : 0; valB = b.survey_sent_at ? new Date(b.survey_sent_at).getTime() : 0; break;
       case "activity": valA = a.last_activity_at ? new Date(a.last_activity_at).getTime() : 0; valB = b.last_activity_at ? new Date(b.last_activity_at).getTime() : 0; break;
     }
     if (valA < valB) return sortDirection === "asc" ? -1 : 1;
@@ -417,6 +427,7 @@ const sortedGuests = useMemo(() => {
                     <th className="p-2 hidden md:table-cell bg-surface">Email</th>
                     <th className="p-2 hidden md:table-cell cursor-pointer hover:bg-primary/20 select-none group bg-surface" onClick={() => handleSort("group")}><div className="flex items-center gap-1">Group <SortIcon field="group" /></div></th>
                     <th className="p-2 cursor-pointer hover:bg-primary/20 select-none group bg-surface" onClick={() => handleSort("rsvp")}><div className="flex items-center gap-1">RSVP <SortIcon field="rsvp" /></div></th>
+                    <th className="p-2 hidden xl:table-cell cursor-pointer hover:bg-primary/20 select-none group bg-surface" onClick={() => handleSort("survey")}><div className="flex items-center gap-1">Survey <SortIcon field="survey" /></div></th>
                     <th className="p-2 hidden lg:table-cell cursor-pointer hover:bg-primary/20 select-none group bg-surface" onClick={() => handleSort("activity")}><div className="flex items-center gap-1">Last Activity <SortIcon field="activity" /></div></th>
                   </tr>
                 </thead>
@@ -465,6 +476,18 @@ const sortedGuests = useMemo(() => {
                             </span>
                           ) : (
                             <span className="text-gray-500 text-xs">—</span>
+                          )}
+                        </td>
+
+                        {/* NEW SURVEY STATUS CELL (Area 51 Styling) */}
+                        <td className="p-2 hidden xl:table-cell align-top sm:align-middle whitespace-nowrap">
+                          {g.survey_sent_at ? (
+                            <div className="flex flex-col">
+                              <span className={`text-[10px] font-bold ${selection.isSelected(g.id) ? "text-black" : "text-[#45CC2D]"}`}>SENT</span>
+                              <span className="text-[9px] opacity-50">{new Date(g.survey_sent_at).toLocaleDateString()}</span>
+                            </div>
+                          ) : (
+                            <span className="text-gray-600 text-[10px] font-bold opacity-40">UNSENT</span>
                           )}
                         </td>
 

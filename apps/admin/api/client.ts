@@ -204,3 +204,13 @@ export async function overrideGuestRSVP(guestId: string, status: string) {
     body: JSON.stringify({ status }),
   });
 }
+
+// ------------------------------
+// SURVEY (admin)
+// ------------------------------
+export async function sendAdminSurvey(guestId: string) {
+  return apiFetch(`/admin/survey/send`, {
+    method: "POST",
+    body: JSON.stringify({ guest_id: guestId }),
+  });
+}

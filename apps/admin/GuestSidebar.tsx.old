@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { fetchGuestActivity, apiFetch } from "./api/client";
+import { fetchGuestActivity, apiFetch } from "./api/client"; // Corrected import
 import GroupEditModal from "./components/GroupEditModal";
 import SendCommunicationModal from "./components/SendCommunicationModal";
 import { 
@@ -52,9 +52,6 @@ const kindMap: Record<string, { Icon: React.ElementType; label: string; emphasis
   invite_sent:    { Icon: PaperAirplaneIcon, label: "Invite Sent" },
   invite_resent:  { Icon: PaperAirplaneIcon, label: "Invite Resent" },
   invite_used:    { Icon: TicketIcon, label: "Invite Used", emphasis: true },
-  survey_sent:      { Icon: PaperAirplaneIcon, label: "Survey Sent", emphasis: true },
-  survey_resent:    { Icon: PaperAirplaneIcon, label: "Survey Resent" },
-  event_responses_updated: { Icon: PencilSquareIcon, label: "Neural Data Imprinted", emphasis: true },
   admin_invite_resent: { Icon: PaperAirplaneIcon, label: "Invite Resent (Admin)" },
   auth_success:     { Icon: TicketIcon, label: "Invite Used" },
   admin_nudge_sent: { Icon: ChatBubbleLeftRightIcon, label: "Admin Nudge Sent" },
@@ -217,12 +214,6 @@ export default function GuestSidebar({ guest, onClose, onUpdate }: GuestSidebarP
     return Object.values(groups).sort((a, b) => b.dayKey.localeCompare(a.dayKey));
   }, [activity]);
 
-  const latestSurvey = useMemo(() => {
-    return activity.find(a => a.kind === "survey_sent" || a.kind === "survey_resent");
-  }, [activity]);
-
-  const surveySentAt = latestSurvey?.occurred_at || null;
-
   return (
     <div className="w-full lg:w-[420px] bg-black text-[#45CC2D] font-mono h-full flex flex-col border-l border-[#45CC2D]">
       <div className="p-4 flex justify-between items-start border-b border-[#45CC2D]">
@@ -250,76 +241,58 @@ export default function GuestSidebar({ guest, onClose, onUpdate }: GuestSidebarP
         <button className="text-[#45CC2D] hover:bg-[#45CC2D] hover:text-black px-2 py-0.5 border border-transparent hover:border-[#45CC2D] transition-colors" onClick={onClose}>✕</button>
       </div>
 
-        <div className="p-4 flex-1 overflow-auto">
-          <div className="grid grid-cols-1 gap-6 mb-8">
-            
-            {/* NEW SECTION: SURVEY STATUS */}
-            <div>
-              <h3 className="text-xs font-bold uppercase tracking-widest mb-2 border-b border-[#45CC2D]/30 pb-1">Survey Status</h3>
-              <div className="flex items-center justify-between">
-                <span className={`text-sm ${!latestSurvey ? "text-[#45CC2D]/50" : "text-[#45CC2D]"}`}>
-                  {!latestSurvey ? "NOT SENT" : "SENT"}
-                </span>
-                <button 
-                  onClick={() => setShowSendModal(true)} 
-                  className="border border-[#45CC2D] text-[#45CC2D] px-3 py-1 text-xs hover:bg-[#45CC2D] hover:text-black transition-colors uppercase tracking-wider"
-                >
-                  {!latestSurvey ? "Send Survey" : "Resend Survey"}
-                </button>
-              </div>
-              {latestSurvey && (
-                <p className="text-[10px] text-[#45CC2D]/60 mt-1">LAST SENT: {new Date(latestSurvey.occurred_at).toLocaleString()}</p>
-              )}
+      <div className="p-4 flex-1 overflow-auto">
+        <div className="grid grid-cols-1 gap-6 mb-8">
+          <div>
+            <h3 className="text-xs font-bold uppercase tracking-widest mb-2 border-b border-[#45CC2D]/30 pb-1">Invite Status</h3>
+            <div className="flex items-center justify-between">
+              <span className={`text-sm ${!guest.invited_at ? "text-[#45CC2D]/50" : "text-[#45CC2D]"}`}>
+                {!guest.invited_at ? "NOT SENT" : "SENT"}
+              </span>
+              <button onClick={() => setShowSendModal(true)} className="border border-[#45CC2D] text-[#45CC2D] px-3 py-1 text-xs hover:bg-[#45CC2D] hover:text-black transition-colors uppercase tracking-wider">
+                {!guest.invited_at ? "Send Invite" : "Resend Invite"}
+              </button>
             </div>
 
-            {/* UPDATED SECTION: INVITE STATUS (BUTTON REMOVED) */}
-            <div>
-              <h3 className="text-xs font-bold uppercase tracking-widest mb-2 border-b border-[#45CC2D]/30 pb-1">Invite Status</h3>
-              <div className="flex items-center justify-between">
-                <span className={`text-sm ${!guest.invited_at ? "text-[#45CC2D]/50" : "text-[#45CC2D]"}`}>
-                  {!guest.invited_at ? "NOT SENT" : "SENT"}
-                </span>
-              </div>
-
-              {/* TOKEN EXPIRY INTERFACE */}
-              {activeToken && (
-                <div className="mt-4 bg-[#45CC2D]/5 border border-[#45CC2D]/20 p-2">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-[9px] uppercase font-bold opacity-60">Portal Expiration:</span>
-                    {!isEditingExpiry && (
-                      <button 
-                        onClick={() => setIsEditingExpiry(true)} 
-                        className="text-[9px] underline hover:text-white"
-                      >
-                        EDIT_DEADLINE
-                      </button>
-                    )}
-                  </div>
-                  
-                  {isEditingExpiry ? (
-                    <div className="flex flex-col gap-2">
-                      <input 
-                        type="datetime-local" 
-                        value={newExpiry} 
-                        onChange={(e) => setNewExpiry(e.target.value)}
-                        className="bg-black border border-[#45CC2D] text-[#45CC2D] text-[10px] p-1 outline-none"
-                      />
-                      <div className="flex justify-end gap-2">
-                        <button onClick={() => setIsEditingExpiry(false)} className="text-[9px] uppercase">Cancel</button>
-                        <button onClick={handleUpdateExpiry} className="text-[9px] bg-[#45CC2D] text-black px-2 font-bold uppercase">Update</button>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className={`text-[10px] font-bold ${new Date(activeToken.expires_at) < new Date() ? 'text-red-500' : 'text-[#45CC2D]'}`}>
-                      {new Date(activeToken.expires_at).toLocaleString()}
-                      {new Date(activeToken.expires_at) < new Date() && " (EXPIRED)"}
-                    </p>
+            {/* TOKEN EXPIRY INTERFACE */}
+            {activeToken && (
+              <div className="mt-4 bg-[#45CC2D]/5 border border-[#45CC2D]/20 p-2">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-[9px] uppercase font-bold opacity-60">Portal Expiration:</span>
+                  {!isEditingExpiry && (
+                    <button 
+                      onClick={() => setIsEditingExpiry(true)} 
+                      className="text-[9px] underline hover:text-white"
+                    >
+                      EDIT_DEADLINE
+                    </button>
                   )}
                 </div>
-              )}
+                
+                {isEditingExpiry ? (
+                  <div className="flex flex-col gap-2">
+                    <input 
+                      type="datetime-local" 
+                      value={newExpiry} 
+                      onChange={(e) => setNewExpiry(e.target.value)}
+                      className="bg-black border border-[#45CC2D] text-[#45CC2D] text-[10px] p-1 outline-none"
+                    />
+                    <div className="flex justify-end gap-2">
+                      <button onClick={() => setIsEditingExpiry(false)} className="text-[9px] uppercase">Cancel</button>
+                      <button onClick={handleUpdateExpiry} className="text-[9px] bg-[#45CC2D] text-black px-2 font-bold uppercase">Update</button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className={`text-[10px] font-bold ${new Date(activeToken.expires_at) < new Date() ? 'text-red-500' : 'text-[#45CC2D]'}`}>
+                    {new Date(activeToken.expires_at).toLocaleString()}
+                    {new Date(activeToken.expires_at) < new Date() && " (EXPIRED)"}
+                  </p>
+                )}
+              </div>
+            )}
 
-              {guest.invited_at && <p className="text-[10px] text-[#45CC2D]/60 mt-1">LAST SENT: {new Date(guest.invited_at).toLocaleString()}</p>}
-            </div>
+            {guest.invited_at && <p className="text-[10px] text-[#45CC2D]/60 mt-1">LAST SENT: {new Date(guest.invited_at).toLocaleString()}</p>}
+          </div>
 
           <div className="flex flex-col gap-2">
             <span className="text-[10px] uppercase opacity-50 tracking-tighter">Manual Override RSVP:</span>
