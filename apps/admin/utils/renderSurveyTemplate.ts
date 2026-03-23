@@ -2,7 +2,7 @@
 
 export function renderSurveyTemplate(code: string, inviteUrl: string) {
   // Ensure this URL matches your Supabase storage path for the ASCII PNG
-const bgImgUrl = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/alienASCII.png";
+const bgImgUrl = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/alienASCII2.png";
 
 return `
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
