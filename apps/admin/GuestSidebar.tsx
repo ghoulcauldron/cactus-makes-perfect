@@ -254,7 +254,7 @@ export default function GuestSidebar({ guest, onClose, onUpdate }: GuestSidebarP
     );
   }, [activity]);
 
-  const surveySentAt = latestSurvey?.occurred_at || null;
+  const surveySentAt = latestSurvey?.occurred_at || latestSurvey?.created_at || null;
 
   console.log("SIDEBAR_ACTIVITY_LOG:", activity.map(a => ({ kind: a.kind, type: a.meta?.type })));
   console.log("DEBUG_SURVEY_DATA:", {
