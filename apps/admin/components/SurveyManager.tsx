@@ -108,9 +108,40 @@ export default function SurveyManager() {
     idle: processedData.filter(r => r.is_idle).length
   }), [processedData]);
 
+  // --- ENHANCED LOGISTICS TALLY ---
+  const tallies = useMemo(() => {
+    const arrivalCounts: Record<string, number> = {};
+    const eventCounts: Record<string, number> = {};
+
+    // Initialize all events to 0
+    EVENTS.forEach(ev => eventCounts[ev.id] = 0);
+
+    processedData.forEach(guest => {
+      if (guest.event_responses) {
+        // Tally Arrival Days
+        const day = guest.event_responses.arrival_day;
+        if (day) arrivalCounts[day] = (arrivalCounts[day] || 0) + 1;
+
+        // Tally Event Participation
+        EVENTS.forEach(ev => {
+          if (guest.event_responses[ev.id] === true) {
+            eventCounts[ev.id]++;
+          }
+        });
+      }
+    });
+
+    return { 
+      arrivals: Object.entries(arrivalCounts)
+        .filter(([_, count]) => count > 0)
+        .sort((a, b) => a[0].localeCompare(b[0])), 
+      events: EVENTS.map(ev => ({ label: ev.label, count: eventCounts[ev.id] }))
+    };
+  }, [processedData]);
+
   if (loading) return <div className="p-12 text-[#45CC2D] font-mono animate-pulse uppercase text-center">Scanning Response Matrix...</div>;
 
-  return (
+return (
     <div className="h-full w-full flex bg-black overflow-hidden font-mono text-[#45CC2D] relative">
       <div className="flex-1 flex flex-col min-w-0 bg-black">
         <div className="shrink-0 p-4 sm:p-8 space-y-6 border-b border-[#45CC2D]/30">
@@ -142,6 +173,34 @@ export default function SurveyManager() {
                   </button>
                 ))}
               </div>
+            </div>
+          </div>
+
+          {/* LOGISTICS METRICS RIBBON */}
+          <div className="flex flex-wrap gap-x-8 gap-y-4 pt-4 border-t border-[#45CC2D]/10">
+            {/* Arrival Day Cluster */}
+            <div className="flex gap-4">
+              {tallies.arrivals.map(([day, count]) => (
+                <div key={day} className="flex flex-col">
+                  <span className="text-[8px] opacity-40 uppercase tracking-widest leading-none mb-1">{day.slice(0,3)}</span>
+                  <span className="text-sm font-black tracking-tighter">{count}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Vertical Divider */}
+            <div className="hidden sm:block w-px h-8 bg-[#45CC2D]/20"></div>
+
+            {/* Event Cluster */}
+            <div className="flex gap-5 overflow-x-auto scrollbar-hide pb-1">
+              {tallies.events.map((ev) => (
+                <div key={ev.label} className="flex flex-col min-w-[32px]">
+                  <span className="text-[8px] opacity-40 uppercase tracking-widest leading-none mb-1">{ev.label}</span>
+                  <span className={`text-sm font-black tracking-tighter ${ev.count === 0 ? 'opacity-20' : ''}`}>
+                    {ev.count}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
