@@ -282,7 +282,7 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           guest_id: guestId,
-          arrival_day: formattedArrivalDay, // Sent as Capitalized string
+          arrival_day: state.arrival_day,
           friday_meowwolf: Boolean(state.friday_meowwolf),
           friday_dinner: Boolean(state.friday_dinner),
           saturday_railway: Boolean(state.saturday_railway),
