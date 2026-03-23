@@ -176,6 +176,26 @@ return (
             </div>
           </div>
 
+          {/* ROW 2: SEARCH FILTER (REINSTATED) */}
+          <div className="relative max-w-md">
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#45CC2D]/40" />
+            <input 
+              type="text" 
+              placeholder="FILTER BY NAME OR EMAIL..." 
+              value={searchQuery} 
+              onChange={(e) => setSearchQuery(e.target.value)} 
+              className="w-full bg-neutral-900/50 border border-[#45CC2D]/30 pl-10 pr-4 py-2 text-xs text-[#45CC2D] placeholder-[#45CC2D]/30 outline-none focus:border-[#45CC2D] transition-all uppercase tracking-widest"
+            />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#45CC2D]/40 hover:text-[#45CC2D]"
+              >
+                <XMarkIcon className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
           {/* LOGISTICS METRICS RIBBON */}
           <div className="flex flex-wrap gap-x-8 gap-y-4 pt-4 border-t border-[#45CC2D]/10">
             {/* Arrival Day Cluster */}
