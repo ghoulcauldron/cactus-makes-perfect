@@ -258,14 +258,15 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
   };
 
   // This function is called ONLY after you click confirm in the new modal
-  {/* --- TARGETED PATCH: CLEAN TRANSMISSION & NULL CHECK --- */}
+ {/* --- TARGETED PATCH: UUID & SCHEMA ALIGNMENT --- */}
   const executeFinalSave = async () => {
     setShowConfirm(false);
     const guestId = localStorage.getItem("guest_user_id");
     
-    // Safety check: Prevents the request if the ID is missing
+    // Critical: Database marked guest_id as NOT NULL
     if (!guestId) {
-      alert("ERROR: GUEST_ID NOT FOUND. RE-AUTHENTICATE.");
+      console.error("TRANSMISSION_ERROR: GUEST_UUID_MISSING");
+      alert("ERROR: GUEST_ID NOT FOUND. PLEASE RE-LINK YOUR TERMINAL.");
       return;
     }
 
@@ -276,17 +277,22 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          guest_id: guestId,
-          arrival_day: state.arrival_day,
-          friday_meowwolf: !!state.friday_meowwolf,
-          friday_dinner: !!state.friday_dinner,
-          saturday_railway: !!state.saturday_railway,
-          sunday_brunch: !!state.sunday_brunch,
-          sunday_movie: !!state.sunday_movie
+          guest_id: guestId, // Must be a valid UUID string
+          arrival_day: state.arrival_day, // Matches "text" type in schema
+          friday_meowwolf: Boolean(state.friday_meowwolf), // Matches "boolean" type
+          friday_dinner: Boolean(state.friday_dinner),
+          saturday_railway: Boolean(state.saturday_railway),
+          sunday_brunch: Boolean(state.sunday_brunch),
+          sunday_movie: Boolean(state.sunday_movie)
         }),
       });
 
-      if (!res.ok) throw new Error();
+      // Capture specific Postgres error messages if 400 persists
+      if (!res.ok) {
+        const errorDetail = await res.json();
+        console.error("DATABASE_REJECTION:", errorDetail);
+        throw new Error(errorDetail.message || "Unknown Database Error");
+      }
       
       setState(prev => ({ 
         ...prev, 
