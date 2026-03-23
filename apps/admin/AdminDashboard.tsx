@@ -1,17 +1,19 @@
 import React, { useState } from "react";
 import GuestList from "./components/GuestList";
-import LodgingManager from "./components/LodgingManager"; // Points to your shared scaffold
+import LodgingManager from "./components/LodgingManager";
+import SurveyManager from "./components/SurveyManager";
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/react';
 import { ChevronDownIcon } from '@heroicons/react/20/solid';
 
-type Tab = "GUESTS" | "LODGING";
+type Tab = "GUESTS" | "LODGING" | "SURVEYS";
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<Tab>("GUESTS");
 
   const tabs: { id: Tab; label: string }[] = [
     { id: "GUESTS", label: "GUEST LIST" },
-    { id: "LODGING", label: "LODGING MGMT" }
+    { id: "LODGING", label: "LODGING MGMT" },
+    { id: "SURVEYS", label: "SURVEY RESP" }
   ];
 
   return (
@@ -82,6 +84,7 @@ export default function AdminDashboard() {
       <div className="flex-1 overflow-hidden">
         {activeTab === "GUESTS" && <GuestList />}
         {activeTab === "LODGING" && <LodgingManager />}
+        {activeTab === "SURVEYS" && <SurveyManager />}
       </div>
     </div>
   );

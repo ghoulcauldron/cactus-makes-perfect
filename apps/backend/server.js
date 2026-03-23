@@ -1780,6 +1780,36 @@ app.get("/api/v1/admin/lodging/eligible-guests", requireAdminAuth, async (req, r
   }
 });
 
+// ---- Admin: GET Survey Responses & Activity Summary ----
+app.get("/api/v1/admin/surveys", requireAdminAuth, async (req, res) => {
+  try {
+    // 1. Fetch all guests with their survey responses (matrix data)
+    const { data: responses, error: rErr } = await supabase
+      .from("guests")
+      .select(`
+        id, first_name, last_name, email,
+        event_responses (*)
+      `)
+      .order("last_name", { ascending: true });
+
+    if (rErr) throw rErr;
+
+    // 2. Fetch survey-related user activity for the sidebar
+    // We look for 'survey_sent' and 'rsvp_submitted' kind events
+    const { data: activity, error: aErr } = await supabase
+      .from("user_activity")
+      .select("guest_id, kind, created_at")
+      .or('kind.eq.survey_sent,kind.eq.rsvp_submitted');
+
+    if (aErr) throw aErr;
+
+    return res.json({ responses: responses || [], activity: activity || [] });
+  } catch (e) {
+    console.error("[AdminSurveyFetch] Error:", e);
+    return res.status(500).json({ error: "Failed to fetch survey data" });
+  }
+});
+
 // ---- Serve built frontend from /app/dist (we'll place it there in Docker) ----
 const distDir = path.join(__dirname, "public");
 app.use(express.static(distDir));
