@@ -258,10 +258,19 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
   };
 
   // This function is called ONLY after you click confirm in the new modal
+  {/* --- TARGETED PATCH: CLEAN TRANSMISSION & NULL CHECK --- */}
   const executeFinalSave = async () => {
     setShowConfirm(false);
     const guestId = localStorage.getItem("guest_user_id");
+    
+    // Safety check: Prevents the request if the ID is missing
+    if (!guestId) {
+      alert("ERROR: GUEST_ID NOT FOUND. RE-AUTHENTICATE.");
+      return;
+    }
+
     setState(prev => ({ ...prev, isSaving: true, isSaved: false }));
+    
     try {
       const res = await fetch("/api/v1/event-responses", {
         method: "POST",
@@ -269,15 +278,23 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
         body: JSON.stringify({
           guest_id: guestId,
           arrival_day: state.arrival_day,
-          friday_meowwolf: state.friday_meowwolf,
-          friday_dinner: state.friday_dinner,
-          saturday_railway: state.saturday_railway,
-          sunday_brunch: state.sunday_brunch,
-          sunday_movie: state.sunday_movie
+          friday_meowwolf: !!state.friday_meowwolf,
+          friday_dinner: !!state.friday_dinner,
+          saturday_railway: !!state.saturday_railway,
+          sunday_brunch: !!state.sunday_brunch,
+          sunday_movie: !!state.sunday_movie
         }),
       });
+
       if (!res.ok) throw new Error();
-      setState(prev => ({ ...prev, isSaving: false, isSaved: true, hasExistingRecord: true }));
+      
+      setState(prev => ({ 
+        ...prev, 
+        isSaving: false, 
+        isSaved: true, 
+        hasExistingRecord: true 
+      }));
+      
       setTimeout(() => setState(prev => ({ ...prev, isSaved: false })), 3000);
     } catch (err) {
       setState(prev => ({ ...prev, isSaving: false }));
