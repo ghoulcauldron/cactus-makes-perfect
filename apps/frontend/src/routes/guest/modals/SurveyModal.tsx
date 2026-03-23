@@ -180,7 +180,7 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
           if (r) {
             setState(prev => ({
               ...prev,
-              arrival_day: r.arrival_day ?? null,
+              arrival_day: r.arrival_day ? r.arrival_day.toLowerCase() : null,
               friday_meowwolf: !!r.friday_meowwolf,
               friday_dinner: !!r.friday_dinner,
               saturday_railway: !!r.saturday_railway,
@@ -258,17 +258,21 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
   };
 
   // This function is called ONLY after you click confirm in the new modal
- {/* --- TARGETED PATCH: UUID & SCHEMA ALIGNMENT --- */}
+  {/* --- TARGETED PATCH: CAPITALIZE ENUM VALUES --- */}
   const executeFinalSave = async () => {
     setShowConfirm(false);
     const guestId = localStorage.getItem("guest_user_id");
     
-    // Critical: Database marked guest_id as NOT NULL
     if (!guestId) {
       console.error("TRANSMISSION_ERROR: GUEST_UUID_MISSING");
-      alert("ERROR: GUEST_ID NOT FOUND. PLEASE RE-LINK YOUR TERMINAL.");
+      alert("ERROR: GUEST_ID NOT FOUND.");
       return;
     }
+
+    // Capitalize arrival_day for DB schema compliance (e.g., 'friday' -> 'Friday')
+    const formattedArrivalDay = state.arrival_day 
+      ? state.arrival_day.charAt(0).toUpperCase() + state.arrival_day.slice(1) 
+      : null;
 
     setState(prev => ({ ...prev, isSaving: true, isSaved: false }));
     
@@ -277,9 +281,9 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          guest_id: guestId, // Must be a valid UUID string
-          arrival_day: state.arrival_day, // Matches "text" type in schema
-          friday_meowwolf: Boolean(state.friday_meowwolf), // Matches "boolean" type
+          guest_id: guestId,
+          arrival_day: formattedArrivalDay, // Sent as Capitalized string
+          friday_meowwolf: Boolean(state.friday_meowwolf),
           friday_dinner: Boolean(state.friday_dinner),
           saturday_railway: Boolean(state.saturday_railway),
           sunday_brunch: Boolean(state.sunday_brunch),
@@ -287,24 +291,17 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
         }),
       });
 
-      // Capture specific Postgres error messages if 400 persists
       if (!res.ok) {
         const errorDetail = await res.json();
         console.error("DATABASE_REJECTION:", errorDetail);
         throw new Error(errorDetail.message || "Unknown Database Error");
       }
       
-      setState(prev => ({ 
-        ...prev, 
-        isSaving: false, 
-        isSaved: true, 
-        hasExistingRecord: true 
-      }));
-      
+      setState(prev => ({ ...prev, isSaving: false, isSaved: true, hasExistingRecord: true }));
       setTimeout(() => setState(prev => ({ ...prev, isSaved: false })), 3000);
     } catch (err) {
       setState(prev => ({ ...prev, isSaving: false }));
-      alert("Transmission failed.");
+      alert("Transmission failed. Check console.");
     }
   };
 
