@@ -24,18 +24,37 @@ return `
       background-image: linear-gradient(#00ffff, #00ffff) !important;
     }
 
-    /* Target Gmail/iOS specifically to prevent text dimming and force colors */
-    @media (prefers-color-scheme: dark) {
-      .keep-white { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
-      .keep-cyan { color: #00ffff !important; -webkit-text-fill-color: #00ffff !important; }
-      .keep-red { color: #ff4a4a !important; -webkit-text-fill-color: #ff4a4a !important; }
+    /* THE IOS BRIGHTNESS FIX: Using gradients as text fill to lock colors */
+    .lock-white {
+      color: #ffffff !important;
+      background-image: linear-gradient(#ffffff, #ffffff) !important;
+      -webkit-background-clip: text !important;
+      -webkit-text-fill-color: transparent !important;
+      display: inline-block;
     }
-    
-    /* The "Glow" Hack: Subtle shadow prevents iOS from dimming font weight/brightness */
-    .brighten { text-shadow: 0 0 1px rgba(255,255,255,0.1); }
+
+    .lock-cyan {
+      color: #00ffff !important;
+      background-image: linear-gradient(#00ffff, #00ffff) !important;
+      -webkit-background-clip: text !important;
+      -webkit-text-fill-color: transparent !important;
+      display: inline-block;
+    }
+
+    .lock-red {
+      color: #ff4a4a !important;
+      background-image: linear-gradient(#ff4a4a, #ff4a4a) !important;
+      -webkit-background-clip: text !important;
+      -webkit-text-fill-color: transparent !important;
+      display: inline-block;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .brighten { text-shadow: 0 0 1px rgba(255,255,255,0.2) !important; }
+    }
   </style>
 </head>
-<body class="force-black-bg" style="margin: 0; padding: 0; background-color: #000000; background-image: linear-gradient(#000000, #000000);">
+<body class="force-black-bg" style="margin: 0; padding: 0; background-color: #000000;">
   
   <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" class="force-black-bg" style="width: 100%; background-color: #000000;">
     <tr>
@@ -49,43 +68,43 @@ return `
                 <tr>
                   <td align="center" style="font-family: 'Courier New', Courier, monospace;">
                     
-                    <h1 class="keep-cyan brighten" style="color: #00ffff !important; font-size: 12px; letter-spacing: 6px; margin: 0 0 30px 0; text-transform: uppercase;">/// MISSION_MANIFEST_V2 ///</h1>
-                    <p class="keep-white brighten" style="color: #ffffff !important; font-size: 18px; font-weight: bold; margin: 0 0 10px 0; text-transform: uppercase;">THE FREQUENCY HAS SHIFTED.</p>
+                    <h1 style="margin: 0 0 30px 0;"><span class="lock-cyan" style="font-size: 12px; letter-spacing: 6px; text-transform: uppercase;">/// MISSION_MANIFEST_V2 ///</span></h1>
+                    <p style="margin: 0 0 10px 0;"><span class="lock-white" style="font-size: 18px; font-weight: bold; text-transform: uppercase;">THE FREQUENCY HAS SHIFTED.</span></p>
 
-                    <div class="keep-white brighten" style="color: #ffffff !important; margin: 0 0 40px 0; line-height: 1.6; font-size: 14px; text-align: center;">
-                      <p style="margin: 0 0 10px 0;">We’re excited to have you join the mission.</p>
+                    <div style="margin: 0 0 40px 0; line-height: 1.6; font-size: 14px; text-align: center;">
+                      <p style="margin: 0 0 10px 0;"><span class="lock-white">We’re excited to have you join the mission.</span></p>
                       <p style="margin: 0; font-size: 13px;">
-                        Please review the schedule below and confirm your arrival date + participation by following the link.<br/>
-                        <span class="keep-cyan" style="color: #00ffff !important; font-weight: bold;">Deadline: APRIL 1</span><br/>
-                        (The link will stay active.)
+                        <span class="lock-white">Please review the schedule below and confirm your arrival date + participation by following the link.</span><br/>
+                        <span class="lock-cyan" style="font-weight: bold;">Deadline: APRIL 1</span><br/>
+                        <span class="lock-white" style="font-size: 11px; opacity: 0.8;">(The link will stay active.)</span>
                       </p>
                     </div>
 
                     <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom: 40px;">
                       <tr>
                         <td width="50%" valign="top" style="padding-right: 15px; text-align: left; font-family: 'Courier New', Courier, monospace; font-size: 11px; line-height: 1.5;">
-                          <div class="keep-cyan brighten" style="color: #00ffff !important; font-weight: bold; letter-spacing: 2px; border-bottom: 1px solid #00ffff; padding-bottom: 4px; margin-bottom: 8px;">THU AUG 27</div>
-                          <div class="keep-white" style="font-weight: bold; color: #ffffff !important; margin-bottom: 4px;">THE ARRIVAL</div>
-                          <div class="keep-cyan" style="color: #00ffff !important;">Infiltration window opens</div>
+                          <div style="border-bottom: 1px solid #00ffff; padding-bottom: 4px; margin-bottom: 8px;"><span class="lock-cyan" style="font-weight: bold; letter-spacing: 2px;">THU AUG 27</span></div>
+                          <div style="margin-bottom: 4px;"><span class="lock-white" style="font-weight: bold;">THE ARRIVAL</span></div>
+                          <div><span class="lock-cyan">Infiltration window opens</span></div>
                           <br/>
-                          <div class="keep-cyan brighten" style="color: #00ffff !important; font-weight: bold; letter-spacing: 2px; border-bottom: 1px solid #00ffff; padding-bottom: 4px; margin-bottom: 8px;">FRI AUG 28</div>
-                          <div class="keep-white" style="font-weight: bold; color: #ffffff !important; margin-bottom: 4px;">PSYCHE-FEASTIA</div>
-                          <div class="keep-cyan" style="color: #00ffff !important;">Midday: Off-World Excursion<br/>6PM: Ceremonial Feast</div>
+                          <div style="border-bottom: 1px solid #00ffff; padding-bottom: 4px; margin-bottom: 8px;"><span class="lock-cyan" style="font-weight: bold; letter-spacing: 2px;">FRI AUG 28</span></div>
+                          <div style="margin-bottom: 4px;"><span class="lock-white" style="font-weight: bold;">PSYCHE-FEASTIA</span></div>
+                          <div><span class="lock-cyan">Midday: Off-World Excursion<br/>6PM: Ceremonial Feast</span></div>
                         </td>
                         <td width="50%" valign="top" style="padding-left: 15px; text-align: left; font-family: 'Courier New', Courier, monospace; font-size: 11px; line-height: 1.5;">
-                          <div class="keep-cyan brighten" style="color: #00ffff !important; font-weight: bold; letter-spacing: 2px; border-bottom: 1px solid #00ffff; padding-bottom: 4px; margin-bottom: 8px;">SAT AUG 29</div>
-                          <div class="keep-white" style="font-weight: bold; color: #ffffff !important; margin-bottom: 4px;">ATMOSPHERIC TRANSIT</div>
-                          <div class="keep-cyan" style="color: #00ffff !important;">6PM: Ride into the sky</div>
+                          <div style="border-bottom: 1px solid #00ffff; padding-bottom: 4px; margin-bottom: 8px;"><span class="lock-cyan" style="font-weight: bold; letter-spacing: 2px;">SAT AUG 29</span></div>
+                          <div style="margin-bottom: 4px;"><span class="lock-white" style="font-weight: bold;">ATMOSPHERIC TRANSIT</span></div>
+                          <div><span class="lock-cyan">6PM: Ride into the sky</span></div>
                           <br/>
-                          <div class="keep-cyan brighten" style="color: #00ffff !important; font-weight: bold; letter-spacing: 2px; border-bottom: 1px solid #00ffff; padding-bottom: 4px; margin-bottom: 8px;">SUN AUG 30</div>
-                          <div class="keep-white" style="font-weight: bold; color: #ffffff !important; margin-bottom: 4px;">POST-MISSION DEBRIEF</div>
-                          <div class="keep-cyan" style="color: #00ffff !important;">Midday: Brunch<br/>Evening: Soft Entertainment</div>
+                          <div style="border-bottom: 1px solid #00ffff; padding-bottom: 4px; margin-bottom: 8px;"><span class="lock-cyan" style="font-weight: bold; letter-spacing: 2px;">SUN AUG 30</span></div>
+                          <div style="margin-bottom: 4px;"><span class="lock-white" style="font-weight: bold;">POST-MISSION DEBRIEF</span></div>
+                          <div><span class="lock-cyan">Midday: Brunch<br/>Evening: Soft Entertainment</span></div>
                         </td>
                       </tr>
                     </table>
 
                     <div style="margin-bottom: 40px;">
-                      <p class="keep-red brighten" style="color: #ff4a4a !important; font-size: 12px; font-weight: bold; letter-spacing: 2px; margin: 0 0 20px 0; text-transform: uppercase;">ACTION REQUIRED: CONFIRM BY APRIL 1</p>
+                      <p style="margin: 0 0 20px 0;"><span class="lock-red" style="font-size: 12px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase;">ACTION REQUIRED: CONFIRM BY APRIL 1</span></p>
                       <table border="0" cellpadding="0" cellspacing="0" role="presentation" align="center">
                         <tr>
                           <td align="center" class="force-cyan-bg" style="background-color: #00ffff; border-radius: 50px;">
@@ -98,8 +117,8 @@ return `
                     </div>
 
                     <div style="border-top: 1px solid #00ffff; padding-top: 30px;">
-                       <span class="keep-cyan brighten" style="color: #00ffff !important; font-size: 14px; font-weight: bold; letter-spacing: 4px; display: block; margin-bottom: 10px;">CODE: ${code}</span>
-                       <p class="keep-white brighten" style="color: #ffffff !important; font-style: italic; font-size: 13px; margin: 0; font-weight: bold;">Be excellent to each other 👽</p>
+                       <span style="display: block; margin-bottom: 10px;"><span class="lock-cyan" style="font-size: 14px; font-weight: bold; letter-spacing: 4px;">CODE: ${code}</span></span>
+                       <p style="margin: 0;"><span class="lock-white" style="font-style: italic; font-size: 13px; font-weight: bold;">Be excellent to each other 👽</span></p>
                     </div>
 
                   </td>
