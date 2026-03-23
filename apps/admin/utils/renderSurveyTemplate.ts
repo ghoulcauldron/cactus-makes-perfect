@@ -37,7 +37,6 @@ return `
         
         <table width="600" border="0" cellpadding="0" cellspacing="0" class="force-card-bg" style="max-width: 600px; width: 100%; background-color: ${darkerPurple}; border: 1px solid ${electricGreen}; border-radius: 40px; overflow: hidden; text-align: left;" role="presentation">
           
-          {/* Header Bar */}
           <tr>
             <td bgcolor="${electricGreen}" class="force-green-bg" style="background-color: ${electricGreen}; color: #000000; padding: 12px 24px; font-weight: bold; font-family: 'Courier New', Courier, monospace; text-transform: uppercase; font-size: 13px; letter-spacing: 3px;">
               /// MISSION_MANIFEST_V3 ///
@@ -61,7 +60,6 @@ return `
                 <span style="font-size: 11px; color: ${mutedMagenta}; opacity: 0.9;">(The link will stay active.)</span>
               </p>
 
-              {/* Event Grid */}
               <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin: 24px 0;" role="presentation">
                 <tr>
                   <td width="50%" valign="top" style="padding-right: 15px; border-right: 1px dashed ${mutedMagenta};">
@@ -85,7 +83,6 @@ return `
                 </tr>
               </table>
 
-              {/* Code Box */}
               <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin: 24px 0;" role="presentation">
                 <tr>
                   <td align="center" style="border: 1px dashed ${electricGreen}; background-color: ${darkerPurple}; padding: 18px; color: ${electricGreen}; font-weight: bold; font-size: 20px; letter-spacing: 4px;">
@@ -98,7 +95,6 @@ return `
                 Be excellent to each other 👽
               </p>
 
-              {/* CTA Button */}
               <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation">
                 <tr>
                   <td align="center">
@@ -112,7 +108,6 @@ return `
             </td>
           </tr>
           
-          {/* Footer */}
           <tr>
             <td style="border-top: 1px solid ${mutedMagenta}; padding: 15px 30px; font-size: 10px; text-transform: uppercase; color: ${fadedRadioactive}; letter-spacing: 1px;">
               SECURE LINE: ENCRYPTED // MISSION: AREA_51_SURVEY<br/>
