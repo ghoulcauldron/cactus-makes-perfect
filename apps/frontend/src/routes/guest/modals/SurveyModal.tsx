@@ -77,6 +77,27 @@ function CosmicBackground() {
   );
 }
 
+const TooltipContent = ({ onDismiss }: { onDismiss: () => void }) => (
+  <>
+    <div className="flex items-center gap-2 mb-3 border-b border-[#00ffff]/20 pb-2">
+      <div className="w-1.5 h-1.5 bg-[#00ffff] rounded-full animate-ping" />
+      <p className="text-[#00ffff] text-[9px] tracking-[0.4em] uppercase font-bold">Coordinates_Locked</p>
+    </div>
+    <p className="text-white/90 text-[10px] leading-relaxed uppercase tracking-wider italic">
+      Dos Hermanas: S&G Command Base.<br/>
+      443 W San Francisco St, Santa Fe, NM<br/>
+      Elevation: 7,200ft<br/>
+      Status: <span className="text-[#39FF14]">Arrival_Ready</span>
+    </p>
+    <button 
+      onClick={(e) => { e.stopPropagation(); onDismiss(); }} 
+      className="mt-4 w-full py-2 bg-white/5 border border-white/10 rounded-full text-[#39FF14] text-[8px] tracking-[0.3em] uppercase hover:bg-white/10 transition-all"
+    >
+      [ DISMISS ]
+    </button>
+  </>
+);
+
 // --- MAIN SURVEY MODAL ---
 export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const [state, setState] = useState({
@@ -290,71 +311,36 @@ export default function SurveyModal({ isOpen, onClose }: { isOpen: boolean; onCl
             style={{ clipPath: 'ellipse(48% 42% at 50% 50%)' }} 
             onClick={(e) => e.stopPropagation()}
           >
-            <Map 
-              ref={mapRef}
-              {...viewState}
-              onMove={(evt) => setViewState(evt.viewState)}
-              mapboxAccessToken={MAPBOX_TOKEN} 
-              mapStyle={CUSTOM_STYLE} 
-              style={{ width: '100%', height: '100%' }}
-              antialias={true}
-              maxPitch={85}
-              terrain={{ source: 'mapbox-dem', exaggeration: 1.5 }}
-              onClick={() => {
-                // Clicking the map itself (outside the marker) closes the tooltip
-                if (showMarkerTooltip) setShowMarkerTooltip(false);
-              }}
-            > 
-              {showUFOMarker && (
+          <Map 
+            ref={mapRef}
+            {...viewState}
+            onMove={(evt) => setViewState(evt.viewState)}
+            mapboxAccessToken={MAPBOX_TOKEN} 
+            mapStyle={CUSTOM_STYLE} 
+            style={{ width: '100%', height: '100%' }}
+            onClick={() => showMarkerTooltip && setShowMarkerTooltip(false)} // Close on map click
+          >
+            {showUFOMarker && (
                 <Marker longitude={-105.944936} latitude={35.689511} anchor="bottom">
                   <UFOMarker onClick={() => setShowMarkerTooltip(!showMarkerTooltip)} />
+                  
+                  {/* --- DESKTOP TOOLTIP: Remains pinned to the Marker --- */}
+                  {showMarkerTooltip && (
+                    <div className="hidden md:block absolute -translate-y-32 -translate-x-1/2 z-[80] bg-[#020617]/90 backdrop-blur-xl border border-[#00ffff]/30 p-5 rounded-[30px] min-w-[240px] shadow-[0_0_40px_rgba(0,255,255,0.2)] animate-modal-entry">
+                      <TooltipContent onDismiss={() => setShowMarkerTooltip(false)} />
+                    </div>
+                  )}
                 </Marker>
               )}
             </Map>
 
               {/* 4. TOOLTIP: Anchored to the center of the viewport/oval on mobile */}
+              {/* --- MOBILE TOOLTIP: Outside the Map, centered in the Oval --- */}
             {showMarkerTooltip && (
-              <div 
-                className={`
-                  absolute z-[100]
-                  /* MOBILE: Force absolute center of the oval container */
-                  top-[50%] left-[50%] -translate-x-1/2 -translate-y-1/2
-                  
-                  /* DESKTOP: Re-align to float above the marker (center-ish of map) */
-                  md:top-auto md:bottom-[60%] md:left-1/2 md:-translate-y-0
-                  
-                  bg-[#020617]/95 backdrop-blur-3xl border border-[#00ffff]/40 
-                  p-6 rounded-[30px] w-[88vw] max-w-[280px] 
-                  shadow-[0_0_60px_rgba(0,255,255,0.4)] 
-                  animate-modal-entry pointer-events-auto
-                `}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="flex items-center gap-2 mb-4 border-b border-[#00ffff]/20 pb-2">
-                  <div className="w-1.5 h-1.5 bg-[#00ffff] rounded-full animate-ping" />
-                  <p className="text-[#00ffff] text-[9px] tracking-[0.4em] uppercase font-bold">Coordinates_Locked</p>
+              <div className="md:hidden absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] w-[85vw] max-w-[280px] pointer-events-auto">
+                <div className="bg-[#020617]/95 backdrop-blur-2xl border border-[#00ffff]/40 p-6 rounded-[30px] shadow-[0_0_60px_rgba(0,255,255,0.4)] animate-modal-entry">
+                  <TooltipContent onDismiss={() => setShowMarkerTooltip(false)} />
                 </div>
-                
-                <div className="space-y-2">
-                  <p className="text-white/90 text-[11px] leading-relaxed uppercase tracking-wider font-bold">
-                    Dos Hermanas Compound
-                  </p>
-                  <p className="text-white/70 text-[10px] leading-relaxed uppercase tracking-wide italic">
-                    443 W San Francisco St<br/>
-                    Santa Fe, NM 87501
-                  </p>
-                  <div className="pt-2 flex flex-col gap-1 text-[#39FF14] text-[8px] tracking-[0.2em]">
-                    <p>ELEVATION: 7,200FT</p>
-                    <p>STATUS: ARRIVAL_READY</p>
-                  </div>
-                </div>
-
-                <button 
-                  onClick={() => setShowMarkerTooltip(false)} 
-                  className="mt-6 w-full py-2 bg-[#00ffff]/10 border border-[#00ffff]/30 rounded-full text-[#00ffff] text-[8px] tracking-[0.3em] uppercase hover:bg-[#00ffff] hover:text-black transition-all"
-                >
-                  [ DISMISS_DATA ]
-                </button>
               </div>
             )}
 
