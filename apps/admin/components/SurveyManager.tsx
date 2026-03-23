@@ -44,14 +44,22 @@ export default function SurveyManager() {
     );
   }, [data, searchQuery]);
 
-  // Sidebar Metrics Logic
+  // Sidebar Metrics Logic - Now reflects only 'yes' or 'maybe' guests
   const stats = useMemo(() => {
+    // respondedIds: ID of guests who HAVE a row in event_responses
     const respondedIds = new Set(data.filter(r => r.event_responses).map(r => r.id));
-    const sentIds = new Set(activity.filter(a => a.kind === 'survey_sent').map(a => a.guest_id));
+    
+    // sentIds: IDs of guests who were sent a survey (filtered to only those in our current 'yes/maybe' list)
+    const activeGuestIds = new Set(data.map(g => g.id));
+    const sentIds = new Set(
+      activity
+        .filter(a => a.kind === 'survey_sent' && activeGuestIds.has(a.guest_id))
+        .map(a => a.guest_id)
+    );
     
     return {
-      total: data.length,
-      responded: data.filter(r => r.event_responses).map(r => r.id),
+      total: data.length, // Total 'yes' and 'maybe' guests
+      responded: Array.from(respondedIds),
       pending: data.filter(r => !r.event_responses).map(r => r.id),
       sentButNoResp: Array.from(sentIds).filter(id => !respondedIds.has(id))
     };

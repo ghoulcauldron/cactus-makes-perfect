@@ -1780,33 +1780,37 @@ app.get("/api/v1/admin/lodging/eligible-guests", requireAdminAuth, async (req, r
   }
 });
 
-// ---- Admin: GET Survey Responses & Activity Summary ----
+// apps/backend/server.js
+
+// ---- Admin: GET Survey Responses (Filtered by RSVP status) ----
 app.get("/api/v1/admin/surveys", requireAdminAuth, async (req, res) => {
   try {
-    // 1. Fetch all guests with their survey responses (matrix data)
+    // 1. Fetch guests who responded 'yes' or 'maybe'
+    // We filter using the 'rsvps!inner' syntax to enforce the status condition
     const { data: responses, error: rErr } = await supabase
       .from("guests")
       .select(`
         id, first_name, last_name, email,
+        rsvps!inner(status),
         event_responses (*)
       `)
+      .or('status.eq.yes,status.eq.maybe', { foreignTable: 'rsvps' })
       .order("last_name", { ascending: true });
 
     if (rErr) throw rErr;
 
-    // 2. Fetch survey-related user activity for the sidebar
-    // We look for 'survey_sent' and 'rsvp_submitted' kind events
+    // 2. Fetch relevant activity (survey sends)
     const { data: activity, error: aErr } = await supabase
       .from("user_activity")
-      .select("guest_id, kind, created_at")
-      .or('kind.eq.survey_sent,kind.eq.rsvp_submitted');
+      .select("guest_id, kind")
+      .eq('kind', 'survey_sent');
 
     if (aErr) throw aErr;
 
     return res.json({ responses: responses || [], activity: activity || [] });
   } catch (e) {
     console.error("[AdminSurveyFetch] Error:", e);
-    return res.status(500).json({ error: "Failed to fetch survey data" });
+    return res.status(500).json({ error: "Failed to fetch filtered survey data" });
   }
 });
 
