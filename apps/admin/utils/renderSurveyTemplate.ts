@@ -3,6 +3,8 @@
 export function renderSurveyTemplate(code: string, inviteUrl: string) {
   // Ensure this URL matches your Supabase storage path for the ASCII PNG
 const bgImgUrl = "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/alienASCII2.png";
+  const deepPurple = "#44026a";
+  const darkerPurple = "#2a0142"; // For the inner card contrast
 
 return `
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -14,15 +16,16 @@ return `
   <meta name="supported-color-schemes" content="light dark">
   <style>
     :root { color-scheme: light dark; supported-color-schemes: light dark; }
-    body { margin: 0; padding: 0; width: 100% !important; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; background-color: #000000 !important; }
+    body { margin: 0; padding: 0; width: 100% !important; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; background-color: ${deepPurple} !important; }
     
-    .force-black-bg {
-      background-color: #000000 !important;
-      background-image: linear-gradient(#000000, #000000) !important;
+    /* Ensure the purple persists in Gmail/Outlook */
+    .force-bg {
+      background-color: ${deepPurple} !important;
+      background-image: linear-gradient(${deepPurple}, ${deepPurple}) !important;
     }
     .force-card-bg {
-      background-color: #050505 !important;
-      background-image: linear-gradient(#050505, #050505) !important;
+      background-color: ${darkerPurple} !important;
+      background-image: linear-gradient(${darkerPurple}, ${darkerPurple}) !important;
     }
     .force-cyan-bg {
       background-color: #00ffff !important;
@@ -30,13 +33,13 @@ return `
     }
   </style>
 </head>
-<body class="force-black-bg" style="margin: 0; padding: 0; background-color: #000000; background-image: linear-gradient(#000000, #000000); color: #ffffff; font-family: 'Courier New', Courier, monospace;">
+<body class="force-bg" style="margin: 0; padding: 0; background-color: ${deepPurple}; background-image: linear-gradient(${deepPurple}, ${deepPurple}); color: #ffffff; font-family: 'Courier New', Courier, monospace;">
   
-  <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" class="force-black-bg" style="background-color: #000000; background-image: linear-gradient(#000000, #000000); width: 100%;">
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" class="force-bg" style="background-color: ${deepPurple}; background-image: linear-gradient(${deepPurple}, ${deepPurple}); width: 100%;">
     <tr>
       <td align="center" style="padding: 40px 20px;">
         
-        <table width="600" border="0" cellpadding="0" cellspacing="0" bgcolor="#050505" class="force-card-bg" style="max-width: 600px; width: 100%; background-color: #050505; background-image: linear-gradient(#050505, #050505); border: 1px solid #00ffff; border-radius: 40px; overflow: hidden; text-align: left;" role="presentation">
+        <table width="600" border="0" cellpadding="0" cellspacing="0" class="force-card-bg" style="max-width: 600px; width: 100%; background-color: ${darkerPurple}; background-image: linear-gradient(${darkerPurple}, ${darkerPurple}); border: 1px solid #00ffff; border-radius: 40px; overflow: hidden; text-align: left;" role="presentation">
           
           <tr>
             <td bgcolor="#00ffff" class="force-cyan-bg" style="background-color: #00ffff; background-image: linear-gradient(#00ffff, #00ffff); color: #000000; padding: 12px 24px; font-weight: bold; font-family: 'Courier New', Courier, monospace; text-transform: uppercase; font-size: 13px; letter-spacing: 3px;">
@@ -110,7 +113,7 @@ return `
           </tr>
           
           <tr>
-            <td style="border-top: 1px solid #1a1a1a; padding: 15px 30px; font-size: 10px; text-transform: uppercase; color: #00ffff; opacity: 0.5; font-family: 'Courier New', Courier, monospace; letter-spacing: 1px;">
+            <td style="border-top: 1px solid #cf4aff; padding: 15px 30px; font-size: 10px; text-transform: uppercase; color: #00ffff; opacity: 0.5; font-family: 'Courier New', Courier, monospace; letter-spacing: 1px;">
               SECURE LINE: ENCRYPTED // MISSION: AREA_51_SURVEY<br/>
               EYES ONLY. DO NOT REPLY.
             </td>
