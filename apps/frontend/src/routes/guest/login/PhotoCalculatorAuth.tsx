@@ -498,14 +498,13 @@ if (!token && !DEBUG) {
         </div>
 
         {/* CASCADING ASCII BLOCK: Stabilized column flex */}
-        <div 
-          className="flex flex-row mb-12 select-none justify-center items-start min-h-[300px]"
-        >
+        <div className="flex flex-row mb-12 select-none justify-center items-start min-h-[300px] overflow-visible">
           {asciiColumns.map((columnText, i) => (
             <div 
               key={i} 
               onMouseEnter={() => colRefs.current[i]?.triggerHover()}
-              className="flex flex-col text-[6px] md:text-[8px] leading-none whitespace-pre text-white/80 transition-colors duration-300 hover:text-[#00ffff]"
+              className="flex flex-col text-[6px] md:text-[8px] leading-none text-white/80 transition-colors duration-300 hover:text-[#00ffff]"
+              style={{ width: '1ch' }} /* Forces each column to the width of one character */
             >
               <PatternScramble 
                 ref={el => { colRefs.current[i] = el; }}
