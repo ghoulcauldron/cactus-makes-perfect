@@ -477,7 +477,7 @@ export default function PhotoCalculatorAuth({
 
 
   // Early conditional render: if not in DEBUG and missing token, show message
-{/* --- TARGETED PATCH: LIQUID METAL CASCADING ASCII --- */}
+{/* --- TARGETED PATCH: STABLE VERTICAL WATERFALL RENDER --- */}
 if (!token && !DEBUG) {
   return (
     <div className="fixed inset-0 bg-[#050505] flex flex-col items-center justify-center font-mono text-white p-4 text-center overflow-hidden touch-none">
@@ -485,8 +485,11 @@ if (!token && !DEBUG) {
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#39FF14]/5 rounded-full blur-[120px] animate-pulse" />
       <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-[#00ffff]/5 rounded-full blur-[140px] animate-pulse delay-1000" />
 
+      {/* FIXED HUD CONTAINER: Added missing closing div and stabilized layout */}
+      <div className="relative z-10 w-full max-w-4xl flex flex-col items-center justify-center bg-black/40 backdrop-blur-2xl p-12 rounded-[40px] border border-white/5 shadow-[0_0_100px_rgba(0,0,0,1)]">
+        
         {/* Status Banner */}
-        <div className="flex items-center gap-3 mb-8">
+        <div className="flex items-center gap-3 mb-8 shrink-0">
           <div className="h-[1px] w-12 bg-gradient-to-r from-transparent to-[#00ffff]" />
           <span className="text-[10px] tracking-[0.8em] text-[#00ffff] font-black uppercase drop-shadow-[0_0_10px_rgba(0,255,255,0.5)]">
             Restricted_Sector
@@ -494,31 +497,30 @@ if (!token && !DEBUG) {
           <div className="h-[1px] w-12 bg-gradient-to-l from-transparent to-[#00ffff]" />
         </div>
 
-        {/* Cascading ASCII Block */}
+        {/* CASCADING ASCII BLOCK: Stabilized column flex */}
         <div 
-        className="flex flex-row mb-12 select-none justify-center items-start"
-        style={{ writingMode: 'vertical-rl' }} // Rotates the scramble logic to flow top-to-bottom
-      >
-        {asciiColumns.map((columnText, i) => (
-          <div 
-            key={i} 
-            onMouseEnter={() => colRefs.current[i]?.triggerHover()} // ONLY triggers the specific column under the mouse
-            className="text-[6px] md:text-[8px] leading-[1] whitespace-pre text-white/80 transition-colors duration-300 hover:text-[#00ffff]"
-            style={{ writingMode: 'horizontal-tb' }} // Restores character orientation
-          >
-            <PatternScramble 
-              ref={el => colRefs.current[i] = el}
-              text={columnText} 
-              speed={0.8} 
-              waveWidth={10}
-              startTrigger={true}
-              {...CYBERPUNK_THEME} 
-            />
-          </div>
-        ))}
-      </div>
+          className="flex flex-row mb-12 select-none justify-center items-start min-h-[300px]"
+        >
+          {asciiColumns.map((columnText, i) => (
+            <div 
+              key={i} 
+              onMouseEnter={() => colRefs.current[i]?.triggerHover()}
+              className="flex flex-col text-[6px] md:text-[8px] leading-none whitespace-pre text-white/80 transition-colors duration-300 hover:text-[#00ffff]"
+            >
+              <PatternScramble 
+                ref={el => { colRefs.current[i] = el; }}
+                text={columnText} 
+                speed={0.8} 
+                waveWidth={10}
+                startTrigger={true}
+                {...CYBERPUNK_THEME} 
+              />
+            </div>
+          ))}
+        </div>
 
-        <div className="space-y-6 max-w-sm relative">
+        {/* RE-RENDERED MESSAGE ELEMENTS */}
+        <div className="space-y-6 max-w-sm relative shrink-0">
           <div className="absolute -top-4 -left-4 w-8 h-8 border-t border-l border-[#39FF14]/40 rounded-tl-2xl" />
           <h2 className="text-sm font-light tracking-[0.5em] uppercase text-white">
             Beacon <span className="text-[#39FF14] font-bold">Offline</span>
@@ -531,11 +533,12 @@ if (!token && !DEBUG) {
         </div>
 
         {/* System Error Footer */}
-        <div className="mt-12 py-2 px-6 bg-red-500/5 border border-red-500/20 rounded-full flex items-center gap-3">
+        <div className="mt-12 py-2 px-6 bg-red-500/5 border border-red-500/20 rounded-full flex items-center gap-3 shrink-0">
           <div className="w-1 h-1 bg-red-500 rounded-full animate-ping" />
           <span className="text-[8px] text-red-500 tracking-[0.4em] font-bold uppercase">Error: Signal_Interrupted</span>
         </div>
-      </div>
+      </div> {/* This is the critical missing closing div */}
+    </div>
   );
 }
 {/* --- END TARGETED PATCH --- */}
