@@ -399,29 +399,14 @@ export default function PhotoCalculatorAuth({
 
 
   // Early conditional render: if not in DEBUG and missing token, show message
-{/* --- TARGETED PATCH: LIQUID METAL ALIEN REDESIGN --- */}
-if (!token) {
-  if (!DEBUG) {
-    return (
-      <div className="fixed inset-0 bg-[#050505] flex flex-col items-center justify-center font-mono text-white p-4 text-center overflow-hidden touch-none">
-        {/* Bioluminescent Background Vapors */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#39FF14]/5 rounded-full blur-[120px] animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-[#00ffff]/5 rounded-full blur-[140px] animate-pulse delay-1000" />
-
-        {/* HUD Container */}
-        <div className="relative z-10 w-full max-w-3xl flex flex-col items-center justify-center bg-black/40 backdrop-blur-2xl p-12 rounded-[40px] border border-white/5 shadow-[0_0_100px_rgba(0,0,0,1)]">
-          
-          {/* Status Banner */}
-          <div className="flex items-center gap-3 mb-12">
-            <div className="h-[1px] w-12 bg-gradient-to-r from-transparent to-[#00ffff]" />
-            <span className="text-[10px] tracking-[0.8em] text-[#00ffff] font-black uppercase drop-shadow-[0_0_10px_rgba(0,255,255,0.5)]">
-              Restricted_Sector
-            </span>
-            <div className="h-[1px] w-12 bg-gradient-to-l from-transparent to-[#00ffff]" />
-          </div>
-
-          {/* Liquid Metal Alien Render */}
-          <pre className="text-[10px] leading-[1.1] mb-12 animate-pulse whitespace-pre overflow-hidden text-white/90 drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
+  // --- UPDATED RESTRICTED ACCESS RENDER ---
+  if (!token) {
+    if (!DEBUG) {
+      return (
+        <div className="fixed inset-0 bg-black flex flex-col items-center justify-center font-mono text-[#45CC2D] p-4 text-center overflow-hidden touch-none">
+          {/* Container with max-width and hidden overflow to prevent ASCII-driven scrolling */}
+          <div className="w-full max-w-full overflow-hidden flex flex-col items-center justify-center">
+            <pre className="text-[10px] leading-[1.1] mb-8 animate-pulse whitespace-pre overflow-hidden">
 {`
 
 
@@ -470,34 +455,24 @@ if (!token) {
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠡⠀⠀⠀⠀⠀⠀⠀⠀⠁⠈⢄⠂⠡⢈⠂⡉⠎⡵⠳⡽⣿⠻⣍⠉⠐⠀⠂⠌⠠⢁⠊⠄⡘⢄⠊⡜⡻⠿⣿⣿⣿⡇⠀⠀⠀⠀⠨⢞⢿⣧⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 `}
           </pre>
+          </div>
 
-          <div className="space-y-6 max-w-sm relative">
-            {/* Decorative Liquid Corner */}
-            <div className="absolute -top-4 -left-4 w-8 h-8 border-t border-l border-[#39FF14]/40 rounded-tl-2xl" />
-            
-            <h2 className="text-sm font-light tracking-[0.5em] uppercase text-white">
-              Beacon <span className="text-[#39FF14] font-bold">Offline</span>
+          <div className="space-y-4 max-w-xs relative z-10">
+            <h2 className="text-sm font-bold tracking-[0.3em] uppercase border-b border-[#45CC2D]/30 pb-2">
+              Unauthorized Sector
             </h2>
-            
-            <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-            
-            <p className="text-[10px] uppercase leading-relaxed tracking-[0.3em] text-white/40 italic">
-              Terminal requires a valid landing frequency.<br/>
+            <p className="text-[10px] uppercase leading-relaxed opacity-70">
+              The system could not detect a valid landing beacon. 
               Mingle or I'll mangle.
             </p>
           </div>
-
-          {/* System Error Footer */}
-          <div className="mt-12 py-2 px-6 bg-red-500/5 border border-red-500/20 rounded-full flex items-center gap-3">
-            <div className="w-1 h-1 bg-red-500 rounded-full animate-ping" />
-            <span className="text-[8px] text-red-500 tracking-[0.4em] font-bold uppercase">Error: Signal_Interrupted</span>
+          <div className="mt-12 text-[8px] opacity-30 tracking-[0.5em] uppercase relative z-10">
+            Error: Beacon_Missing
           </div>
         </div>
-      </div>
-    );
+      );
+    }
   }
-}
-{/* --- END TARGETED PATCH --- */}
 
   return (
     <div className="w-screen h-screen bg-cactus-green relative overflow-hidden">
