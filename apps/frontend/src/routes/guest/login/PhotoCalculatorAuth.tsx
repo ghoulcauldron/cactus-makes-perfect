@@ -82,6 +82,65 @@ export default function PhotoCalculatorAuth({
   const [memory, setMemory] = useState<number>(0);
 
   // Ref array for the PatternScramble components on each digit (for triggering scrambles on demand)
+  /* --- TARGETED PATCH: NATIVE WATERFALL UTILITY --- */
+  const CascadingMatrixColumn = ({ text, delay }: { text: string; delay: number }) => {
+    const [displayChars, setDisplayChars] = useState<string[]>(new Array(text.length).fill(""));
+    const animationRef = useRef<number | null>(null);
+    const startTimeRef = useRef<number | null>(null);
+
+    const symbols = ["▽", "▱", "⌇", "⚯", "⌗", "⏦", "⌬", "⋔", "⌁"];
+    const colors = ["#00ffff", "#39FF14", "#FFFFFF"];
+
+    const runScramble = useCallback(() => {
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+      startTimeRef.current = null;
+
+      const animate = (time: number) => {
+        if (!startTimeRef.current) startTimeRef.current = time;
+        const progress = (time - startTimeRef.current - delay) / 800; // Duration 800ms
+
+        if (progress < 0) {
+          animationRef.current = requestAnimationFrame(animate);
+          return;
+        }
+
+        const newChars = text.split("").map((char, i) => {
+          const threshold = i / text.length;
+          if (progress > threshold + 0.2) return char; // Fully revealed
+          if (progress > threshold) return symbols[Math.floor(Math.random() * symbols.length)]; // Scrambling
+          return ""; // Hidden
+        });
+
+        setDisplayChars(newChars);
+        if (progress < 1.2) animationRef.current = requestAnimationFrame(animate);
+      };
+      animationRef.current = requestAnimationFrame(animate);
+    }, [text, delay]);
+
+    useEffect(() => {
+      runScramble();
+      return () => { if (animationRef.current) cancelAnimationFrame(animationRef.current); };
+    }, [runScramble]);
+
+    return (
+      <div 
+        onMouseEnter={runScramble} 
+        className="flex flex-col text-[6px] md:text-[8px] leading-none select-none transition-colors duration-500 hover:text-[#00ffff]"
+        style={{ width: '1ch' }}
+      >
+        {displayChars.map((char, i) => (
+          <span key={i} style={{ 
+            height: '1em',
+            color: symbols.includes(char) ? colors[Math.floor(Math.random() * colors.length)] : 'inherit',
+            opacity: char === "" ? 0 : 1,
+            textShadow: symbols.includes(char) ? `0 0 8px ${colors[0]}` : 'none'
+          }}>
+            {char || " "}
+          </span>
+        ))}
+      </div>
+    );
+  };
   const asciiColumns = useMemo(() => {
     const raw = `
 
@@ -477,69 +536,55 @@ export default function PhotoCalculatorAuth({
 
 
   // Early conditional render: if not in DEBUG and missing token, show message
-{/* --- TARGETED PATCH: STABLE VERTICAL WATERFALL RENDER --- */}
-if (!token && !DEBUG) {
-  return (
-    <div className="fixed inset-0 bg-[#050505] flex flex-col items-center justify-center font-mono text-white p-4 text-center overflow-hidden touch-none">
-      {/* Bioluminescent Background Vapors */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#39FF14]/5 rounded-full blur-[120px] animate-pulse" />
-      <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-[#00ffff]/5 rounded-full blur-[140px] animate-pulse delay-1000" />
+  /* --- TARGETED PATCH: RESTRICTED SECTOR UI --- */
+  if (!token && !DEBUG) {
+    return (
+      <div className="fixed inset-0 bg-[#050505] flex flex-col items-center justify-center font-mono text-white p-4 text-center overflow-hidden touch-none">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#39FF14]/5 rounded-full blur-[120px] animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-[#00ffff]/5 rounded-full blur-[140px] animate-pulse delay-1000" />
 
-      {/* FIXED HUD CONTAINER: Added missing closing div and stabilized layout */}
-      <div className="relative z-10 w-full max-w-4xl flex flex-col items-center justify-center bg-black/40 backdrop-blur-2xl p-12 rounded-[40px] border border-white/5 shadow-[0_0_100px_rgba(0,0,0,1)]">
-        
-        {/* Status Banner */}
-        <div className="flex items-center gap-3 mb-8 shrink-0">
-          <div className="h-[1px] w-12 bg-gradient-to-r from-transparent to-[#00ffff]" />
-          <span className="text-[10px] tracking-[0.8em] text-[#00ffff] font-black uppercase drop-shadow-[0_0_10px_rgba(0,255,255,0.5)]">
-            Restricted_Sector
-          </span>
-          <div className="h-[1px] w-12 bg-gradient-to-l from-transparent to-[#00ffff]" />
-        </div>
+        <div className="relative z-10 w-full max-w-4xl flex flex-col items-center justify-center bg-black/40 backdrop-blur-2xl p-12 rounded-[40px] border border-white/5 shadow-[0_0_100px_rgba(0,0,0,1)]">
+          
+          <div className="flex items-center gap-3 mb-8 shrink-0">
+            <div className="h-[1px] w-12 bg-gradient-to-r from-transparent to-[#00ffff]" />
+            <span className="text-[10px] tracking-[0.8em] text-[#00ffff] font-black uppercase drop-shadow-[0_0_10px_rgba(0,255,255,0.5)]">
+              Restricted_Sector
+            </span>
+            <div className="h-[1px] w-12 bg-gradient-to-l from-transparent to-[#00ffff]" />
+          </div>
 
-        {/* CASCADING ASCII BLOCK: Stabilized column flex */}
-        <div className="flex flex-row mb-12 select-none justify-center items-start min-h-[300px] overflow-visible">
-          {asciiColumns.map((columnText, i) => (
-            <div 
-              key={i} 
-              onMouseEnter={() => colRefs.current[i]?.triggerHover()}
-              className="flex flex-col text-[6px] md:text-[8px] leading-none text-white/80 transition-colors duration-300 hover:text-[#00ffff]"
-              style={{ width: '1ch' }} /* Forces each column to the width of one character */
-            >
-              <PatternScramble 
-                ref={el => { colRefs.current[i] = el; }}
-                text={columnText} 
-                speed={0.8} 
-                waveWidth={10}
-                startTrigger={true}
-                {...CYBERPUNK_THEME} 
+          {/* WATERFALL RENDER: Localized columns with sine-wave delay */}
+          <div className="flex flex-row mb-12 justify-center items-start min-h-[300px]">
+            {asciiColumns.map((colText, i) => (
+              <CascadingMatrixColumn 
+                key={i} 
+                text={colText} 
+                // Sine wave randomness for the "dripping" effect
+                delay={i * 15 + Math.sin(i * 0.5) * 150} 
               />
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
 
-        {/* RE-RENDERED MESSAGE ELEMENTS */}
-        <div className="space-y-6 max-w-sm relative shrink-0">
-          <div className="absolute -top-4 -left-4 w-8 h-8 border-t border-l border-[#39FF14]/40 rounded-tl-2xl" />
-          <h2 className="text-sm font-light tracking-[0.5em] uppercase text-white">
-            Beacon <span className="text-[#39FF14] font-bold">Offline</span>
-          </h2>
-          <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-          <p className="text-[10px] uppercase leading-relaxed tracking-[0.3em] text-white/40 italic">
-            Terminal requires a valid landing frequency.<br/>
-            Mingle or I'll mangle.
-          </p>
-        </div>
+          <div className="space-y-6 max-w-sm relative shrink-0">
+            <div className="absolute -top-4 -left-4 w-8 h-8 border-t border-l border-[#39FF14]/40 rounded-tl-2xl" />
+            <h2 className="text-sm font-light tracking-[0.5em] uppercase text-white">
+              Beacon <span className="text-[#39FF14] font-bold">Offline</span>
+            </h2>
+            <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+            <p className="text-[10px] uppercase leading-relaxed tracking-[0.3em] text-white/40 italic">
+              Terminal requires a valid landing frequency.<br/>
+              Mingle or I'll mangle.
+            </p>
+          </div>
 
-        {/* System Error Footer */}
-        <div className="mt-12 py-2 px-6 bg-red-500/5 border border-red-500/20 rounded-full flex items-center gap-3 shrink-0">
-          <div className="w-1 h-1 bg-red-500 rounded-full animate-ping" />
-          <span className="text-[8px] text-red-500 tracking-[0.4em] font-bold uppercase">Error: Signal_Interrupted</span>
+          <div className="mt-12 py-2 px-6 bg-red-500/5 border border-red-500/20 rounded-full flex items-center gap-3 shrink-0">
+            <div className="w-1 h-1 bg-red-500 rounded-full animate-ping" />
+            <span className="text-[8px] text-red-500 tracking-[0.4em] font-bold uppercase">Error: Signal_Interrupted</span>
+          </div>
         </div>
-      </div> {/* This is the critical missing closing div */}
-    </div>
-  );
-}
+      </div>
+    );
+  }
 {/* --- END TARGETED PATCH --- */}
 
   return (
