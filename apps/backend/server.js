@@ -740,10 +740,10 @@ app.get("/api/v1/rsvps/me/:guest_id", async (req, res) => {
 });
 
 // ---- API: Get my event responses ----
-app.get("/api/v1/event-responses/me", async (req, res) => {
+app.get("/api/v1/event-responses/me/:guest_id", async (req, res) => {
   try {
-    const guest = await getGuestFromJWT(req);
-    if (!guest) return res.status(401).json({ error: "Unauthorized" });
+    const { guest_id } = req.params;
+    if (!guest_id) return res.status(400).json({ error: "Missing guest_id" });
 
     const { data, error } = await supabase
       .from("event_responses")
@@ -757,7 +757,7 @@ app.get("/api/v1/event-responses/me", async (req, res) => {
         sunday_movie,
         updated_at
       `)
-      .eq("guest_id", guest.id)
+      .eq("guest_id", guest_id)
       .maybeSingle();
 
     if (error) {
@@ -776,6 +776,7 @@ app.get("/api/v1/event-responses/me", async (req, res) => {
 app.post("/api/v1/event-responses", async (req, res) => {
   try {
     const {
+      guest_id,
       arrival_day,
       friday_meowwolf,
       friday_dinner,
@@ -784,10 +785,7 @@ app.post("/api/v1/event-responses", async (req, res) => {
       sunday_movie
     } = req.body || {};
 
-    const guest = await getGuestFromJWT(req);
-    if (!guest) return res.status(401).json({ error: "Unauthorized" });
-
-    const guest_id = guest.id;
+    if (!guest_id) return res.status(400).json({ error: "Missing guest_id" });
 
     if (arrival_day && !["thursday", "friday", "saturday"].includes(arrival_day)) {
       return res.status(400).json({ error: "Invalid arrival_day" });
