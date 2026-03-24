@@ -82,8 +82,7 @@ export default function PhotoCalculatorAuth({
   const [memory, setMemory] = useState<number>(0);
 
   // Ref array for the PatternScramble components on each digit (for triggering scrambles on demand)
-  const scrambleRefs = useRef<(PatternScrambleHandle | null)[]>([]);
-  const asciiLines = useMemo(() => {
+  const asciiColumns = useMemo(() => {
     const raw = `
 
 
@@ -131,17 +130,32 @@ export default function PhotoCalculatorAuth({
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⢈⠴⠜⠊⠁⠀⠉⠁⠀⠀⠢⡄⠀⠀⠀⠀⠀⠀⠀⠀⠄⠡⠘⢀⠣⠑⡄⢊⡙⢶⡯⣴⢳⣿⣿⣶⠀⠱⡐⢉⠆⡌⠣⠜⢢⡙⢤⢛⣾⡿⣿⣿⣿⣿⣿⠁⠀⠀⢨⢲⢿⣿⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠡⠀⠀⠀⠀⠀⠀⠀⠀⠁⠈⢄⠂⠡⢈⠂⡉⠎⡵⠳⡽⣿⠻⣍⠉⠐⠀⠂⠌⠠⢁⠊⠄⡘⢄⠊⡜⡻⠿⣿⣿⣿⡇⠀⠀⠀⠀⠨⢞⢿⣧⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 `;
-    return raw.split('\n');
+  const lines = raw.split('\n');
+  const maxLen = Math.max(...lines.map(l => l.length));
+  
+  // Create an array of columns for the vertical waterfall
+  const cols: string[] = [];
+    for (let x = 0; x < maxLen; x++) {
+      let columnStr = "";
+      for (let y = 0; y < lines.length; y++) {
+        columnStr += lines[y][x] || " ";
+      }
+      cols.push(columnStr);
+    }
+    return cols;
   }, []);
 
-  const triggerCascade = useCallback(() => {
-    asciiLines.forEach((_, i) => {
-      // Staggered waterfall delay
+  // Individual column refs for localized re-triggering
+  const colRefs = useRef<(PatternScrambleHandle | null)[]>([]);
+
+  const triggerVerticalWaterfall = useCallback(() => {
+    asciiColumns.forEach((_, i) => {
+      // Randomize the delay slightly for a "dripping" waterfall effect
       setTimeout(() => {
-        scrambleRefs.current[i]?.triggerHover();
-      }, i * 40); 
+        colRefs.current[i]?.triggerHover();
+      }, i * 20 + Math.random() * 100); 
     });
-  }, [asciiLines]);
+  }, [asciiColumns]);
 
   /** ===== UX bits ===== */
   const [submitting, setSubmitting] = useState(false);
@@ -471,12 +485,6 @@ if (!token && !DEBUG) {
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#39FF14]/5 rounded-full blur-[120px] animate-pulse" />
       <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-[#00ffff]/5 rounded-full blur-[140px] animate-pulse delay-1000" />
 
-      {/* HUD Container - Triggers re-animation on Mouse Enter */}
-      <div 
-        onMouseEnter={triggerCascade}
-        className="relative z-10 w-full max-w-4xl flex flex-col items-center justify-center bg-black/40 backdrop-blur-2xl p-12 rounded-[40px] border border-white/5 shadow-[0_0_100px_rgba(0,0,0,1)] cursor-crosshair"
-      >
-        
         {/* Status Banner */}
         <div className="flex items-center gap-3 mb-8">
           <div className="h-[1px] w-12 bg-gradient-to-r from-transparent to-[#00ffff]" />
@@ -487,20 +495,28 @@ if (!token && !DEBUG) {
         </div>
 
         {/* Cascading ASCII Block */}
-        <div className="flex flex-col mb-12 select-none pointer-events-none">
-          {asciiLines.map((line, i) => (
-            <div key={i} className="text-[6px] md:text-[8px] leading-[1.1] whitespace-pre text-white/80 drop-shadow-[0_0_5px_rgba(0,255,255,0.2)]">
-              <PatternScramble 
-                ref={el => scrambleRefs.current[i] = el}
-                text={line} 
-                speed={0.5} 
-                waveWidth={20}
-                startTrigger={true}
-                {...CYBERPUNK_THEME} 
-              />
-            </div>
-          ))}
-        </div>
+        <div 
+        className="flex flex-row mb-12 select-none justify-center items-start"
+        style={{ writingMode: 'vertical-rl' }} // Rotates the scramble logic to flow top-to-bottom
+      >
+        {asciiColumns.map((columnText, i) => (
+          <div 
+            key={i} 
+            onMouseEnter={() => colRefs.current[i]?.triggerHover()} // ONLY triggers the specific column under the mouse
+            className="text-[6px] md:text-[8px] leading-[1] whitespace-pre text-white/80 transition-colors duration-300 hover:text-[#00ffff]"
+            style={{ writingMode: 'horizontal-tb' }} // Restores character orientation
+          >
+            <PatternScramble 
+              ref={el => colRefs.current[i] = el}
+              text={columnText} 
+              speed={0.8} 
+              waveWidth={10}
+              startTrigger={true}
+              {...CYBERPUNK_THEME} 
+            />
+          </div>
+        ))}
+      </div>
 
         <div className="space-y-6 max-w-sm relative">
           <div className="absolute -top-4 -left-4 w-8 h-8 border-t border-l border-[#39FF14]/40 rounded-tl-2xl" />
@@ -520,7 +536,6 @@ if (!token && !DEBUG) {
           <span className="text-[8px] text-red-500 tracking-[0.4em] font-bold uppercase">Error: Signal_Interrupted</span>
         </div>
       </div>
-    </div>
   );
 }
 {/* --- END TARGETED PATCH --- */}
