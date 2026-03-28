@@ -9,7 +9,6 @@ import { v4 as uuidv4 } from "uuid";
 import nodemailer from "nodemailer";
 import cors from "cors";
 import { renderSurveyTemplate } from "./utils/renderSurveyTemplate.js";
-import { syncInbox } from "./utils/ImapFetcher.js";
 
 // Load backend-local .env file
 import dotenv from "dotenv";
@@ -1853,53 +1852,42 @@ app.post("/api/v1/admin/email/send", requireAdminAuth, async (req, res) => {
   }
 });
 
-// ---- Admin: Mailtrap Webhook Receiver ----
+// ---- Admin: Mailgun Webhook Receiver ----
 app.post("/api/v1/webhooks/mailtrap", async (req, res) => {
   try {
     const payload = req.body;
     
-    // Mailtrap typically sends an array of events or a single message object
-    // depending on the specific webhook configuration.
-    const message = payload.message || payload; 
-    const fromEmail = message.from_email || message.from?.email;
+    // Mailgun Inbound Routes send data as top-level fields in a POST request
+    const fromEmail = payload.sender || payload.from;
+    const subject = payload.subject || "No Subject";
+    const body = payload['body-plain'] || payload.text || "";
 
     if (!fromEmail) return res.status(400).json({ error: "Invalid payload" });
 
     // 1. Identify the Guest Node
     const { data: guest } = await supabase
       .from("guests")
-      .select("id, first_name, last_name")
+      .select("id")
       .eq("email", fromEmail)
       .maybeSingle();
 
-    // 2. Log the Inbound Traffic
-    await supabase.from("emails_log").insert([{
+    // 2. Log the Inbound Traffic to Supabase
+    const { error } = await supabase.from("emails_log").insert([{
       guest_id: guest?.id || null,
       type: "inbound_comm",
-      subject: message.subject,
-      provider: "mailtrap",
+      subject: subject,
+      provider: "mailgun",
       status: "received",
       sent_at: new Date().toISOString(),
       meta: { 
-        mailtrap_id: message.id,
         from: fromEmail,
-        snippet: message.text_body?.substring(0, 200)
+        body: body.substring(0, 2000) // Store the actual message
       }
     }]);
 
-    // 3. Log Activity for the Timeline
-    if (guest) {
-      await supabase.from("user_activity").insert([{
-        guest_id: guest.id,
-        kind: "inbound_message_received",
-        meta: { subject: message.subject }
-      }]);
-    }
+    if (error) throw error;
 
-    console.log(`[Webhook] Inbound message processed from: ${fromEmail}`);
-    
-    // Note: To make this "Real-time" in the UI without polling, 
-    // you would typically trigger a Socket.io event or a Supabase Realtime broadcast here.
+    console.log(`[Mailgun Webhook] Inbound processed from: ${fromEmail}`);
     return res.json({ ok: true });
   } catch (e) {
     console.error("[Webhook Error]:", e);
@@ -1922,11 +1910,6 @@ app.get("/api/v1/admin/email/inbox", requireAdminAuth, async (req, res) => {
     return res.status(500).json({ error: "Sync failed" });
   }
 });
-
-// HEARTBEAT: Check Gmail every 60 seconds
-setInterval(() => {
-    syncInbox().catch(err => console.error("[IMAP Sync Error]", err));
-}, 60000);
 
 // ---- Serve built frontend from /app/dist (we'll place it there in Docker) ----
 const distDir = path.join(__dirname, "public");
