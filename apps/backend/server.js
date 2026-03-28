@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from "uuid";
 import nodemailer from "nodemailer";
 import cors from "cors";
 import { renderSurveyTemplate } from "./utils/renderSurveyTemplate.js";
+import { syncInbox } from "./utils/ImapFetcher.js";
 
 // Load backend-local .env file
 import dotenv from "dotenv";
@@ -1780,8 +1781,6 @@ app.get("/api/v1/admin/lodging/eligible-guests", requireAdminAuth, async (req, r
   }
 });
 
-// apps/backend/server.js
-
 // ---- Admin: GET Survey Responses (Filtered by RSVP status) ----
 app.get("/api/v1/admin/surveys", requireAdminAuth, async (req, res) => {
   try {
@@ -1821,6 +1820,113 @@ app.get("/api/v1/admin/surveys", requireAdminAuth, async (req, res) => {
     return res.status(500).json({ error: "Failed to fetch coordination data" });
   }
 });
+
+// ---- Admin: SEND Message to Guest (Eyes Only) ----
+app.post("/api/v1/admin/email/send", requireAdminAuth, async (req, res) => {
+  try {
+    const { guest_id, subject, text } = req.body;
+    const { data: guest } = await supabase.from("guests").select("email").eq("id", guest_id).single();
+    
+    if (!guest) return res.status(404).json({ error: "Guest node not found" });
+
+    // Force sender to the Eyes Only alias
+    await sendEmail({
+      to: guest.email,
+      from: "eyesonly@cactusmakesperfect.org", 
+      subject: `[EYES ONLY] ${subject}`,
+      text
+    });
+
+    // Log the interaction
+    await supabase.from("emails_log").insert([{
+      guest_id,
+      type: "two_way_comm",
+      subject,
+      provider: "mailtrap",
+      status: "sent",
+      meta: { alias: "eyesonly" }
+    }]);
+
+    return res.json({ ok: true });
+  } catch (e) {
+    return res.status(500).json({ error: "Transmission failed" });
+  }
+});
+
+// ---- Admin: Mailtrap Webhook Receiver ----
+app.post("/api/v1/webhooks/mailtrap", async (req, res) => {
+  try {
+    const payload = req.body;
+    
+    // Mailtrap typically sends an array of events or a single message object
+    // depending on the specific webhook configuration.
+    const message = payload.message || payload; 
+    const fromEmail = message.from_email || message.from?.email;
+
+    if (!fromEmail) return res.status(400).json({ error: "Invalid payload" });
+
+    // 1. Identify the Guest Node
+    const { data: guest } = await supabase
+      .from("guests")
+      .select("id, first_name, last_name")
+      .eq("email", fromEmail)
+      .maybeSingle();
+
+    // 2. Log the Inbound Traffic
+    await supabase.from("emails_log").insert([{
+      guest_id: guest?.id || null,
+      type: "inbound_comm",
+      subject: message.subject,
+      provider: "mailtrap",
+      status: "received",
+      sent_at: new Date().toISOString(),
+      meta: { 
+        mailtrap_id: message.id,
+        from: fromEmail,
+        snippet: message.text_body?.substring(0, 200)
+      }
+    }]);
+
+    // 3. Log Activity for the Timeline
+    if (guest) {
+      await supabase.from("user_activity").insert([{
+        guest_id: guest.id,
+        kind: "inbound_message_received",
+        meta: { subject: message.subject }
+      }]);
+    }
+
+    console.log(`[Webhook] Inbound message processed from: ${fromEmail}`);
+    
+    // Note: To make this "Real-time" in the UI without polling, 
+    // you would typically trigger a Socket.io event or a Supabase Realtime broadcast here.
+    return res.json({ ok: true });
+  } catch (e) {
+    console.error("[Webhook Error]:", e);
+    return res.status(500).json({ error: "Webhook processing failed" });
+  }
+});
+
+// UPDATE: Fetch from local DB instead of Mailtrap API
+app.get("/api/v1/admin/email/inbox", requireAdminAuth, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("emails_log")
+      .select("*, guest:guests(id, first_name, last_name)")
+      .eq("type", "inbound_comm")
+      .order("sent_at", { ascending: false });
+
+    if (error) throw error;
+    return res.json({ messages: data || [] });
+  } catch (e) {
+    return res.status(500).json({ error: "Sync failed" });
+  }
+});
+
+// HEARTBEAT: Check Gmail every 60 seconds
+setInterval(() => {
+    syncInbox().catch(err => console.error("[IMAP Sync Error]", err));
+}, 60000);
 
 // ---- Serve built frontend from /app/dist (we'll place it there in Docker) ----
 const distDir = path.join(__dirname, "public");
@@ -1865,8 +1971,9 @@ async function getGuestFromJWT(req) {
 // ---- Helper: issue JWT ----
 async function issueJWT(payload) {
   const alg = "HS256";
-  // Ensure TTL is treated as a relative duration string (e.g., "172800s")
+  // Fix: Ensure TTL is always a relative duration string (e.g., "172800s")
   const ttl = typeof JWT_TTL_SECONDS === "number" ? `${JWT_TTL_SECONDS}s` : String(JWT_TTL_SECONDS);
+  
   const token = await new SignJWT(payload)
     .setProtectedHeader({ alg })
     .setIssuedAt()

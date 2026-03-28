@@ -4,8 +4,9 @@ import LodgingManager from "./components/LodgingManager";
 import SurveyManager from "./components/SurveyManager";
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/react';
 import { ChevronDownIcon } from '@heroicons/react/20/solid';
+import InboxManager from "./components/InboxManager";
 
-type Tab = "GUESTS" | "LODGING" | "SURVEYS";
+type Tab = "GUESTS" | "LODGING" | "SURVEYS" | "INBOX";
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<Tab>("GUESTS");
@@ -13,7 +14,8 @@ export default function AdminDashboard() {
   const tabs: { id: Tab; label: string }[] = [
     { id: "GUESTS", label: "GUEST LIST" },
     { id: "LODGING", label: "LODGING MGMT" },
-    { id: "SURVEYS", label: "SURVEY RESP" }
+    { id: "SURVEYS", label: "SURVEY RESP" },
+    { id: "INBOX", label: "EYES ONLY" }
   ];
 
   return (
@@ -85,6 +87,7 @@ export default function AdminDashboard() {
         {activeTab === "GUESTS" && <GuestList />}
         {activeTab === "LODGING" && <LodgingManager />}
         {activeTab === "SURVEYS" && <SurveyManager />}
+        {activeTab === "INBOX" && <InboxManager />}
       </div>
     </div>
   );
