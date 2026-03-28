@@ -11,9 +11,11 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
+    "imapflow": "^1.2.18",
     "jose": "4.15.5",
+    "mailparser": "^3.9.6",
     "node-fetch": "^3.3.2",
-    "nodemailer": "^7.0.10",
+    "nodemailer": "^8.0.4",
     "twilio": "4.22.0",
     "uuid": "9.0.1"
   }
