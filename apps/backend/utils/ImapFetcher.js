@@ -1,3 +1,4 @@
+// apps/backend/utils/ImapFetcher.js
 import { ImapFlow } from 'imapflow';
 import { simpleParser } from 'mailparser';
 import { createClient } from "@supabase/supabase-js";
@@ -5,7 +6,6 @@ import { createClient } from "@supabase/supabase-js";
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
 export async function syncInbox() {
-    // MOVE INITIALIZATION HERE: Create a fresh instance for every heartbeat
     const client = new ImapFlow({
         host: 'imap.gmail.com',
         port: 993,
@@ -14,7 +14,7 @@ export async function syncInbox() {
             user: 'cactusmakesperfect51@gmail.com',
             pass: process.env.GMAIL_APP_PASSWORD 
         },
-        logger: false // Set to true if you need deep protocol debugging
+        logger: false
     });
 
     console.log("[IMAP] Attempting connection...");
@@ -22,15 +22,20 @@ export async function syncInbox() {
     
     let lock = await client.getMailboxLock('INBOX');
     try {
-        for await (let message of client.listMessages({ seen: false })) {
-            let { content } = await client.download(message.uid);
-            let parsed = await simpleParser(content);
+        // CORRECTED: Use fetch() with search criteria for async iteration
+        for await (let message of client.fetch({ unseen: true }, { source: true })) {
+            let parsed = await simpleParser(message.source);
 
-            const isForAlias = parsed.to.text.toLowerCase().includes('eyesonly@cactusmakesperfect.org');
+            // Filter for the Squarespace alias
+            const isForAlias = parsed.to?.text?.toLowerCase().includes('eyesonly@cactusmakesperfect.org');
 
             if (isForAlias) {
                 const fromEmail = parsed.from.value[0].address;
-                const { data: guest } = await supabase.from("guests").select("id").eq("email", fromEmail).maybeSingle();
+                const { data: guest } = await supabase
+                    .from("guests")
+                    .select("id")
+                    .eq("email", fromEmail)
+                    .maybeSingle();
 
                 await supabase.from("emails_log").insert([{
                     guest_id: guest?.id || null,
@@ -41,10 +46,15 @@ export async function syncInbox() {
                     sent_at: parsed.date,
                     meta: { body: parsed.text, from: fromEmail }
                 }]);
+                
                 console.log(`[IMAP] Logged transmission from: ${fromEmail}`);
             }
-            await client.messageFlagsAdd(message.uid, ['\\Seen']);
+
+            // Mark as seen so it isn't fetched next heartbeat
+            await client.messageFlagsAdd({ uid: message.uid }, ['\\Seen']);
         }
+    } catch (err) {
+        console.error("[IMAP] Iteration Error:", err);
     } finally {
         lock.release();
         await client.logout();
