@@ -923,6 +923,47 @@ app.get("/api/v1/admin/verify", requireAdminAuth, (req, res) => {
   return res.json({ ok: true });
 });
 
+// ---- Admin: Mailgun Webhook Receiver ----
+app.post("/api/v1/webhooks/mailgun", upload.none(), async (req, res) => {
+  try {
+    const payload = req.body;
+    
+    // Mailgun specific field mapping
+    const fromEmail = payload.sender || payload.from;
+    const subject = payload.subject || "Incoming Transmission";
+    const bodyContent = payload['body-plain'] || payload['stripped-text'] || payload.text || "";
+
+    if (!fromEmail) {
+      return res.status(400).json({ error: "Invalid payload: No sender" });
+    }
+
+    const { data: guest } = await supabase
+      .from("guests")
+      .select("id")
+      .eq("email", fromEmail.toLowerCase().trim())
+      .maybeSingle();
+
+    await supabase.from("emails_log").insert([{
+      guest_id: guest?.id || null,
+      type: "inbound_comm",
+      subject: subject,
+      provider: "mailgun_relay",
+      status: "received",
+      sent_at: new Date().toISOString(),
+      meta: { 
+        from: fromEmail,
+        body: bodyContent 
+      }
+    }]);
+
+    console.log(`[Mailgun Webhook] SUCCESS: Received from ${fromEmail}`);
+    return res.json({ ok: true });
+  } catch (e) {
+    console.error("[Mailgun Webhook Error]:", e);
+    return res.status(500).json({ error: "Internal processing failed" });
+  }
+});
+
 // ---- Protect all subsequent admin routes ----
 app.use("/api/v1/admin", requireAdminAuth);
 
@@ -1852,47 +1893,6 @@ app.post("/api/v1/admin/email/send", requireAdminAuth, async (req, res) => {
     return res.json({ ok: true });
   } catch (e) {
     return res.status(500).json({ error: "Transmission failed" });
-  }
-});
-
-// ---- Admin: Mailgun Webhook Receiver ----
-app.post("/api/v1/webhooks/mailgun", upload.none(), async (req, res) => {
-  try {
-    const payload = req.body;
-    
-    // Mailgun specific field mapping
-    const fromEmail = payload.sender || payload.from;
-    const subject = payload.subject || "Incoming Transmission";
-    const bodyContent = payload['body-plain'] || payload['stripped-text'] || payload.text || "";
-
-    if (!fromEmail) {
-      return res.status(400).json({ error: "Invalid payload: No sender" });
-    }
-
-    const { data: guest } = await supabase
-      .from("guests")
-      .select("id")
-      .eq("email", fromEmail.toLowerCase().trim())
-      .maybeSingle();
-
-    await supabase.from("emails_log").insert([{
-      guest_id: guest?.id || null,
-      type: "inbound_comm",
-      subject: subject,
-      provider: "mailgun_relay",
-      status: "received",
-      sent_at: new Date().toISOString(),
-      meta: { 
-        from: fromEmail,
-        body: bodyContent 
-      }
-    }]);
-
-    console.log(`[Mailgun Webhook] SUCCESS: Received from ${fromEmail}`);
-    return res.json({ ok: true });
-  } catch (e) {
-    console.error("[Mailgun Webhook Error]:", e);
-    return res.status(500).json({ error: "Internal processing failed" });
   }
 });
 
