@@ -1898,6 +1898,27 @@ app.post("/api/v1/admin/email/send", requireAdminAuth, async (req, res) => {
   }
 });
 
+// ---- Admin: Update Email Folder State ----
+app.patch("/api/v1/admin/email/status", requireAdminAuth, async (req, res) => {
+  try {
+    const { email_ids, folder_state } = req.body; // Expects an array of IDs
+    
+    if (!Array.isArray(email_ids) || !folder_state) {
+      return res.status(400).json({ error: "Invalid payload" });
+    }
+
+    const { error } = await supabase
+      .from("emails_log")
+      .update({ folder_state })
+      .in("id", email_ids);
+
+    if (error) throw error;
+    return res.json({ ok: true });
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+});
+
 // UPDATE: Fetch from local DB instead of Mailtrap API
 app.get("/api/v1/admin/email/inbox", requireAdminAuth, async (req, res) => {
   try {
