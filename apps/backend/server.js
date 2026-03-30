@@ -1857,35 +1857,33 @@ app.post("/api/v1/webhooks/mailtrap", async (req, res) => {
   try {
     const payload = req.body;
     
-    // Mailgun Inbound Routes send data as top-level fields in a POST request
+    // Mailgun POSTs data as multi-part form data or JSON
     const fromEmail = payload.sender || payload.from;
-    const subject = payload.subject || "No Subject";
-    const body = payload['body-plain'] || payload.text || "";
+    const subject = payload.subject || "Incoming Transmission";
+    
+    // Use 'body-plain' for the terminal text, fallback to 'stripped-text'
+    const bodyContent = payload['body-plain'] || payload['stripped-text'] || payload.text || "";
 
     if (!fromEmail) return res.status(400).json({ error: "Invalid payload" });
 
-    // 1. Identify the Guest Node
     const { data: guest } = await supabase
       .from("guests")
       .select("id")
-      .eq("email", fromEmail)
+      .eq("email", fromEmail.toLowerCase().trim())
       .maybeSingle();
 
-    // 2. Log the Inbound Traffic to Supabase
-    const { error } = await supabase.from("emails_log").insert([{
+    await supabase.from("emails_log").insert([{
       guest_id: guest?.id || null,
       type: "inbound_comm",
       subject: subject,
-      provider: "mailgun",
+      provider: "mailgun_relay",
       status: "received",
       sent_at: new Date().toISOString(),
       meta: { 
         from: fromEmail,
-        body: body.substring(0, 2000) // Store the actual message
+        body: bodyContent // Ensure this matches what InboxManager expects
       }
     }]);
-
-    if (error) throw error;
 
     console.log(`[Mailgun Webhook] Inbound processed from: ${fromEmail}`);
     return res.json({ ok: true });
