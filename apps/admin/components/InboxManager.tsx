@@ -10,8 +10,8 @@ import {
   TrashIcon,
   PlusIcon,
   MagnifyingGlassIcon,
-  EnvelopeIcon, // Added for read status
-  EnvelopeOpenIcon // Added for read status
+  EnvelopeIcon,
+  EnvelopeOpenIcon
 } from '@heroicons/react/20/solid';
 
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY);
@@ -43,10 +43,12 @@ export default function InboxManager() {
     fetchData();
     const channel = supabase.channel('inbox-updates')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'emails_log' }, () => fetchData())
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'emails_log' }, () => fetchData())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, []);
 
+  // --- Logic: Threading (Aggregates Sent & Received) ---
   const threads = useMemo(() => {
     const groups: Record<string, any[]> = {};
     allLogs.forEach(log => {
@@ -57,40 +59,48 @@ export default function InboxManager() {
     return groups;
   }, [allLogs]);
 
+  // --- Logic: Badge Counts ---
+  const unreadCount = useMemo(() => {
+    return allLogs.filter(log => log.type === 'inbound_comm' && !log.is_read && log.folder_state === 'inbox').length;
+  }, [allLogs]);
+
+  // --- Logic: Filtering ---
   const filteredThreads = useMemo(() => {
     return Object.entries(threads).filter(([id, logs]) => {
       const lastLog = logs[0];
       const guestName = logs[0].guest ? `${logs[0].guest.first_name} ${logs[0].guest.last_name}`.toLowerCase() : "";
       const email = (logs[0].guest?.email || logs[0].meta?.from || "").toLowerCase();
-      const subject = (logs[0].subject || "").toLowerCase();
       
       let folderMatch = false;
-      if (currentFolder === "trash") folderMatch = lastLog.folder_state === "trash";
-      else if (currentFolder === "sent") folderMatch = lastLog.type === "two_way_comm" && lastLog.folder_state !== "trash";
-      else folderMatch = lastLog.type === "inbound_comm" && lastLog.folder_state !== "trash";
+      if (currentFolder === "trash") {
+        folderMatch = logs.some(l => l.folder_state === "trash");
+      } else if (currentFolder === "sent") {
+        // Show thread in Sent if latest message is a dispatch
+        folderMatch = (lastLog.type === "two_way_comm" || lastLog.type === "invite") && lastLog.folder_state !== "trash";
+      } else {
+        // Inbox: Show if latest message is inbound
+        folderMatch = lastLog.type === "inbound_comm" && lastLog.folder_state !== "trash";
+      }
 
       if (!folderMatch) return false;
-
       if (!searchQuery) return true;
       const q = searchQuery.toLowerCase();
-      return guestName.includes(q) || email.includes(q) || subject.includes(q);
+      return guestName.includes(q) || email.includes(q) || (lastLog.subject || "").toLowerCase().includes(q);
     });
   }, [threads, currentFolder, searchQuery]);
 
   const activeThread = selectedThreadId ? threads[selectedThreadId] : null;
 
-  // Mark as Read Logic
   useEffect(() => {
     if (activeThread) {
       setIsComposingNew(false);
-      const lastMsg = activeThread[0];
+      const lastMsg = activeThread.find(m => m.type === 'inbound_comm') || activeThread[0];
       setEditSubject(`RE: ${lastMsg.subject.replace(/^RE:\s+/i, "")}`);
       setEditRecipient(lastMsg.guest?.email || lastMsg.meta?.from || "");
       setTargetGuestId(lastMsg.guest?.id || null);
 
-      // Auto-mark as read if the latest message is unread
-      if (!lastMsg.is_read) {
-        toggleReadStatus(activeThread.map(m => m.id), true);
+      if (!activeThread[0].is_read && activeThread[0].type === 'inbound_comm') {
+        toggleReadStatus([activeThread[0].id], true);
       }
     }
   }, [selectedThreadId]);
@@ -100,7 +110,6 @@ export default function InboxManager() {
       method: "PATCH",
       body: JSON.stringify({ email_ids: ids, is_read: isRead })
     });
-    fetchData(); // Sync local state
   };
 
   const startNewMessage = () => {
@@ -109,7 +118,6 @@ export default function InboxManager() {
     setEditSubject("");
     setEditRecipient("");
     setReplyText("");
-    setTargetGuestId(null);
   };
 
   const moveThreadToFolder = async (ids: string[], newState: string) => {
@@ -118,7 +126,6 @@ export default function InboxManager() {
       body: JSON.stringify({ email_ids: ids, folder_state: newState })
     });
     setSelectedThreadId(null);
-    fetchData();
   };
 
   const sendEmail = async () => {
@@ -128,10 +135,8 @@ export default function InboxManager() {
         const { data: guest } = await supabase.from("guests").select("id").eq("email", editRecipient.trim()).maybeSingle();
         finalGuestId = guest?.id || null;
     }
-    if (!finalGuestId) {
-      alert("ERROR: RECIPIENT NOT FOUND");
-      return;
-    }
+    if (!finalGuestId) return alert("ERROR: RECIPIENT NOT FOUND");
+
     try {
       await apiFetch("/admin/email/send", {
         method: "POST",
@@ -141,10 +146,10 @@ export default function InboxManager() {
           text: replyText
         })
       });
+      // Force immediate read-status on our own outbound
       setReplyText("");
       if (isComposingNew) setIsComposingNew(false);
       fetchData(); 
-      alert("TRANSMISSION DISPATCHED");
     } catch (error) {
       alert("CRITICAL: DISPATCH FAILED");
     }
@@ -153,17 +158,25 @@ export default function InboxManager() {
   return (
     <div className="h-full flex bg-black font-mono text-[#45CC2D]">
       
-      {/* 1. Navigation Rail */}
+      {/* 1. Navigation Rail with Badges */}
       <div className="w-16 border-r border-[#45CC2D]/20 flex flex-col items-center py-6 gap-8 bg-neutral-900/20">
         <button onClick={startNewMessage} className="p-2 bg-[#45CC2D]/10 rounded-full hover:bg-[#45CC2D]/20 transition-all mb-4">
           <PlusIcon className="h-6 w-6" />
         </button>
-        <button onClick={() => setCurrentFolder("inbox")} title="Inbox">
+        
+        <button onClick={() => setCurrentFolder("inbox")} title="Inbox" className="relative">
           <InboxIcon className={`h-6 w-6 ${currentFolder === "inbox" ? "opacity-100" : "opacity-30"}`} />
+          {unreadCount > 0 && (
+            <span className="absolute -top-2 -right-2 bg-[#45CC2D] text-black text-[8px] font-bold px-1 min-w-[14px] rounded-full shadow-[0_0_10px_#45CC2D]">
+              {unreadCount}
+            </span>
+          )}
         </button>
+
         <button onClick={() => setCurrentFolder("sent")} title="Sent">
           <SentIcon className={`h-6 w-6 ${currentFolder === "sent" ? "opacity-100" : "opacity-30"}`} />
         </button>
+
         <button onClick={() => setCurrentFolder("trash")} title="Trash">
           <TrashIcon className={`h-6 w-6 ${currentFolder === "trash" ? "opacity-100" : "opacity-30"}`} />
         </button>
@@ -176,14 +189,14 @@ export default function InboxManager() {
             <span className="text-[10px] font-bold uppercase tracking-widest">{currentFolder}</span>
             <button onClick={fetchData} className={loading ? "animate-spin" : ""}><ArrowPathIcon className="h-4 w-4" /></button>
           </div>
-          <div className="relative group">
-            <MagnifyingGlassIcon className="h-3 w-3 absolute left-2 top-1/2 -translate-y-1/2 opacity-30 group-focus-within:opacity-100" />
+          <div className="relative">
+            <MagnifyingGlassIcon className="h-3 w-3 absolute left-2 top-1/2 -translate-y-1/2 opacity-30" />
             <input 
               type="text"
               placeholder="FILTER_NODES..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-neutral-900 border border-[#45CC2D]/20 px-7 py-1.5 text-[10px] outline-none focus:border-[#45CC2D]/50 transition-colors placeholder:opacity-20"
+              className="w-full bg-neutral-900 border border-[#45CC2D]/20 px-7 py-1.5 text-[10px] outline-none focus:border-[#45CC2D]/50 transition-colors"
             />
           </div>
         </div>
@@ -193,20 +206,18 @@ export default function InboxManager() {
             <div 
               key={id} 
               onClick={() => setSelectedThreadId(id)}
-              className={`p-4 border-b border-[#45CC2D]/10 hover:bg-[#45CC2D]/5 cursor-pointer relative transition-all ${selectedThreadId === id ? 'bg-[#45CC2D]/10' : ''}`}
+              className={`p-4 border-b border-[#45CC2D]/10 hover:bg-[#45CC2D]/5 cursor-pointer relative ${selectedThreadId === id ? 'bg-[#45CC2D]/10' : ''}`}
             >
-              {/* Unread Indicator */}
               {!logs[0].is_read && logs[0].type === 'inbound_comm' && (
-                <div className="absolute left-1 top-1/2 -translate-y-1/2 w-1 h-8 bg-[#45CC2D] shadow-[0_0_10px_#45CC2D]" />
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#45CC2D] shadow-[2px_0_10px_#45CC2D]" />
               )}
-              
               <div className="flex justify-between text-[10px] font-bold uppercase mb-1">
-                <span className={`truncate ${!logs[0].is_read ? 'text-white' : ''}`}>
+                <span className={!logs[0].is_read ? 'text-white' : ''}>
                     {logs[0].guest ? `${logs[0].guest.first_name} ${logs[0].guest.last_name}` : (logs[0].meta?.from || "Unknown")}
                 </span>
-                <span className="opacity-30 font-normal text-[8px]">{new Date(logs[0].sent_at).toLocaleDateString()}</span>
+                <span className="opacity-30 text-[8px]">{new Date(logs[0].sent_at).toLocaleDateString()}</span>
               </div>
-              <p className={`text-[9px] truncate ${!logs[0].is_read ? 'opacity-100 text-[#45CC2D]' : 'opacity-40'}`}>
+              <p className={`text-[9px] truncate ${!logs[0].is_read ? 'text-[#45CC2D]' : 'opacity-40'}`}>
                 {logs[0].subject}
               </p>
             </div>
@@ -219,77 +230,66 @@ export default function InboxManager() {
         {(activeThread || isComposingNew) ? (
           <>
             <div className="p-6 border-b border-[#45CC2D]/10 flex justify-between items-start">
-              <div>
-                <h2 className="text-xl font-bold uppercase tracking-tighter mb-1">
+              <div className="flex flex-col gap-1">
+                <h2 className="text-xl font-bold uppercase tracking-tighter">
                   {isComposingNew ? "New Transmission" : activeThread?.[0].subject}
                 </h2>
                 {!isComposingNew && (
                   <p className="text-[10px] opacity-40 uppercase">
-                    Node: {activeThread?.[0].meta?.from || activeThread?.[0].guest?.email}
+                    Channel: {activeThread?.[0].meta?.from || activeThread?.[0].guest?.email}
                   </p>
                 )}
               </div>
+              
               {!isComposingNew && (
                 <div className="flex gap-4">
-                  {/* Mark as Unread Toggle */}
-                  <button 
-                    onClick={() => toggleReadStatus(activeThread!.map(m => m.id), !activeThread![0].is_read)}
-                    className="opacity-40 hover:opacity-100 transition-all p-2"
-                    title={activeThread[0].is_read ? "Mark as Unread" : "Mark as Read"}
-                  >
+                  <button onClick={() => toggleReadStatus(activeThread!.map(m => m.id), !activeThread![0].is_read)} className="opacity-40 hover:opacity-100 transition-all p-2">
                     {activeThread[0].is_read ? <EnvelopeIcon className="h-5 w-5" /> : <EnvelopeOpenIcon className="h-5 w-5" />}
                   </button>
-                  <button 
-                    onClick={() => moveThreadToFolder(activeThread!.map(m => m.id), currentFolder === 'trash' ? 'inbox' : 'trash')}
-                    className="opacity-40 hover:opacity-100 transition-all p-2"
-                  >
+                  <button onClick={() => moveThreadToFolder(activeThread!.map(m => m.id), currentFolder === 'trash' ? 'inbox' : 'trash')} className="opacity-40 hover:opacity-100 transition-all p-2">
                     <TrashIcon className="h-5 w-5" />
                   </button>
                 </div>
               )}
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-8 scrollbar-hide">
-              {activeThread?.slice().reverse().map((msg: any) => (
-                <div key={msg.id} className={`max-w-xl ${msg.type === 'inbound_comm' ? 'mr-auto' : 'ml-auto text-right'}`}>
-                  <div className="text-[8px] opacity-30 uppercase mb-2">
-                    {msg.type === 'inbound_comm' ? 'Inbound Transmission' : 'Outbound Dispatch'} // {new Date(msg.sent_at).toLocaleString()}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-hide flex flex-col-reverse">
+              {activeThread?.map((msg: any) => (
+                <div key={msg.id} className={`max-w-xl ${msg.type === 'inbound_comm' ? 'self-start' : 'self-end text-right'}`}>
+                  <div className="text-[7px] opacity-30 uppercase mb-1">
+                    {msg.type === 'inbound_comm' ? 'Inbound' : 'Outbound'} // {new Date(msg.sent_at).toLocaleString()}
                   </div>
-                  <div className={`p-4 text-xs leading-relaxed border ${
-                    msg.type === 'inbound_comm' ? 'border-[#45CC2D]/30 bg-black' : 'border-[#45CC2D]/10 bg-[#45CC2D]/5'
-                  }`}>
-                    {msg.meta?.body || msg.text || "[Empty Transmission]"}
+                  <div className={`p-4 text-xs leading-relaxed border ${msg.type === 'inbound_comm' ? 'border-[#45CC2D]/30 bg-black' : 'border-[#45CC2D]/10 bg-[#45CC2D]/5'}`}>
+                    {msg.meta?.body || msg.text || "[No Content]"}
                   </div>
                 </div>
               ))}
+              {isComposingNew && <div className="flex-1 flex items-center justify-center opacity-20 text-[8px] italic">Awaiting Payload...</div>}
             </div>
 
             <div className="p-6 border-t border-[#45CC2D]/20 bg-black space-y-3">
               {(isComposingNew) && (
-                <div className="flex flex-col gap-2 border-b border-[#45CC2D]/10 pb-3">
-                  <div className="flex items-center text-[10px] gap-2">
-                    <span className="opacity-40 w-12">TO:</span>
-                    <input type="text" placeholder="guest@email.com" value={editRecipient} onChange={(e) => setEditRecipient(e.target.value)} className="bg-transparent outline-none flex-1 text-[#45CC2D]" />
-                  </div>
-                  <div className="flex items-center text-[10px] gap-2">
-                    <span className="opacity-40 w-12">SUBJ:</span>
-                    <input type="text" placeholder="SUBJECT" value={editSubject} onChange={(e) => setEditSubject(e.target.value)} className="bg-transparent outline-none flex-1 text-[#45CC2D]" />
-                  </div>
+                <div className="flex flex-col gap-2 border-b border-[#45CC2D]/10 pb-3 text-[10px]">
+                    <div className="flex gap-2">
+                        <span className="opacity-40 w-12">TO:</span>
+                        <input type="text" placeholder="GUEST_EMAIL" value={editRecipient} onChange={(e) => setEditRecipient(e.target.value)} className="bg-transparent outline-none flex-1" />
+                    </div>
+                    <div className="flex gap-2">
+                        <span className="opacity-40 w-12">SUB:</span>
+                        <input type="text" placeholder="SUBJECT_LINE" value={editSubject} onChange={(e) => setEditSubject(e.target.value)} className="bg-transparent outline-none flex-1" />
+                    </div>
                 </div>
               )}
-              <textarea value={replyText} onChange={(e) => setReplyText(e.target.value)} className="w-full bg-transparent outline-none border-none text-xs h-32 resize-none text-[#45CC2D] placeholder-[#45CC2D]/20 leading-relaxed" placeholder={isComposingNew ? "START NEW TRANSMISSION..." : "REPLY TO NODE..."} />
-              <div className="flex justify-end mt-2">
-                <button onClick={sendEmail} disabled={!replyText.trim() || (isComposingNew && !editRecipient)} className="flex items-center gap-2 border border-[#45CC2D] px-6 py-2 text-xs font-bold uppercase hover:bg-[#45CC2D] hover:text-black transition-all disabled:opacity-20">
-                  <PaperAirplaneIcon className="h-4 w-4" /> Dispatch Signal
+              <textarea value={replyText} onChange={(e) => setReplyText(e.target.value)} className="w-full bg-transparent outline-none border-none text-xs h-32 resize-none text-[#45CC2D] placeholder-[#45CC2D]/20" placeholder="ENTER TRANSMISSION..." />
+              <div className="flex justify-end">
+                <button onClick={sendEmail} disabled={!replyText.trim() || (isComposingNew && !editRecipient)} className="flex items-center gap-2 border border-[#45CC2D] px-6 py-2 text-xs font-bold uppercase hover:bg-[#45CC2D] transition-all disabled:opacity-20">
+                  <PaperAirplaneIcon className="h-4 w-4" /> Dispatch
                 </button>
               </div>
             </div>
           </>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center opacity-10 text-[10px] tracking-[1em] uppercase">
-            <div className="mb-4 text-2xl">⎐</div>
-            Select Node or Start New
-          </div>
+          <div className="flex-1 flex flex-col items-center justify-center opacity-10 text-[10px] tracking-[1em] uppercase">Select Node</div>
         )}
       </div>
     </div>
