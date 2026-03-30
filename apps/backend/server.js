@@ -1920,18 +1920,18 @@ app.patch("/api/v1/admin/email/read-status", requireAdminAuth, async (req, res) 
   }
 });
 
-// ---- Admin: Update Email Folder State ----
+// ---- Admin: Update Email Archive Status ----
 app.patch("/api/v1/admin/email/status", requireAdminAuth, async (req, res) => {
   try {
-    const { email_ids, folder_state } = req.body; // Expects an array of IDs
+    const { email_ids, is_archived } = req.body; 
     
-    if (!Array.isArray(email_ids) || !folder_state) {
-      return res.status(400).json({ error: "Invalid payload" });
+    if (!Array.isArray(email_ids)) {
+      return res.status(400).json({ error: "Invalid payload: email_ids must be an array" });
     }
 
     const { error } = await supabase
       .from("emails_log")
-      .update({ folder_state })
+      .update({ is_archived: !!is_archived }) // Force boolean
       .in("id", email_ids);
 
     if (error) throw error;

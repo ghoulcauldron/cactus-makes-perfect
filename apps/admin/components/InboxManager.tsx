@@ -131,12 +131,16 @@ const filteredThreads = useMemo(() => {
     setReplyText("");
   };
 
-  const moveThreadToFolder = async (ids: string[], newState: string) => {
+  const moveThreadToFolder = async (ids: string[], shouldArchive: boolean) => {
     await apiFetch("/admin/email/status", {
       method: "PATCH",
-      body: JSON.stringify({ email_ids: ids, folder_state: newState })
+      body: JSON.stringify({ 
+        email_ids: ids, 
+        is_archived: shouldArchive 
+      })
     });
     setSelectedThreadId(null);
+    fetchData(); // Sync local state
   };
 
   const sendEmail = async () => {
@@ -252,13 +256,22 @@ const filteredThreads = useMemo(() => {
                 )}
               </div>
               
+              {/* Header with Archive/Restore Controls */}
               {!isComposingNew && (
                 <div className="flex gap-4">
-                  <button onClick={() => toggleReadStatus(activeThread!.map(m => m.id), !activeThread![0].is_read)} className="opacity-40 hover:opacity-100 transition-all p-2">
-                    {activeThread[0].is_read ? <EnvelopeIcon className="h-5 w-5" /> : <EnvelopeOpenIcon className="h-5 w-5" />}
-                  </button>
-                  <button onClick={() => moveThreadToFolder(activeThread!.map(m => m.id), currentFolder === 'trash' ? 'inbox' : 'trash')} className="opacity-40 hover:opacity-100 transition-all p-2">
-                    <TrashIcon className="h-5 w-5" />
+                  <button 
+                    onClick={() => moveThreadToFolder(
+                      activeThread!.map(m => m.id), 
+                      currentFolder !== 'trash' // If not in trash, archive it. If in trash, restore it.
+                    )}
+                    className="opacity-40 hover:opacity-100 transition-all p-2"
+                    title={currentFolder === 'trash' ? "Restore to Inbox" : "Move to Trash"}
+                  >
+                    {currentFolder === 'trash' ? (
+                      <span className="text-[10px] border border-[#45CC2D]/30 px-2 py-1 uppercase">Restore</span>
+                    ) : (
+                      <TrashIcon className="h-5 w-5" />
+                    )}
                   </button>
                 </div>
               )}
