@@ -923,18 +923,29 @@ app.get("/api/v1/admin/verify", requireAdminAuth, (req, res) => {
   return res.json({ ok: true });
 });
 
-// ---- Admin: Mailgun Webhook Receiver ----
 app.post("/api/v1/webhooks/mailgun", upload.none(), async (req, res) => {
   try {
+    // DIAGNOSTIC LOGS: Watch your Railway console for these
+    console.log("[Mailgun Webhook] Signal Detect at:", new Date().toISOString());
+    console.log("[Mailgun Webhook] Content-Type:", req.headers['content-type']);
+    console.log("[Mailgun Webhook] Body Keys:", Object.keys(req.body || {}));
+
     const payload = req.body;
     
-    // Mailgun specific field mapping
-    const fromEmail = payload.sender || payload.from;
-    const subject = payload.subject || "Incoming Transmission";
+    // Mailgun sometimes uses different field names depending on the API version
+    const fromEmail = payload.sender || payload.from || payload['From'];
+    const subject = payload.subject || payload['Subject'] || "Incoming Transmission";
     const bodyContent = payload['body-plain'] || payload['stripped-text'] || payload.text || "";
 
+    // If this log shows "undefined", we know why the 400 is happening
+    console.log("[Mailgun Webhook] Resolved Sender:", fromEmail);
+
     if (!fromEmail) {
-      return res.status(400).json({ error: "Invalid payload: No sender" });
+      console.error("[Mailgun Webhook] 400 REJECTION: Missing 'from' or 'sender' field.");
+      return res.status(400).json({ 
+        error: "Invalid payload: No sender",
+        received_keys: Object.keys(req.body || {}) 
+      });
     }
 
     const { data: guest } = await supabase
@@ -950,10 +961,7 @@ app.post("/api/v1/webhooks/mailgun", upload.none(), async (req, res) => {
       provider: "mailgun_relay",
       status: "received",
       sent_at: new Date().toISOString(),
-      meta: { 
-        from: fromEmail,
-        body: bodyContent 
-      }
+      meta: { from: fromEmail, body: bodyContent }
     }]);
 
     console.log(`[Mailgun Webhook] SUCCESS: Received from ${fromEmail}`);
