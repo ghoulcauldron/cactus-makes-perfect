@@ -98,48 +98,47 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-app.post(
-  "/api/v1/webhooks/mailgun", 
-  express.urlencoded({ extended: true }), 
-  upload.none(), 
-  async (req, res) => {
-    try {
-      const payload = req.body;
-      
-      // DIAGNOSTIC CHECK
-      console.log("[Mailgun Webhook] Body Keys Received:", Object.keys(payload));
+app.post("/api/v1/webhooks/mailgun", express.urlencoded({ extended: true }), upload.none(), async (req, res) => {
+  try {
+    const payload = req.body;
+    
+    // THE FIX: Prioritize 'From' (Capital F) to get the original sender
+    // We use a regex to extract the email from "Name <email@domain.com>"
+    const rawFrom = payload['From'] || payload.from || payload.sender;
+    const emailMatch = rawFrom.match(/<([^>]+)>/) || [null, rawFrom];
+    const fromEmail = emailMatch[1].toLowerCase().trim();
 
-      const fromEmail = payload.sender || payload.from || payload['From'];
-      const subject = payload.subject || payload['Subject'] || "Incoming Transmission";
-      const bodyContent = payload['body-plain'] || payload['stripped-text'] || payload.text || "";
+    const subject = payload.subject || "Incoming Transmission";
+    const bodyContent = payload['stripped-text'] || payload['body-plain'] || payload.text || "";
 
-      if (!fromEmail) {
-        console.error("[Mailgun Webhook] 400 REJECTION: Still no sender in:", Object.keys(payload));
-        return res.status(400).json({ error: "Missing sender" });
+    console.log(`[Mailgun Webhook] Identified Original Sender: ${fromEmail}`);
+
+    // Match with Guest Database
+    const { data: guest } = await supabase
+      .from("guests")
+      .select("id")
+      .eq("email", fromEmail)
+      .maybeSingle();
+
+    await supabase.from("emails_log").insert([{
+      guest_id: guest?.id || null,
+      type: "inbound_comm",
+      subject: subject,
+      provider: "mailgun_relay",
+      status: "received",
+      sent_at: new Date().toISOString(),
+      meta: { 
+        from: fromEmail, 
+        body: bodyContent,
+        raw_sender: payload.sender // Keep the ImprovMX bounce addr for debugging
       }
+    }]);
 
-      const { data: guest } = await supabase
-        .from("guests")
-        .select("id")
-        .eq("email", fromEmail.toLowerCase().trim())
-        .maybeSingle();
-
-      await supabase.from("emails_log").insert([{
-        guest_id: guest?.id || null,
-        type: "inbound_comm",
-        subject: subject,
-        provider: "mailgun_relay",
-        status: "received",
-        sent_at: new Date().toISOString(),
-        meta: { from: fromEmail, body: bodyContent }
-      }]);
-
-      console.log(`[Mailgun Webhook] SUCCESS: Processed mail from ${fromEmail}`);
-      return res.json({ ok: true });
-    } catch (e) {
-      console.error("[Mailgun Webhook Error]:", e);
-      return res.status(500).json({ error: "Internal processing failed" });
-    }
+    return res.json({ ok: true });
+  } catch (e) {
+    console.error("[Mailgun Webhook Error]:", e);
+    return res.status(500).json({ error: "Internal processing failed" });
+  }
 });
 
 app.use(
