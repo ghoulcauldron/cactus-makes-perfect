@@ -98,6 +98,50 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
+app.post(
+  "/api/v1/webhooks/mailgun", 
+  express.urlencoded({ extended: true }), 
+  upload.none(), 
+  async (req, res) => {
+    try {
+      const payload = req.body;
+      
+      // DIAGNOSTIC CHECK
+      console.log("[Mailgun Webhook] Body Keys Received:", Object.keys(payload));
+
+      const fromEmail = payload.sender || payload.from || payload['From'];
+      const subject = payload.subject || payload['Subject'] || "Incoming Transmission";
+      const bodyContent = payload['body-plain'] || payload['stripped-text'] || payload.text || "";
+
+      if (!fromEmail) {
+        console.error("[Mailgun Webhook] 400 REJECTION: Still no sender in:", Object.keys(payload));
+        return res.status(400).json({ error: "Missing sender" });
+      }
+
+      const { data: guest } = await supabase
+        .from("guests")
+        .select("id")
+        .eq("email", fromEmail.toLowerCase().trim())
+        .maybeSingle();
+
+      await supabase.from("emails_log").insert([{
+        guest_id: guest?.id || null,
+        type: "inbound_comm",
+        subject: subject,
+        provider: "mailgun_relay",
+        status: "received",
+        sent_at: new Date().toISOString(),
+        meta: { from: fromEmail, body: bodyContent }
+      }]);
+
+      console.log(`[Mailgun Webhook] SUCCESS: Processed mail from ${fromEmail}`);
+      return res.json({ ok: true });
+    } catch (e) {
+      console.error("[Mailgun Webhook Error]:", e);
+      return res.status(500).json({ error: "Internal processing failed" });
+    }
+});
+
 app.use(
   cors({
     origin: [
@@ -921,55 +965,6 @@ app.post("/api/v1/admin/login", async (req, res) => {
 // ---- API: Admin Verify ----
 app.get("/api/v1/admin/verify", requireAdminAuth, (req, res) => {
   return res.json({ ok: true });
-});
-
-app.post("/api/v1/webhooks/mailgun", upload.none(), async (req, res) => {
-  try {
-    // DIAGNOSTIC LOGS: Watch your Railway console for these
-    console.log("[Mailgun Webhook] Signal Detect at:", new Date().toISOString());
-    console.log("[Mailgun Webhook] Content-Type:", req.headers['content-type']);
-    console.log("[Mailgun Webhook] Body Keys:", Object.keys(req.body || {}));
-
-    const payload = req.body;
-    
-    // Mailgun sometimes uses different field names depending on the API version
-    const fromEmail = payload.sender || payload.from || payload['From'];
-    const subject = payload.subject || payload['Subject'] || "Incoming Transmission";
-    const bodyContent = payload['body-plain'] || payload['stripped-text'] || payload.text || "";
-
-    // If this log shows "undefined", we know why the 400 is happening
-    console.log("[Mailgun Webhook] Resolved Sender:", fromEmail);
-
-    if (!fromEmail) {
-      console.error("[Mailgun Webhook] 400 REJECTION: Missing 'from' or 'sender' field.");
-      return res.status(400).json({ 
-        error: "Invalid payload: No sender",
-        received_keys: Object.keys(req.body || {}) 
-      });
-    }
-
-    const { data: guest } = await supabase
-      .from("guests")
-      .select("id")
-      .eq("email", fromEmail.toLowerCase().trim())
-      .maybeSingle();
-
-    await supabase.from("emails_log").insert([{
-      guest_id: guest?.id || null,
-      type: "inbound_comm",
-      subject: subject,
-      provider: "mailgun_relay",
-      status: "received",
-      sent_at: new Date().toISOString(),
-      meta: { from: fromEmail, body: bodyContent }
-    }]);
-
-    console.log(`[Mailgun Webhook] SUCCESS: Received from ${fromEmail}`);
-    return res.json({ ok: true });
-  } catch (e) {
-    console.error("[Mailgun Webhook Error]:", e);
-    return res.status(500).json({ error: "Internal processing failed" });
-  }
 });
 
 // ---- Protect all subsequent admin routes ----
