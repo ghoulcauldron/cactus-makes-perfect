@@ -64,57 +64,56 @@ export default function InboxManager() {
     return allLogs.filter(log => log.type === 'inbound_comm' && !log.is_read && log.folder_state === 'inbox').length;
   }, [allLogs]);
 
-// --- Logic: Filtering ---
-const filteredThreads = useMemo(() => {
-  return Object.entries(threads).filter(([id, logs]) => {
-    const lastLog = logs[0];
-    const guestName = logs[0].guest ? `${logs[0].guest.first_name} ${logs[0].guest.last_name}`.toLowerCase() : "";
-    const email = (logs[0].guest?.email || logs[0].meta?.from || "").toLowerCase();
-    const subject = (lastLog.subject || "").toLowerCase();
-    
-    // 1. Determine Folder Membership
-    let folderMatch = false;
+  // --- Logic: Filtering ---
+  const filteredThreads = useMemo(() => {
+    return Object.entries(threads).filter(([id, logs]) => {
+      const lastLog = logs[0];
+      const guestName = logs[0].guest ? `${logs[0].guest.first_name} ${logs[0].guest.last_name}`.toLowerCase() : "";
+      const email = (logs[0].guest?.email || logs[0].meta?.from || "").toLowerCase();
+      
+      let folderMatch = false;
 
-    if (currentFolder === "trash") {
-      // Show in Trash if the latest message is explicitly archived
-      folderMatch = lastLog.is_archived === true;
-    } else {
-      // For all other folders, hide anything that is archived
-      if (lastLog.is_archived === true) return false;
+      if (currentFolder === "trash") {
+        folderMatch = lastLog.is_archived === true;
+      } else {
+        if (lastLog.is_archived === true) return false;
 
-      if (currentFolder === "sent") {
-        // Show in Sent if latest message is outbound
-        folderMatch = (lastLog.type === "two_way_comm" || lastLog.type === "invite" || lastLog.type === "survey");
-      } else if (currentFolder === "inbox") {
-        // Show in Inbox if latest message is inbound
-        folderMatch = lastLog.type === "inbound_comm";
+        if (currentFolder === "sent") {
+          // IMPROVEMENT: Show the thread if YOU have sent ANY message in it
+          folderMatch = logs.some(l => 
+            ["two_way_comm", "invite", "survey"].includes(l.type)
+          );
+        } else if (currentFolder === "inbox") {
+          // Inbox shows threads where the LAST action was the guest contacting you
+          folderMatch = lastLog.type === "inbound_comm";
+        }
       }
-    }
 
-    if (!folderMatch) return false;
-
-    // 2. Search Logic
-    if (!searchQuery) return true;
-    const q = searchQuery.toLowerCase();
-    return guestName.includes(q) || email.includes(q) || subject.includes(q);
-  });
-}, [threads, currentFolder, searchQuery]);
+      if (!folderMatch) return false;
+      if (!searchQuery) return true;
+      const q = searchQuery.toLowerCase();
+      return guestName.includes(q) || email.includes(q) || (lastLog.subject || "").toLowerCase().includes(q);
+    });
+  }, [threads, currentFolder, searchQuery]);
 
   const activeThread = selectedThreadId ? threads[selectedThreadId] : null;
 
   useEffect(() => {
     if (activeThread) {
       setIsComposingNew(false);
+      
+      // Identify the original message or the most recent one for context
       const lastMsg = activeThread.find(m => m.type === 'inbound_comm') || activeThread[0];
       setEditSubject(`RE: ${lastMsg.subject.replace(/^RE:\s+/i, "")}`);
       setEditRecipient(lastMsg.guest?.email || lastMsg.meta?.from || "");
       setTargetGuestId(lastMsg.guest?.id || null);
 
-      if (!activeThread[0].is_read && activeThread[0].type === 'inbound_comm') {
+      // THE FIX: Automatically mark the LATEST message as read if it's currently unread
+      if (activeThread[0].type === 'inbound_comm' && !activeThread[0].is_read) {
         toggleReadStatus([activeThread[0].id], true);
       }
     }
-  }, [selectedThreadId]);
+  }, [selectedThreadId, activeThread]); // Ensure activeThread is a dependency
 
   const toggleReadStatus = async (ids: string[], isRead: boolean) => {
     await apiFetch("/admin/email/read-status", {
@@ -256,25 +255,34 @@ const filteredThreads = useMemo(() => {
                 )}
               </div>
               
-              {/* Header with Archive/Restore Controls */}
-              {!isComposingNew && (
-                <div className="flex gap-4">
-                  <button 
-                    onClick={() => moveThreadToFolder(
-                      activeThread!.map(m => m.id), 
-                      currentFolder !== 'trash' // If not in trash, archive it. If in trash, restore it.
-                    )}
-                    className="opacity-40 hover:opacity-100 transition-all p-2"
-                    title={currentFolder === 'trash' ? "Restore to Inbox" : "Move to Trash"}
-                  >
-                    {currentFolder === 'trash' ? (
-                      <span className="text-[10px] border border-[#45CC2D]/30 px-2 py-1 uppercase">Restore</span>
-                    ) : (
-                      <TrashIcon className="h-5 w-5" />
-                    )}
-                  </button>
-                </div>
-              )}
+            {/* Header with Controls */}
+            {!isComposingNew && activeThread && (
+              <div className="flex gap-4 items-center">
+                {/* Manual Read/Unread Toggle */}
+                <button 
+                  onClick={() => toggleReadStatus([activeThread[0].id], !activeThread[0].is_read)}
+                  className="opacity-40 hover:opacity-100 transition-all p-2"
+                  title={activeThread[0].is_read ? "Mark as Unread" : "Mark as Read"}
+                >
+                  {activeThread[0].is_read ? (
+                    <EnvelopeIcon className="h-5 w-5" />
+                  ) : (
+                    <EnvelopeOpenIcon className="h-5 w-5 text-white shadow-[0_0_10px_rgba(255,255,255,0.5)]" />
+                  )}
+                </button>
+
+                <button 
+                  onClick={() => moveThreadToFolder(activeThread.map(m => m.id), currentFolder !== 'trash')}
+                  className="opacity-40 hover:opacity-100 transition-all p-2"
+                >
+                  {currentFolder === 'trash' ? (
+                    <span className="text-[10px] border border-[#45CC2D]/30 px-2 py-1 uppercase">Restore</span>
+                  ) : (
+                    <TrashIcon className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
+            )}
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-hide flex flex-col-reverse">
