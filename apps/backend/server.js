@@ -1376,17 +1376,20 @@ app.post("/api/v1/admin/groups/:group_label/nudge", requireAdminAuth, async (req
     if (error) throw error;
     for (const g of guests) {
       await sendEmail({ to: g.email, subject, html, text });
-      await supabase.from("emails_log").insert([
-        {
-          guest_id: g.id,
-          type: "group_nudge",
-          subject,
-          provider: EMAIL_PROVIDER,
-          status: "sent",
-          sent_at: new Date().toISOString(),
-          meta: { group_label, to: g.email }
+      await supabase.from("emails_log").insert([{
+        guest_id,
+        type: "two_way_comm",
+        subject,
+        provider: "mailgun",
+        status: "sent",
+        sent_at: new Date().toISOString(),
+        is_read: true,      // Admin messages are read by default
+        is_archived: false,
+        meta: { 
+          from: "eyesonly@cactusmakesperfect.org",
+          body: text // <--- THIS is what the UI looks for to display content
         }
-      ]);
+      }]);
       await supabase.from("user_activity").insert([
         { guest_id: g.id, kind: "group_nudge_sent", meta: { group_label } }
       ]);
