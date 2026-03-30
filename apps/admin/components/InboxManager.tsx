@@ -64,30 +64,41 @@ export default function InboxManager() {
     return allLogs.filter(log => log.type === 'inbound_comm' && !log.is_read && log.folder_state === 'inbox').length;
   }, [allLogs]);
 
-  // --- Logic: Filtering ---
-  const filteredThreads = useMemo(() => {
-    return Object.entries(threads).filter(([id, logs]) => {
-      const lastLog = logs[0];
-      const guestName = logs[0].guest ? `${logs[0].guest.first_name} ${logs[0].guest.last_name}`.toLowerCase() : "";
-      const email = (logs[0].guest?.email || logs[0].meta?.from || "").toLowerCase();
-      
-      let folderMatch = false;
-      if (currentFolder === "trash") {
-        folderMatch = logs.some(l => l.folder_state === "trash");
-      } else if (currentFolder === "sent") {
-        // Show thread in Sent if latest message is a dispatch
-        folderMatch = (lastLog.type === "two_way_comm" || lastLog.type === "invite") && lastLog.folder_state !== "trash";
-      } else {
-        // Inbox: Show if latest message is inbound
-        folderMatch = lastLog.type === "inbound_comm" && lastLog.folder_state !== "trash";
-      }
+// --- Logic: Filtering ---
+const filteredThreads = useMemo(() => {
+  return Object.entries(threads).filter(([id, logs]) => {
+    const lastLog = logs[0];
+    const guestName = logs[0].guest ? `${logs[0].guest.first_name} ${logs[0].guest.last_name}`.toLowerCase() : "";
+    const email = (logs[0].guest?.email || logs[0].meta?.from || "").toLowerCase();
+    const subject = (lastLog.subject || "").toLowerCase();
+    
+    // 1. Determine Folder Membership
+    let folderMatch = false;
 
-      if (!folderMatch) return false;
-      if (!searchQuery) return true;
-      const q = searchQuery.toLowerCase();
-      return guestName.includes(q) || email.includes(q) || (lastLog.subject || "").toLowerCase().includes(q);
-    });
-  }, [threads, currentFolder, searchQuery]);
+    if (currentFolder === "trash") {
+      // Show in Trash if the latest message is explicitly archived
+      folderMatch = lastLog.is_archived === true;
+    } else {
+      // For all other folders, hide anything that is archived
+      if (lastLog.is_archived === true) return false;
+
+      if (currentFolder === "sent") {
+        // Show in Sent if latest message is outbound
+        folderMatch = (lastLog.type === "two_way_comm" || lastLog.type === "invite" || lastLog.type === "survey");
+      } else if (currentFolder === "inbox") {
+        // Show in Inbox if latest message is inbound
+        folderMatch = lastLog.type === "inbound_comm";
+      }
+    }
+
+    if (!folderMatch) return false;
+
+    // 2. Search Logic
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return guestName.includes(q) || email.includes(q) || subject.includes(q);
+  });
+}, [threads, currentFolder, searchQuery]);
 
   const activeThread = selectedThreadId ? threads[selectedThreadId] : null;
 

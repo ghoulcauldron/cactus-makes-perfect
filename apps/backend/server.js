@@ -1874,7 +1874,6 @@ app.post("/api/v1/admin/email/send", requireAdminAuth, async (req, res) => {
     
     if (!guest) return res.status(404).json({ error: "Guest node not found" });
 
-    // Force sender to the Eyes Only alias
     await sendEmail({
       to: guest.email,
       from: "eyesonly@cactusmakesperfect.org", 
@@ -1882,14 +1881,20 @@ app.post("/api/v1/admin/email/send", requireAdminAuth, async (req, res) => {
       text
     });
 
-    // Log the interaction
+    // CRITICAL: We must save the 'text' into 'meta.body' so the frontend can see it
     await supabase.from("emails_log").insert([{
       guest_id,
-      type: "two_way_comm",
+      type: "two_way_comm", // Sent messages are 'two_way_comm'
       subject,
-      provider: "mailtrap",
+      provider: "mailgun",
       status: "sent",
-      meta: { alias: "eyesonly" }
+      sent_at: new Date().toISOString(),
+      is_read: true,      // Admin obviously read their own sent mail
+      is_archived: false,
+      meta: { 
+        alias: "eyesonly",
+        body: text // <--- This was missing!
+      }
     }]);
 
     return res.json({ ok: true });
@@ -1936,13 +1941,14 @@ app.patch("/api/v1/admin/email/status", requireAdminAuth, async (req, res) => {
   }
 });
 
-// UPDATE: Fetch from local DB instead of Mailtrap API
+// UPDATE: Fetch ALL relevant communication types
 app.get("/api/v1/admin/email/inbox", requireAdminAuth, async (req, res) => {
   try {
     const { data, error } = await supabase
       .from("emails_log")
-      .select("*, guest:guests(id, first_name, last_name)")
-      .eq("type", "inbound_comm")
+      .select("*, guest:guests(id, first_name, last_name, email)")
+      // We must include 'two_way_comm' and 'invite' to see sent history
+      .in("type", ["inbound_comm", "two_way_comm", "invite", "survey"]) 
       .order("sent_at", { ascending: false });
 
     if (error) throw error;
