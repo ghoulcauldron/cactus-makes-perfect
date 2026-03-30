@@ -14,6 +14,7 @@
     "imapflow": "^1.2.18",
     "jose": "4.15.5",
     "mailparser": "^3.9.6",
+    "multer": "^2.1.1",
     "node-fetch": "^3.3.2",
     "nodemailer": "^8.0.4",
     "twilio": "4.22.0",

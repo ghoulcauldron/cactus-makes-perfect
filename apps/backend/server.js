@@ -9,10 +9,13 @@ import { v4 as uuidv4 } from "uuid";
 import nodemailer from "nodemailer";
 import cors from "cors";
 import { renderSurveyTemplate } from "./utils/renderSurveyTemplate.js";
+import multer from "multer";
 
 // Load backend-local .env file
 import dotenv from "dotenv";
 dotenv.config();
+
+const upload = multer(); // Initialize multer to handle form-data
 
 process.on("SIGTERM", () => {
   console.log("[Signal] SIGTERM received at", new Date().toISOString());
@@ -1853,18 +1856,18 @@ app.post("/api/v1/admin/email/send", requireAdminAuth, async (req, res) => {
 });
 
 // ---- Admin: Mailgun Webhook Receiver ----
-app.post("/api/v1/webhooks/mailtrap", async (req, res) => {
+app.post("/api/v1/webhooks/mailgun", upload.none(), async (req, res) => {
   try {
     const payload = req.body;
     
-    // Mailgun POSTs data as multi-part form data or JSON
+    // Mailgun specific field mapping
     const fromEmail = payload.sender || payload.from;
     const subject = payload.subject || "Incoming Transmission";
-    
-    // Use 'body-plain' for the terminal text, fallback to 'stripped-text'
     const bodyContent = payload['body-plain'] || payload['stripped-text'] || payload.text || "";
 
-    if (!fromEmail) return res.status(400).json({ error: "Invalid payload" });
+    if (!fromEmail) {
+      return res.status(400).json({ error: "Invalid payload: No sender" });
+    }
 
     const { data: guest } = await supabase
       .from("guests")
@@ -1881,15 +1884,15 @@ app.post("/api/v1/webhooks/mailtrap", async (req, res) => {
       sent_at: new Date().toISOString(),
       meta: { 
         from: fromEmail,
-        body: bodyContent // Ensure this matches what InboxManager expects
+        body: bodyContent 
       }
     }]);
 
-    console.log(`[Mailgun Webhook] Inbound processed from: ${fromEmail}`);
+    console.log(`[Mailgun Webhook] SUCCESS: Received from ${fromEmail}`);
     return res.json({ ok: true });
   } catch (e) {
-    console.error("[Webhook Error]:", e);
-    return res.status(500).json({ error: "Webhook processing failed" });
+    console.error("[Mailgun Webhook Error]:", e);
+    return res.status(500).json({ error: "Internal processing failed" });
   }
 });
 
