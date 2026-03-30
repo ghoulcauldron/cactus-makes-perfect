@@ -8,6 +8,8 @@ import {
   InboxIcon, 
   PaperAirplaneIcon as SentIcon, 
   TrashIcon,
+  PlusIcon,
+  MagnifyingGlassIcon // Added for search UI
 } from '@heroicons/react/20/solid';
 
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY);
@@ -16,12 +18,14 @@ export default function InboxManager() {
   const [allLogs, setAllLogs] = useState<any[]>([]);
   const [currentFolder, setCurrentFolder] = useState<"inbox" | "sent" | "trash">("inbox");
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
+  const [isComposingNew, setIsComposingNew] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState(""); // New search state
   
-  // Composer State
   const [replyText, setReplyText] = useState("");
   const [editSubject, setEditSubject] = useState("");
   const [editRecipient, setEditRecipient] = useState("");
+  const [targetGuestId, setTargetGuestId] = useState<string | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -51,22 +55,49 @@ export default function InboxManager() {
     return groups;
   }, [allLogs]);
 
+  // --- Logic: Search and Folder Filtering ---
   const filteredThreads = useMemo(() => {
-    return Object.entries(threads).filter(([_, logs]) => {
-      return logs[0].folder_state === currentFolder;
+    return Object.entries(threads).filter(([id, logs]) => {
+      const lastLog = logs[0];
+      const guestName = logs[0].guest ? `${logs[0].guest.first_name} ${logs[0].guest.last_name}`.toLowerCase() : "";
+      const email = (logs[0].guest?.email || logs[0].meta?.from || "").toLowerCase();
+      const subject = (logs[0].subject || "").toLowerCase();
+      
+      // 1. Folder Logic
+      let folderMatch = false;
+      if (currentFolder === "trash") folderMatch = lastLog.folder_state === "trash";
+      else if (currentFolder === "sent") folderMatch = lastLog.type === "two_way_comm" && lastLog.folder_state !== "trash";
+      else folderMatch = lastLog.type === "inbound_comm" && lastLog.folder_state !== "trash";
+
+      if (!folderMatch) return false;
+
+      // 2. Search Logic
+      if (!searchQuery) return true;
+      const q = searchQuery.toLowerCase();
+      return guestName.includes(q) || email.includes(q) || subject.includes(q);
     });
-  }, [threads, currentFolder]);
+  }, [threads, currentFolder, searchQuery]);
 
   const activeThread = selectedThreadId ? threads[selectedThreadId] : null;
 
-  // Auto-populate composer when thread changes
   useEffect(() => {
     if (activeThread) {
+      setIsComposingNew(false);
       const lastMsg = activeThread[0];
       setEditSubject(`RE: ${lastMsg.subject.replace(/^RE:\s+/i, "")}`);
       setEditRecipient(lastMsg.guest?.email || lastMsg.meta?.from || "");
+      setTargetGuestId(lastMsg.guest?.id || null);
     }
   }, [selectedThreadId]);
+
+  const startNewMessage = () => {
+    setSelectedThreadId(null);
+    setIsComposingNew(true);
+    setEditSubject("");
+    setEditRecipient("");
+    setReplyText("");
+    setTargetGuestId(null);
+  };
 
   const moveThreadToFolder = async (ids: string[], newState: string) => {
     await apiFetch("/admin/email/status", {
@@ -77,33 +108,31 @@ export default function InboxManager() {
     fetchData();
   };
 
-  const sendReply = async () => {
-    if (!activeThread || !replyText.trim()) return;
-
-    const guestId = activeThread[0].guest?.id;
-
-    if (!guestId) {
-      alert("ERROR: CANNOT RESOLVE GUEST NODE ID");
+  const sendEmail = async () => {
+    if (!replyText.trim()) return;
+    let finalGuestId = targetGuestId;
+    if (!finalGuestId && editRecipient) {
+        const { data: guest } = await supabase.from("guests").select("id").eq("email", editRecipient.trim()).maybeSingle();
+        finalGuestId = guest?.id || null;
+    }
+    if (!finalGuestId) {
+      alert("ERROR: RECIPIENT NOT FOUND");
       return;
     }
-
     try {
       await apiFetch("/admin/email/send", {
         method: "POST",
         body: JSON.stringify({
-          guest_id: guestId,
-          subject: editSubject, // Use edited subject
-          text: replyText,
-          // Note: The backend uses guest_id to find the email, 
-          // but you could expand the API to use editRecipient if needed.
+          guest_id: finalGuestId,
+          subject: editSubject || "[SECURE TRANSMISSION]",
+          text: replyText
         })
       });
-
       setReplyText("");
+      if (isComposingNew) setIsComposingNew(false);
       fetchData(); 
       alert("TRANSMISSION DISPATCHED");
     } catch (error) {
-      console.error("Failed to send reply:", error);
       alert("CRITICAL: DISPATCH FAILED");
     }
   };
@@ -113,6 +142,9 @@ export default function InboxManager() {
       
       {/* 1. Navigation Rail */}
       <div className="w-16 border-r border-[#45CC2D]/20 flex flex-col items-center py-6 gap-8 bg-neutral-900/20">
+        <button onClick={startNewMessage} className="p-2 bg-[#45CC2D]/10 rounded-full hover:bg-[#45CC2D]/20 transition-all mb-4">
+          <PlusIcon className="h-6 w-6" />
+        </button>
         <button onClick={() => setCurrentFolder("inbox")} title="Inbox">
           <InboxIcon className={`h-6 w-6 ${currentFolder === "inbox" ? "opacity-100" : "opacity-30"}`} />
         </button>
@@ -124,12 +156,27 @@ export default function InboxManager() {
         </button>
       </div>
 
-      {/* 2. Thread List */}
+      {/* 2. Thread List with Search */}
       <div className="w-80 border-r border-[#45CC2D]/30 flex flex-col bg-black">
-        <div className="p-4 border-b border-[#45CC2D]/30 flex justify-between items-center bg-neutral-900/40">
-          <span className="text-[10px] font-bold uppercase tracking-widest">{currentFolder}</span>
-          <button onClick={fetchData} className={loading ? "animate-spin" : ""}><ArrowPathIcon className="h-4 w-4" /></button>
+        <div className="p-4 border-b border-[#45CC2D]/30 space-y-3 bg-neutral-900/40">
+          <div className="flex justify-between items-center">
+            <span className="text-[10px] font-bold uppercase tracking-widest">{currentFolder}</span>
+            <button onClick={fetchData} className={loading ? "animate-spin" : ""}><ArrowPathIcon className="h-4 w-4" /></button>
+          </div>
+          
+          {/* Search Input */}
+          <div className="relative group">
+            <MagnifyingGlassIcon className="h-3 w-3 absolute left-2 top-1/2 -translate-y-1/2 opacity-30 group-focus-within:opacity-100" />
+            <input 
+              type="text"
+              placeholder="FILTER_NODES..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-neutral-900 border border-[#45CC2D]/20 px-7 py-1.5 text-[10px] outline-none focus:border-[#45CC2D]/50 transition-colors placeholder:opacity-20"
+            />
+          </div>
         </div>
+
         <div className="flex-1 overflow-y-auto scrollbar-hide">
           {filteredThreads.map(([id, logs]) => (
             <div 
@@ -139,55 +186,47 @@ export default function InboxManager() {
             >
               <div className="flex justify-between text-[10px] font-bold uppercase mb-1">
                 <span className="truncate">{logs[0].guest ? `${logs[0].guest.first_name} ${logs[0].guest.last_name}` : (logs[0].meta?.from || "Unknown")}</span>
-                <span className="opacity-30 font-normal">{new Date(logs[0].sent_at).toLocaleDateString()}</span>
+                <span className="opacity-30 font-normal text-[8px]">{new Date(logs[0].sent_at).toLocaleDateString()}</span>
               </div>
               <p className="text-[9px] opacity-40 truncate">{logs[0].subject}</p>
-              <p className="text-[8px] opacity-20 truncate mt-1 italic">"{logs[0].meta?.body?.substring(0, 40)}..."</p>
             </div>
           ))}
+          {filteredThreads.length === 0 && searchQuery && (
+            <div className="p-8 text-center text-[10px] opacity-20 uppercase tracking-widest">No matching nodes</div>
+          )}
         </div>
       </div>
 
       {/* 3. Reading Pane */}
       <div className="flex-1 flex flex-col bg-neutral-900/5 overflow-hidden">
-        {activeThread ? (
+        {(activeThread || isComposingNew) ? (
           <>
             <div className="p-6 border-b border-[#45CC2D]/10 flex justify-between items-start">
               <div>
                 <h2 className="text-xl font-bold uppercase tracking-tighter mb-1">
-                  {activeThread[0].subject}
+                  {isComposingNew ? "New Transmission" : activeThread?.[0].subject}
                 </h2>
-                <p className="text-[10px] opacity-40 uppercase">
-                  Node: {activeThread[0].meta?.from || activeThread[0].guest?.email}
-                </p>
+                {!isComposingNew && (
+                  <p className="text-[10px] opacity-40 uppercase">
+                    Node: {activeThread?.[0].meta?.from || activeThread?.[0].guest?.email}
+                  </p>
+                )}
               </div>
-              
-              <div className="flex gap-4">
-                {currentFolder !== 'trash' ? (
+              {!isComposingNew && (
+                <div className="flex gap-4">
                   <button 
-                    onClick={() => moveThreadToFolder(activeThread.map(m => m.id), 'trash')}
-                    className="opacity-40 hover:opacity-100 hover:text-red-500 transition-all p-2"
+                    onClick={() => moveThreadToFolder(activeThread!.map(m => m.id), currentFolder === 'trash' ? 'inbox' : 'trash')}
+                    className="opacity-40 hover:opacity-100 transition-all p-2"
                   >
                     <TrashIcon className="h-5 w-5" />
                   </button>
-                ) : (
-                  <button 
-                    onClick={() => moveThreadToFolder(activeThread.map(m => m.id), 'inbox')}
-                    className="text-[10px] border border-[#45CC2D]/30 px-3 py-1 uppercase hover:bg-[#45CC2D]/10"
-                  >
-                    Restore
-                  </button>
-                )}
-              </div>
+                </div>
+              )}
             </div>
 
-            {/* Conversation Flow */}
             <div className="flex-1 overflow-y-auto p-6 space-y-8 scrollbar-hide">
-              {activeThread.slice().reverse().map((msg: any) => (
-                <div 
-                  key={msg.id} 
-                  className={`max-w-xl ${msg.type === 'inbound_comm' ? 'mr-auto' : 'ml-auto text-right'}`}
-                >
+              {activeThread?.slice().reverse().map((msg: any) => (
+                <div key={msg.id} className={`max-w-xl ${msg.type === 'inbound_comm' ? 'mr-auto' : 'ml-auto text-right'}`}>
                   <div className="text-[8px] opacity-30 uppercase mb-2">
                     {msg.type === 'inbound_comm' ? 'Inbound Transmission' : 'Outbound Dispatch'} // {new Date(msg.sent_at).toLocaleString()}
                   </div>
@@ -200,41 +239,22 @@ export default function InboxManager() {
               ))}
             </div>
 
-            {/* Enhanced Reply Terminal */}
             <div className="p-6 border-t border-[#45CC2D]/20 bg-black space-y-3">
-              <div className="flex flex-col gap-2 border-b border-[#45CC2D]/10 pb-3">
-                <div className="flex items-center text-[10px] gap-2">
-                  <span className="opacity-40 w-12">TO:</span>
-                  <input 
-                    type="text"
-                    value={editRecipient}
-                    onChange={(e) => setEditRecipient(e.target.value)}
-                    className="bg-transparent outline-none flex-1 text-[#45CC2D]"
-                  />
+              {(isComposingNew) && (
+                <div className="flex flex-col gap-2 border-b border-[#45CC2D]/10 pb-3">
+                  <div className="flex items-center text-[10px] gap-2">
+                    <span className="opacity-40 w-12">TO:</span>
+                    <input type="text" placeholder="guest@email.com" value={editRecipient} onChange={(e) => setEditRecipient(e.target.value)} className="bg-transparent outline-none flex-1 text-[#45CC2D]" />
+                  </div>
+                  <div className="flex items-center text-[10px] gap-2">
+                    <span className="opacity-40 w-12">SUBJ:</span>
+                    <input type="text" placeholder="SUBJECT" value={editSubject} onChange={(e) => setEditSubject(e.target.value)} className="bg-transparent outline-none flex-1 text-[#45CC2D]" />
+                  </div>
                 </div>
-                <div className="flex items-center text-[10px] gap-2">
-                  <span className="opacity-40 w-12">SUBJ:</span>
-                  <input 
-                    type="text"
-                    value={editSubject}
-                    onChange={(e) => setEditSubject(e.target.value)}
-                    className="bg-transparent outline-none flex-1 text-[#45CC2D]"
-                  />
-                </div>
-              </div>
-              
-              <textarea 
-                value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
-                className="w-full bg-transparent outline-none border-none text-xs h-24 resize-none text-[#45CC2D] placeholder-[#45CC2D]/20 leading-relaxed"
-                placeholder="ENTER ENCRYPTED RESPONSE..."
-              />
+              )}
+              <textarea value={replyText} onChange={(e) => setReplyText(e.target.value)} className="w-full bg-transparent outline-none border-none text-xs h-32 resize-none text-[#45CC2D] placeholder-[#45CC2D]/20 leading-relaxed" placeholder={isComposingNew ? "START NEW TRANSMISSION..." : "REPLY TO NODE..."} />
               <div className="flex justify-end mt-2">
-                <button 
-                  onClick={sendReply}
-                  disabled={!replyText.trim()}
-                  className="flex items-center gap-2 border border-[#45CC2D] px-6 py-2 text-xs font-bold uppercase hover:bg-[#45CC2D] hover:text-black transition-all disabled:opacity-20"
-                >
+                <button onClick={sendEmail} disabled={!replyText.trim() || (isComposingNew && !editRecipient)} className="flex items-center gap-2 border border-[#45CC2D] px-6 py-2 text-xs font-bold uppercase hover:bg-[#45CC2D] hover:text-black transition-all disabled:opacity-20">
                   <PaperAirplaneIcon className="h-4 w-4" /> Dispatch Signal
                 </button>
               </div>
@@ -243,7 +263,7 @@ export default function InboxManager() {
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center opacity-10 text-[10px] tracking-[1em] uppercase">
             <div className="mb-4 text-2xl">⎐</div>
-            Select Thread
+            Select Node or Start New
           </div>
         )}
       </div>
