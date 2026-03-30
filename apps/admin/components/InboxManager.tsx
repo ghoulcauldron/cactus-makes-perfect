@@ -9,7 +9,9 @@ import {
   PaperAirplaneIcon as SentIcon, 
   TrashIcon,
   PlusIcon,
-  MagnifyingGlassIcon // Added for search UI
+  MagnifyingGlassIcon,
+  EnvelopeIcon, // Added for read status
+  EnvelopeOpenIcon // Added for read status
 } from '@heroicons/react/20/solid';
 
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY);
@@ -20,7 +22,7 @@ export default function InboxManager() {
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const [isComposingNew, setIsComposingNew] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState(""); // New search state
+  const [searchQuery, setSearchQuery] = useState(""); 
   
   const [replyText, setReplyText] = useState("");
   const [editSubject, setEditSubject] = useState("");
@@ -55,7 +57,6 @@ export default function InboxManager() {
     return groups;
   }, [allLogs]);
 
-  // --- Logic: Search and Folder Filtering ---
   const filteredThreads = useMemo(() => {
     return Object.entries(threads).filter(([id, logs]) => {
       const lastLog = logs[0];
@@ -63,7 +64,6 @@ export default function InboxManager() {
       const email = (logs[0].guest?.email || logs[0].meta?.from || "").toLowerCase();
       const subject = (logs[0].subject || "").toLowerCase();
       
-      // 1. Folder Logic
       let folderMatch = false;
       if (currentFolder === "trash") folderMatch = lastLog.folder_state === "trash";
       else if (currentFolder === "sent") folderMatch = lastLog.type === "two_way_comm" && lastLog.folder_state !== "trash";
@@ -71,7 +71,6 @@ export default function InboxManager() {
 
       if (!folderMatch) return false;
 
-      // 2. Search Logic
       if (!searchQuery) return true;
       const q = searchQuery.toLowerCase();
       return guestName.includes(q) || email.includes(q) || subject.includes(q);
@@ -80,6 +79,7 @@ export default function InboxManager() {
 
   const activeThread = selectedThreadId ? threads[selectedThreadId] : null;
 
+  // Mark as Read Logic
   useEffect(() => {
     if (activeThread) {
       setIsComposingNew(false);
@@ -87,8 +87,21 @@ export default function InboxManager() {
       setEditSubject(`RE: ${lastMsg.subject.replace(/^RE:\s+/i, "")}`);
       setEditRecipient(lastMsg.guest?.email || lastMsg.meta?.from || "");
       setTargetGuestId(lastMsg.guest?.id || null);
+
+      // Auto-mark as read if the latest message is unread
+      if (!lastMsg.is_read) {
+        toggleReadStatus(activeThread.map(m => m.id), true);
+      }
     }
   }, [selectedThreadId]);
+
+  const toggleReadStatus = async (ids: string[], isRead: boolean) => {
+    await apiFetch("/admin/email/read-status", {
+      method: "PATCH",
+      body: JSON.stringify({ email_ids: ids, is_read: isRead })
+    });
+    fetchData(); // Sync local state
+  };
 
   const startNewMessage = () => {
     setSelectedThreadId(null);
@@ -156,15 +169,13 @@ export default function InboxManager() {
         </button>
       </div>
 
-      {/* 2. Thread List with Search */}
+      {/* 2. Thread List */}
       <div className="w-80 border-r border-[#45CC2D]/30 flex flex-col bg-black">
         <div className="p-4 border-b border-[#45CC2D]/30 space-y-3 bg-neutral-900/40">
           <div className="flex justify-between items-center">
             <span className="text-[10px] font-bold uppercase tracking-widest">{currentFolder}</span>
             <button onClick={fetchData} className={loading ? "animate-spin" : ""}><ArrowPathIcon className="h-4 w-4" /></button>
           </div>
-          
-          {/* Search Input */}
           <div className="relative group">
             <MagnifyingGlassIcon className="h-3 w-3 absolute left-2 top-1/2 -translate-y-1/2 opacity-30 group-focus-within:opacity-100" />
             <input 
@@ -182,18 +193,24 @@ export default function InboxManager() {
             <div 
               key={id} 
               onClick={() => setSelectedThreadId(id)}
-              className={`p-4 border-b border-[#45CC2D]/10 hover:bg-[#45CC2D]/5 cursor-pointer ${selectedThreadId === id ? 'bg-[#45CC2D]/10' : ''}`}
+              className={`p-4 border-b border-[#45CC2D]/10 hover:bg-[#45CC2D]/5 cursor-pointer relative transition-all ${selectedThreadId === id ? 'bg-[#45CC2D]/10' : ''}`}
             >
+              {/* Unread Indicator */}
+              {!logs[0].is_read && logs[0].type === 'inbound_comm' && (
+                <div className="absolute left-1 top-1/2 -translate-y-1/2 w-1 h-8 bg-[#45CC2D] shadow-[0_0_10px_#45CC2D]" />
+              )}
+              
               <div className="flex justify-between text-[10px] font-bold uppercase mb-1">
-                <span className="truncate">{logs[0].guest ? `${logs[0].guest.first_name} ${logs[0].guest.last_name}` : (logs[0].meta?.from || "Unknown")}</span>
+                <span className={`truncate ${!logs[0].is_read ? 'text-white' : ''}`}>
+                    {logs[0].guest ? `${logs[0].guest.first_name} ${logs[0].guest.last_name}` : (logs[0].meta?.from || "Unknown")}
+                </span>
                 <span className="opacity-30 font-normal text-[8px]">{new Date(logs[0].sent_at).toLocaleDateString()}</span>
               </div>
-              <p className="text-[9px] opacity-40 truncate">{logs[0].subject}</p>
+              <p className={`text-[9px] truncate ${!logs[0].is_read ? 'opacity-100 text-[#45CC2D]' : 'opacity-40'}`}>
+                {logs[0].subject}
+              </p>
             </div>
           ))}
-          {filteredThreads.length === 0 && searchQuery && (
-            <div className="p-8 text-center text-[10px] opacity-20 uppercase tracking-widest">No matching nodes</div>
-          )}
         </div>
       </div>
 
@@ -214,6 +231,14 @@ export default function InboxManager() {
               </div>
               {!isComposingNew && (
                 <div className="flex gap-4">
+                  {/* Mark as Unread Toggle */}
+                  <button 
+                    onClick={() => toggleReadStatus(activeThread!.map(m => m.id), !activeThread![0].is_read)}
+                    className="opacity-40 hover:opacity-100 transition-all p-2"
+                    title={activeThread[0].is_read ? "Mark as Unread" : "Mark as Read"}
+                  >
+                    {activeThread[0].is_read ? <EnvelopeIcon className="h-5 w-5" /> : <EnvelopeOpenIcon className="h-5 w-5" />}
+                  </button>
                   <button 
                     onClick={() => moveThreadToFolder(activeThread!.map(m => m.id), currentFolder === 'trash' ? 'inbox' : 'trash')}
                     className="opacity-40 hover:opacity-100 transition-all p-2"

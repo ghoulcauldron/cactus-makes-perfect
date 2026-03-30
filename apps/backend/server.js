@@ -1898,6 +1898,23 @@ app.post("/api/v1/admin/email/send", requireAdminAuth, async (req, res) => {
   }
 });
 
+// ---- Admin: Update Email Read Status ----
+app.patch("/api/v1/admin/email/read-status", requireAdminAuth, async (req, res) => {
+  try {
+    const { email_ids, is_read } = req.body;
+    
+    const { error } = await supabase
+      .from("emails_log")
+      .update({ is_read })
+      .in("id", email_ids);
+
+    if (error) throw error;
+    return res.json({ ok: true });
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+});
+
 // ---- Admin: Update Email Folder State ----
 app.patch("/api/v1/admin/email/status", requireAdminAuth, async (req, res) => {
   try {
