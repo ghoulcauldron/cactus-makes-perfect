@@ -214,3 +214,19 @@ export async function sendAdminSurvey(guestId: string) {
     body: JSON.stringify({ guest_id: guestId }),
   });
 }
+export async function overrideSurveyResponse(
+  guestId: string,
+  payload: {
+    arrival_day: "thursday" | "friday" | "saturday" | "sunday" | null;
+    friday_meowwolf:  boolean;
+    friday_dinner:    boolean;
+    saturday_railway: boolean;
+    sunday_brunch:    boolean;
+    sunday_movie:     boolean;
+  }
+) {
+  return apiFetch(`/admin/guest/${guestId}/survey-override`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}

@@ -1497,6 +1497,96 @@ app.post("/api/v1/admin/guest/:id/rsvp-override", requireAdminAuth, async (req, 
   }
 });
 
+// ---- Admin: PATCH survey-override — upsert event_responses + audit log ----
+app.patch("/api/v1/admin/guest/:id/survey-override", requireAdminAuth, async (req, res) => {
+  try {
+    const guest_id = req.params.id;
+    const {
+      arrival_day,
+      friday_meowwolf,
+      friday_dinner,
+      saturday_railway,
+      sunday_brunch,
+      sunday_movie,
+    } = req.body || {};
+
+    // 1. Validate guest exists
+    const { data: guest, error: gErr } = await supabase
+      .from("guests")
+      .select("id")
+      .eq("id", guest_id)
+      .maybeSingle();
+
+    if (gErr || !guest) {
+      return res.status(404).json({ error: "Guest not found" });
+    }
+
+    // 2. Validate arrival_day if provided
+    const VALID_ARRIVAL_DAYS = ["thursday", "friday", "saturday", "sunday"];
+    if (arrival_day !== null && arrival_day !== undefined && !VALID_ARRIVAL_DAYS.includes(arrival_day)) {
+      return res.status(400).json({ error: `Invalid arrival_day: "${arrival_day}". Must be one of ${VALID_ARRIVAL_DAYS.join(", ")}` });
+    }
+
+    // 3. Capture existing response for audit diff
+    const { data: existing } = await supabase
+      .from("event_responses")
+      .select("arrival_day, friday_meowwolf, friday_dinner, saturday_railway, sunday_brunch, sunday_movie, admin_edited")
+      .eq("guest_id", guest_id)
+      .maybeSingle();
+
+    // 4. Build upsert payload
+    const payload = {
+      guest_id,
+      arrival_day:      arrival_day ?? null,
+      friday_meowwolf:  !!friday_meowwolf,
+      friday_dinner:    !!friday_dinner,
+      saturday_railway: !!saturday_railway,
+      sunday_brunch:    !!sunday_brunch,
+      sunday_movie:     !!sunday_movie,
+      admin_edited:     true,
+      updated_at:       new Date().toISOString(),
+    };
+
+    // 5. Upsert event_responses (insert if fresh, update if existing)
+    const { data: upserted, error: upsertErr } = await supabase
+      .from("event_responses")
+      .upsert([payload], { onConflict: "guest_id" })
+      .select()
+      .single();
+
+    if (upsertErr) {
+      console.error("[AdminSurveyOverride] Upsert failed", upsertErr);
+      return res.status(422).json({ error: "Upsert failed", details: upsertErr });
+    }
+
+    // 6. Write audit entry to user_activity
+    await supabase.from("user_activity").insert([{
+      guest_id,
+      kind: "event_responses_updated",
+      meta: {
+        source: "admin_override",
+        edited_by: "admin",
+        old: existing ?? null,
+        new: {
+          arrival_day:      payload.arrival_day,
+          friday_meowwolf:  payload.friday_meowwolf,
+          friday_dinner:    payload.friday_dinner,
+          saturday_railway: payload.saturday_railway,
+          sunday_brunch:    payload.sunday_brunch,
+          sunday_movie:     payload.sunday_movie,
+        },
+      },
+    }]);
+
+    console.log(`[AdminSurveyOverride] guest=${guest_id} overridden. was_fresh=${!existing}`);
+    return res.json({ ok: true, response: upserted });
+
+  } catch (e) {
+    console.error("[AdminSurveyOverride] Unexpected error", e);
+    return res.status(500).json({ error: "Internal error" });
+  }
+});
+
 // ---- Admin: PATCH update guest's active invite token expiry ----
 app.patch("/api/v1/admin/guest/:id/invite-token", requireAdminAuth, async (req, res) => {
   try {
