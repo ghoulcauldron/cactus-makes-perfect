@@ -2051,6 +2051,399 @@ app.get("/api/v1/admin/email/inbox", requireAdminAuth, async (req, res) => {
   }
 });
 
+// =====================================================
+// PHASE 2 — ARTIFACT AUTH & INVITES
+// =====================================================
+
+const ARTIFACT_MEDIA_BASE =
+  "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/artifact/";
+
+function artifactImageUrl(ring, sourceIdx) {
+  return `${ARTIFACT_MEDIA_BASE}r${ring}_${String(sourceIdx).padStart(2, "0")}.png`;
+}
+
+function renderArtifactEmail({ guest, artifactUrl, combination }) {
+  const [c1, c2, c3] = combination;
+  const img1 = artifactImageUrl(1, c1);
+  const img2 = artifactImageUrl(2, c2);
+  const img3 = artifactImageUrl(3, c3);
+  const firstName = guest.first_name ? guest.first_name.toUpperCase() : "AGENT";
+
+  const html = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <style>
+    body { margin:0; padding:0; background-color:#000000 !important; }
+    .force-black { background-color:#000000 !important; background-image:linear-gradient(#000000,#000000) !important; }
+    .force-card  { background-color:#0a0a0a !important; background-image:linear-gradient(#0a0a0a,#0a0a0a) !important; }
+  </style>
+</head>
+<body class="force-black" style="margin:0;padding:0;background-color:#000000;font-family:'Courier New',Courier,monospace;color:#aa00ff;">
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" class="force-black"
+    style="background-color:#000000;" role="presentation">
+    <tr><td align="center" style="padding:40px 20px;">
+
+      <table width="600" border="0" cellpadding="0" cellspacing="0" class="force-card"
+        bgcolor="#0a0a0a" role="presentation"
+        style="max-width:600px;width:100%;background-color:#0a0a0a;border:2px solid #aa00ff;text-align:left;">
+
+        <!-- HEADER -->
+        <tr>
+          <td bgcolor="#aa00ff" style="background-color:#aa00ff;color:#000000;padding:10px 20px;
+            font-weight:bold;text-transform:uppercase;font-size:14px;letter-spacing:2px;
+            font-family:'Courier New',Courier,monospace;">
+            /// PHASE II — TRANSMISSION INCOMING ///
+          </td>
+        </tr>
+
+        <!-- BODY -->
+        <tr>
+          <td style="padding:30px;font-size:14px;line-height:1.7;color:#aa00ff;
+            font-family:'Courier New',Courier,monospace;">
+
+            <p style="margin:0 0 16px 0;color:#ffffff;font-weight:bold;">${firstName},</p>
+
+            <p style="margin:0 0 16px 0;">
+              A new phase has begun. Your coordinates have been updated.<br/>
+              The Artifact awaits your alignment.
+            </p>
+
+            <p style="margin:0 0 12px 0;color:#ffffff;font-weight:bold;
+              letter-spacing:2px;font-size:12px;text-transform:uppercase;">
+              Your Symbol Sequence:
+            </p>
+
+            <!-- COMBINATION ROW -->
+            <table width="100%" border="0" cellpadding="0" cellspacing="0"
+              role="presentation" style="margin:0 0 24px 0;">
+              <tr>
+                <td align="center" width="33%" style="padding:16px 8px;
+                  border:1px solid #aa00ff;background-color:#000000;
+                  background-image:linear-gradient(#000000,#000000);">
+                  <img src="${img1}" width="64" height="64" alt="Ring I"
+                    style="display:block;margin:0 auto 10px auto;width:64px;height:64px;object-fit:contain;" />
+                  <div style="font-size:9px;letter-spacing:3px;color:#aa00ff;
+                    text-transform:uppercase;">Ring I</div>
+                </td>
+                <td align="center" style="color:#aa00ff;font-size:18px;
+                  padding:0 6px;white-space:nowrap;">—</td>
+                <td align="center" width="33%" style="padding:16px 8px;
+                  border:1px solid #aa00ff;background-color:#000000;
+                  background-image:linear-gradient(#000000,#000000);">
+                  <img src="${img2}" width="64" height="64" alt="Ring II"
+                    style="display:block;margin:0 auto 10px auto;width:64px;height:64px;object-fit:contain;" />
+                  <div style="font-size:9px;letter-spacing:3px;color:#aa00ff;
+                    text-transform:uppercase;">Ring II</div>
+                </td>
+                <td align="center" style="color:#aa00ff;font-size:18px;
+                  padding:0 6px;white-space:nowrap;">—</td>
+                <td align="center" width="33%" style="padding:16px 8px;
+                  border:1px solid #aa00ff;background-color:#000000;
+                  background-image:linear-gradient(#000000,#000000);">
+                  <img src="${img3}" width="64" height="64" alt="Ring III"
+                    style="display:block;margin:0 auto 10px auto;width:64px;height:64px;object-fit:contain;" />
+                  <div style="font-size:9px;letter-spacing:3px;color:#aa00ff;
+                    text-transform:uppercase;">Ring III</div>
+                </td>
+              </tr>
+            </table>
+
+            <p style="margin:0 0 16px 0;">
+              Align the three rings to your symbols. Press the center to unlock.
+            </p>
+
+            <p style="margin:0 0 24px 0;font-size:11px;color:#ffffff;opacity:0.5;line-height:1.6;">
+              Your portal link is unique to you. Bookmark it once you've entered —
+              your combination will be needed each time you return from a new device.
+            </p>
+
+            <!-- CTA -->
+            <table width="100%" border="0" cellpadding="0" cellspacing="0"
+              role="presentation" style="margin-bottom:28px;">
+              <tr>
+                <td align="center">
+                  <a href="${artifactUrl}"
+                    style="background-color:#aa00ff;color:#000000;text-decoration:none;
+                    padding:12px 28px;font-weight:bold;text-transform:uppercase;font-size:13px;
+                    border:1px solid #aa00ff;display:inline-block;
+                    font-family:'Courier New',Courier,monospace;letter-spacing:2px;">
+                    ENTER THE ARTIFACT
+                  </a>
+                </td>
+              </tr>
+            </table>
+
+            <p style="margin:0;">BIG LOVE,<br/>S&amp;G</p>
+          </td>
+        </tr>
+
+        <!-- FOOTER -->
+        <tr>
+          <td style="border-top:1px solid #aa00ff;padding:10px 20px;font-size:10px;
+            text-transform:uppercase;color:#aa00ff;opacity:0.5;
+            font-family:'Courier New',Courier,monospace;">
+            PHASE II — ENCRYPTED CHANNEL // EYES ONLY. DO NOT REPLY.
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+  const text = `PHASE II — TRANSMISSION
+
+${firstName},
+
+A new phase has begun. The Artifact awaits your alignment.
+
+YOUR SYMBOL SEQUENCE:
+Ring I:   r1_${String(c1).padStart(2, "0")}
+Ring II:  r2_${String(c2).padStart(2, "0")}
+Ring III: r3_${String(c3).padStart(2, "0")}
+
+Align the three rings to your symbols. Press the center to unlock.
+
+Bookmark your portal once you've entered — your combination is needed
+each time you return from a new device.
+
+PORTAL: ${artifactUrl}
+
+BIG LOVE, S&G`;
+
+  return { html, text };
+}
+
+// ---- Admin: Send Phase 2 Artifact Invite ----
+// Protected automatically by app.use("/api/v1/admin", requireAdminAuth)
+app.post("/api/v1/admin/artifact-invites/send", async (req, res) => {
+  try {
+    const { guest_id } = req.body || {};
+    if (!guest_id) return res.status(400).json({ error: "Missing guest_id" });
+
+    // 1. Load guest
+    const { data: guest, error: gErr } = await supabase
+      .from("guests")
+      .select("*")
+      .eq("id", guest_id)
+      .single();
+
+    if (gErr || !guest) return res.status(404).json({ error: "Guest not found" });
+    if (guest.phase !== 2) return res.status(403).json({ error: "Guest is not Phase 2 eligible" });
+
+    // 2. Reuse existing token if one exists — never generate duplicates
+    let tokenRow;
+    let reused = false;
+
+    const { data: existing } = await supabase
+      .from("artifact_tokens")
+      .select("*")
+      .eq("guest_id", guest_id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existing) {
+      tokenRow = existing;
+      reused = true;
+      console.log(`[ArtifactInviteSend] Reusing token for guest ${guest_id}`);
+    } else {
+      // Generate fresh token + random combination (source indices 0–11)
+      const token = crypto.randomUUID();
+      const combination = [
+        Math.floor(Math.random() * 12),
+        Math.floor(Math.random() * 12),
+        Math.floor(Math.random() * 12),
+      ];
+
+      const { data: newRow, error: insertErr } = await supabase
+        .from("artifact_tokens")
+        .insert({ guest_id, token, combination, delivery_status: "pending" })
+        .select()
+        .single();
+
+      if (insertErr || !newRow) {
+        console.error("[ArtifactInviteSend] Token insert failed", insertErr);
+        return res.status(500).json({ error: "Failed to create artifact token" });
+      }
+
+      tokenRow = newRow;
+      console.log(`[ArtifactInviteSend] Created new token for guest ${guest_id}`);
+    }
+
+    // 3. Build URL and render email
+    const artifactUrl = `${PUBLIC_URL}/artifact?token=${encodeURIComponent(tokenRow.token)}`;
+    const { html, text } = renderArtifactEmail({
+      guest,
+      artifactUrl,
+      combination: tokenRow.combination,
+    });
+
+    // 4. Send
+    await sendEmail({
+      to: guest.email,
+      subject: "🌵 PHASE II — YOUR ARTIFACT AWAITS",
+      html,
+      text,
+    });
+
+    // 5. Mark as sent
+    await supabase
+      .from("artifact_tokens")
+      .update({ delivery_status: "sent" })
+      .eq("id", tokenRow.id);
+
+    // 6. Log activity
+    await supabase.from("user_activity").insert([{
+      guest_id: guest.id,
+      kind: reused ? "artifact_invite_resent" : "artifact_invite_sent",
+      meta: { email: guest.email, reused_token: reused },
+    }]);
+
+    console.log(`[ArtifactInviteSend] ${reused ? "Resent" : "Sent"} to ${guest.email}`);
+    return res.json({ ok: true, reused });
+
+  } catch (e) {
+    console.error("[ArtifactInviteSend] error", e);
+    return res.status(500).json({ error: "Internal error" });
+  }
+});
+
+// ---- Auth: Verify Artifact Combination ----
+// Public route — token + combination is the credential
+app.post("/api/v1/auth/artifact-verify", async (req, res) => {
+  try {
+    const { token, combination } = req.body || {};
+
+    if (!token || !Array.isArray(combination) || combination.length !== 3) {
+      return res.status(400).json({ error: "Missing or malformed fields" });
+    }
+
+    const { data: row, error } = await supabase
+      .from("artifact_tokens")
+      .select("*, guest:guest_id(*)")
+      .eq("token", token)
+      .maybeSingle();
+
+    if (error || !row) {
+      console.warn("[ArtifactVerify] Token not found:", token?.slice(0, 8));
+      return res.status(404).json({ error: "Token not found" });
+    }
+
+    // Compare combination arrays
+    const stored = row.combination;
+    const match =
+      stored[0] === combination[0] &&
+      stored[1] === combination[1] &&
+      stored[2] === combination[2];
+
+    if (!match) {
+      console.warn(`[ArtifactVerify] Wrong combination for guest ${row.guest?.id}`);
+      await supabase.from("user_activity").insert([{
+        guest_id: row.guest.id,
+        kind: "auth_failed",
+        meta: { phase: 2 },
+      }]);
+      return res.status(401).json({ error: "Invalid combination" });
+    }
+
+    // Mark responded (idempotent — token is permanent and reusable)
+    await supabase
+      .from("artifact_tokens")
+      .update({ delivery_status: "responded" })
+      .eq("id", row.id);
+
+    // Issue JWT with phase claim
+    const jwt = await issueJWT({
+      guest_id: row.guest.id,
+      email: row.guest.email,
+      phase: 2,
+    });
+
+    await supabase.from("user_activity").insert([{
+      guest_id: row.guest.id,
+      kind: "auth_success",
+      meta: { phase: 2 },
+    }]);
+
+    console.log(`[ArtifactVerify] Success for guest ${row.guest.id}`);
+    return res.json({ token: jwt, guest_id: row.guest.id });
+
+  } catch (e) {
+    console.error("[ArtifactVerify] error", e);
+    return res.status(500).json({ error: "Internal error" });
+  }
+});
+
+// ---- Auth: Re-link (self-service lost access) ----
+// Always returns 200 — never confirms whether an email exists
+app.post("/api/v1/auth/artifact-relink", async (req, res) => {
+  try {
+    const { email } = req.body || {};
+    if (!email) return res.json({ ok: true });
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    const { data: guest } = await supabase
+      .from("guests")
+      .select("*")
+      .eq("email", normalizedEmail)
+      .eq("phase", 2)
+      .maybeSingle();
+
+    if (!guest) {
+      console.log(`[ArtifactRelink] No Phase 2 guest for email: ${normalizedEmail}`);
+      return res.json({ ok: true });
+    }
+
+    const { data: tokenRow } = await supabase
+      .from("artifact_tokens")
+      .select("*")
+      .eq("guest_id", guest.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!tokenRow) {
+      console.log(`[ArtifactRelink] No token yet for guest ${guest.id}`);
+      return res.json({ ok: true });
+    }
+
+    const artifactUrl = `${PUBLIC_URL}/artifact?token=${encodeURIComponent(tokenRow.token)}`;
+    const { html, text } = renderArtifactEmail({
+      guest,
+      artifactUrl,
+      combination: tokenRow.combination,
+    });
+
+    await sendEmail({
+      to: guest.email,
+      subject: "🌵 YOUR ARTIFACT PORTAL LINK",
+      html,
+      text,
+    });
+
+    await supabase.from("user_activity").insert([{
+      guest_id: guest.id,
+      kind: "artifact_relink_sent",
+      meta: { email: normalizedEmail },
+    }]);
+
+    console.log(`[ArtifactRelink] Re-sent portal link to ${guest.email}`);
+
+  } catch (e) {
+    console.error("[ArtifactRelink] error", e);
+    // Swallow — always return 200
+  }
+
+  return res.json({ ok: true });
+});
+
 // ---- Serve built frontend from /app/dist (we'll place it there in Docker) ----
 const distDir = path.join(__dirname, "public");
 app.use(express.static(distDir));
