@@ -4,25 +4,33 @@ import { Stars } from "@react-three/drei";
 import { useDrag } from "@use-gesture/react";
 import * as THREE from "three";
 import { animated, useSpring } from "@react-spring/three";
-import { triggerHaptic, shuffleArray } from "../../utils/artifactUtils";
+import { triggerHaptic, shuffleArray, getSourceIndex } from "../../utils/artifactUtils";
 
 // --- CENTER BUTTON ---
-export function CenterButton({ isReady, onClick }: { isReady: boolean, onClick: () => void }) {
+export function CenterButton({ isReady, onClick, hasError }: { isReady: boolean, onClick: () => void, hasError?: boolean }) {
   const meshRef = useRef<THREE.Mesh>(null);
   useFrame((state) => {
-    if (isReady && meshRef.current) {
-      const s = 1 + Math.sin(state.clock.elapsedTime * 4) * 0.05;
-      meshRef.current.scale.set(s, s, s);
+    if (meshRef.current) {
+      if (hasError) {
+        // Pulse red on wrong combination
+        const s = 1 + Math.sin(state.clock.elapsedTime * 20) * 0.08;
+        meshRef.current.scale.set(s, s, s);
+      } else if (isReady) {
+        const s = 1 + Math.sin(state.clock.elapsedTime * 4) * 0.05;
+        meshRef.current.scale.set(s, s, s);
+      } else {
+        meshRef.current.scale.set(1, 1, 1);
+      }
     }
   });
   return (
     <mesh ref={meshRef} position={[0, 0, -0.06]} rotation={[0, Math.PI, 0]}
-      onClick={(e) => { if (isReady) { e.stopPropagation(); onClick(); } }}>
+      onClick={(e) => { if (isReady && !hasError) { e.stopPropagation(); onClick(); } }}>
       <circleGeometry args={[0.3, 32]} />
-      <meshStandardMaterial 
-        color={isReady ? "#00ff88" : "#1a0033"} 
-        emissive={isReady ? "#00ff88" : "#000000"}
-        emissiveIntensity={isReady ? 3 : 0}
+      <meshStandardMaterial
+        color={hasError ? "#ff0044" : isReady ? "#00ff88" : "#1a0033"}
+        emissive={hasError ? "#ff0044" : isReady ? "#00ff88" : "#000000"}
+        emissiveIntensity={hasError ? 4 : isReady ? 3 : 0}
         metalness={0.8} roughness={0.2}
       />
     </mesh>
@@ -95,13 +103,13 @@ function CarouselIcon({ texture, index, activeIndex, radius, baseColor }: any) {
 }
 
 // 2. Update CryptexRing to use the hook and restore the hit-area meshes
-export function CryptexRing({ ringIndex, radiusInner, radiusOuter, iconRadius, zPos, dragRef, onInteract, color }: any) {
+export function CryptexRing({ ringIndex, radiusInner, radiusOuter, iconRadius, zPos, dragRef, onInteract, onSelect, color }: any) {
   const iconTextures = useIconAssets(ringIndex);
   const shuffledIcons = useMemo(() => shuffleArray(iconTextures, ringIndex * 1234), [iconTextures, ringIndex]);
   const [spring, api] = useSpring(() => ({ rotationZ: 0, config: { friction: 30, tension: 200 } }));
   const rotationRef = useRef(0);
-  const [activeIndex, setActiveIndex] = useState(0);
   const [hovered, setHovered] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
   const { size } = useThree();
 
   const bind = useDrag(({ xy: [x, y], delta: [dx, dy], down, event, first }) => {
@@ -136,12 +144,20 @@ export function CryptexRing({ ringIndex, radiusInner, radiusOuter, iconRadius, z
         api.start({ rotationZ: newRotation, immediate: true });
       }
     } else {
-      dragRef.current = false; setHovered(false);
+      dragRef.current = false;
+      setHovered(false);
       const snap = Math.round(rotationRef.current / (Math.PI / 6)) * (Math.PI / 6);
       rotationRef.current = snap;
+      const snappedIdx = ((Math.round(snap / (Math.PI / 6)) % 12) + 12) % 12;
+      setActiveIndex(snappedIdx);
       api.start({ rotationZ: snap, immediate: false });
+
+      // Report source index to parent for combination tracking
+      if (onSelect) {
+        onSelect(ringIndex, getSourceIndex(snappedIdx, ringIndex));
+      }
     }
-  }, { preventScroll: true });
+  });
 
   return (
     <animated.group rotation-z={spring.rotationZ} position={[0, 0, zPos]} rotation-y={Math.PI} {...(bind() as any)}
@@ -290,33 +306,126 @@ export function ConstellationManager({ hasInteracted }: { hasInteracted: boolean
 }
 
 // --- INTERACTIVE ARTIFACT ---
-export function InteractiveArtifact({ setHasInteracted, onUnlock }: any) {
+export function InteractiveArtifact({ setHasInteracted, token, onVerified }: {
+  setHasInteracted: (v: boolean) => void;
+  token: string | null;
+  onVerified: (data: { token: string; guest_id: string }) => void;
+}) {
   const groupRef = useRef<THREE.Group>(null);
   const [targetRotationY, setTargetRotationY] = useState(0);
   const [isUnlocked, setIsUnlocked] = useState(false);
   const childIsDraggingRef = useRef(false);
   const [ringStates, setRingStates] = useState([false, false, false]);
-  const { uiOpacity } = useSpring({ uiOpacity: isUnlocked ? 0 : 1, config: { tension: 100, friction: 20 } });
+  const [combination, setCombination] = useState<[number, number, number]>([0, 0, 0]);
+  const [verifyState, setVerifyState] = useState<'idle' | 'loading' | 'error'>('idle');
+
+  const { uiOpacity } = useSpring({
+    uiOpacity: isUnlocked ? 0 : 1,
+    config: { tension: 100, friction: 20 }
+  });
+
+  const allRingsTouched = ringStates.every(Boolean);
+
+  const handleSelect = (ringIndex: number, sourceIndex: number) => {
+    setCombination(prev => {
+      const next = [...prev] as [number, number, number];
+      next[ringIndex - 1] = sourceIndex;
+      return next;
+    });
+  };
+
+  const handleUnlock = async () => {
+    if (!allRingsTouched || verifyState === 'loading' || !token) return;
+    triggerHaptic();
+    setVerifyState('loading');
+
+    try {
+      const res = await fetch('/api/v1/auth/artifact-verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, combination }),
+      });
+
+      if (!res.ok) {
+        setVerifyState('error');
+        setTimeout(() => setVerifyState('idle'), 1500);
+        return;
+      }
+
+      const data = await res.json();
+      if (data?.token) localStorage.setItem('auth_token', data.token);
+      if (data?.guest_id) localStorage.setItem('guest_user_id', data.guest_id);
+
+      setVerifyState('idle');
+      setIsUnlocked(true);
+      setHasInteracted(true);
+      onVerified(data);
+
+    } catch {
+      setVerifyState('error');
+      setTimeout(() => setVerifyState('idle'), 1500);
+    }
+  };
 
   useFrame((state) => {
     if (groupRef.current) {
-      groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, targetRotationY, 0.08);
-      groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, isUnlocked ? Math.PI / 2 : state.pointer.y * 0.1, 0.1);
-      groupRef.current.rotation.z = THREE.MathUtils.lerp(groupRef.current.rotation.z, isUnlocked ? 0 : -state.pointer.x * 0.1, 0.1);
+      groupRef.current.rotation.y = THREE.MathUtils.lerp(
+        groupRef.current.rotation.y, targetRotationY, 0.08
+      );
+      groupRef.current.rotation.x = THREE.MathUtils.lerp(
+        groupRef.current.rotation.x,
+        isUnlocked ? Math.PI / 2 : state.pointer.y * 0.1,
+        0.1
+      );
+      groupRef.current.rotation.z = THREE.MathUtils.lerp(
+        groupRef.current.rotation.z,
+        isUnlocked ? 0 : -state.pointer.x * 0.1,
+        0.1
+      );
     }
   });
 
   return (
-    <group ref={groupRef} onClick={() => { if (!childIsDraggingRef.current && targetRotationY === 0) { setHasInteracted(true); setTargetRotationY(Math.PI); } }}>
+    <group
+      ref={groupRef}
+      onClick={() => {
+        if (!childIsDraggingRef.current && targetRotationY === 0) {
+          setHasInteracted(true);
+          setTargetRotationY(Math.PI);
+        }
+      }}
+    >
       <animated.group scale={uiOpacity} visible={uiOpacity.to(o => o > 0.01)}>
-         <LiquidLayer /> 
-         <PurpleDisc opacity={uiOpacity} />
-         <CenterButton isReady={ringStates.every(Boolean)} onClick={() => { triggerHaptic(); setIsUnlocked(true); if (onUnlock) onUnlock(); }} />
+        <LiquidLayer />
+        <PurpleDisc opacity={uiOpacity} />
+        <CenterButton
+          isReady={allRingsTouched}
+          hasError={verifyState === 'error'}
+          onClick={handleUnlock}
+        />
       </animated.group>
       <animated.group visible={uiOpacity.to(o => o > 0.2)}>
-        <CryptexRing ringIndex={1} radiusInner={1.18} radiusOuter={1.55} iconRadius={1.37} zPos={-0.07} dragRef={childIsDraggingRef} onInteract={() => setRingStates(s => [true, s[1], s[2]])} color="#00ffff" />
-        <CryptexRing ringIndex={2} radiusInner={0.80} radiusOuter={1.20} iconRadius={0.99} zPos={-0.05} dragRef={childIsDraggingRef} onInteract={() => setRingStates(s => [s[0], true, s[2]])} color="#00ffff" />
-        <CryptexRing ringIndex={3} radiusInner={0.40} radiusOuter={0.82} iconRadius={0.60} zPos={-0.03} dragRef={childIsDraggingRef} onInteract={() => setRingStates(s => [s[0], s[1], true])} color="#00ffff" />
+        <CryptexRing
+          ringIndex={1} radiusInner={1.18} radiusOuter={1.55} iconRadius={1.37} zPos={-0.07}
+          dragRef={childIsDraggingRef}
+          onInteract={() => setRingStates(s => [true, s[1], s[2]])}
+          onSelect={handleSelect}
+          color="#00ffff"
+        />
+        <CryptexRing
+          ringIndex={2} radiusInner={0.80} radiusOuter={1.20} iconRadius={0.99} zPos={-0.05}
+          dragRef={childIsDraggingRef}
+          onInteract={() => setRingStates(s => [s[0], true, s[2]])}
+          onSelect={handleSelect}
+          color="#00ffff"
+        />
+        <CryptexRing
+          ringIndex={3} radiusInner={0.40} radiusOuter={0.82} iconRadius={0.60} zPos={-0.03}
+          dragRef={childIsDraggingRef}
+          onInteract={() => setRingStates(s => [s[0], s[1], true])}
+          onSelect={handleSelect}
+          color="#00ffff"
+        />
       </animated.group>
     </group>
   );

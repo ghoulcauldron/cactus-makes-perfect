@@ -1,95 +1,54 @@
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { createBrowserRouter, RouterProvider, redirect } from 'react-router-dom'
-import Welcome from './routes/guest/welcome/Welcome'
-import ProtectedRoute from './routes/ProtectedRoute'
-import PhotoCalculatorAuth from './routes/guest/login/PhotoCalculatorAuth'
 import AccessDenied from './pages/AccessDenied'
 import './index.css'
-import './fonts.css';
-import AmbientSound from './components/AmbientSound';
-
-// --- ARTIFACT IMPORT ---
-import TheArtifact from './TheArtifact';
-
-// --- SIMPLE DEV GATEKEEPER ---
-// This prevents random users from stumbling onto your 3D test
-function ArtifactGate({ children }: { children: React.ReactNode }) {
-  const [verified, setVerified] = useState(false);
-
-  useEffect(() => {
-    // 1. Check if we already unlocked it this session
-    if (sessionStorage.getItem('artifact_unlock') === 'true') {
-      setVerified(true);
-      return;
-    }
-
-    // 2. If not, prompt the user
-    // NOTE: This uses the browser's native blocking prompt
-    const password = window.prompt("🔐 Restricted Access. Enter Dev Password:");
-
-    if (password === "C4ctu$m4k3s93rf3cT") { // <--- CHANGE THIS PASSWORD IF YOU WANT
-      sessionStorage.setItem('artifact_unlock', 'true');
-      setVerified(true);
-    } else {
-      // 3. Wrong password? Send them home.
-      alert("Access Denied.");
-      window.location.href = "/";
-    }
-  }, []);
-
-  if (!verified) return <div style={{ background: '#000', height: '100vh', width: '100vw' }} />;
-  return <>{children}</>;
-}
+import './fonts.css'
+import AmbientSound from './components/AmbientSound'
+import TheArtifact from './TheArtifact'
 
 const router = createBrowserRouter([
   {
+    // Root: dispatch based on what's in localStorage
     path: '/',
     loader: () => {
-        try {
-        if (localStorage.getItem('auth_token')) {
-            return redirect('/guest/welcome');
-        }
-        } catch {}
-        return null;
+      if (localStorage.getItem('artifact_token')) return redirect('/artifact');
+      return redirect('/artifact');
     },
-    element: <PhotoCalculatorAuth />
-  },
-  { 
-    path: '/guest/login', 
-    element: <PhotoCalculatorAuth /> 
   },
   {
+    // Primary Phase 2 entry point
+    path: '/artifact',
+    element: <TheArtifact />,
+  },
+  {
+    // Legacy Phase 1 invite links — forward token to artifact
     path: '/invite',
-    element: <PhotoCalculatorAuth />
+    loader: ({ request }: { request: Request }) => {
+      const url   = new URL(request.url);
+      const token = url.searchParams.get('token');
+      return redirect(token ? `/artifact?token=${token}` : '/artifact');
+    },
+  },
+  {
+    // Legacy Phase 1 login — forward to artifact
+    path: '/guest/login',
+    loader: () => redirect('/artifact'),
+  },
+  {
+    // Legacy Phase 1 welcome — forward to artifact
+    path: '/guest/welcome',
+    loader: () => redirect('/artifact'),
   },
   {
     path: '/denied',
-    element: <AccessDenied />
+    element: <AccessDenied />,
   },
-  { 
-    path: '/guest/welcome',
-    element: (
-      <ProtectedRoute>
-        <Welcome />
-      </ProtectedRoute>
-    ),
-  },
-  
-  // --- NEW HIDDEN ROUTE ---
-  {
-    path: '/artifact',
-    element: (
-      <ArtifactGate>
-        <TheArtifact />
-      </ArtifactGate>
-    )
-  }
 ])
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <AmbientSound />
-    <RouterProvider router={router}/>
+    <RouterProvider router={router} />
   </React.StrictMode>
 )
