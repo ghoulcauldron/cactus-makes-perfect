@@ -2034,14 +2034,87 @@ app.patch("/api/v1/admin/email/status", requireAdminAuth, async (req, res) => {
   }
 });
 
-// UPDATE: Fetch ALL relevant communication types
+// ---- Admin: GET Eyes Only threads (inbound_comm + two_way_comm only) ----
+// Returns messages grouped by guest_id with unread count per thread.
+// Replaces the old flat /inbox endpoint.
+app.get("/api/v1/admin/email/threads", requireAdminAuth, async (req, res) => {
+  try {
+    const { data: messages, error } = await supabase
+      .from("emails_log")
+      .select("*, guest:guests(id, first_name, last_name, email)")
+      .in("type", ["inbound_comm", "two_way_comm"])
+      .order("sent_at", { ascending: true }); // ascending so threads sort oldest→newest internally
+
+    if (error) throw error;
+
+    // Group by guest_id (two_way_comm always has guest_id; inbound_comm should too via webhook)
+    const threadMap = new Map();
+
+    for (const msg of messages || []) {
+      const key = msg.guest_id;
+      if (!key) continue; // drop orphan messages with no guest association
+
+      if (!threadMap.has(key)) {
+        threadMap.set(key, {
+          guest_id: key,
+          guest: msg.guest || null,
+          messages: [],
+          unread_count: 0,
+          last_sent_at: null,
+        });
+      }
+
+      const thread = threadMap.get(key);
+      thread.messages.push(msg);
+      if (msg.type === "inbound_comm" && !msg.is_read) thread.unread_count++;
+      if (!thread.last_sent_at || new Date(msg.sent_at) > new Date(thread.last_sent_at)) {
+        thread.last_sent_at = msg.sent_at;
+      }
+    }
+
+    // Sort threads: unread first, then by most recent message
+    const threads = Array.from(threadMap.values()).sort((a, b) => {
+      if (a.unread_count > 0 && b.unread_count === 0) return -1;
+      if (b.unread_count > 0 && a.unread_count === 0) return 1;
+      return new Date(b.last_sent_at).getTime() - new Date(a.last_sent_at).getTime();
+    });
+
+    return res.json({ threads });
+  } catch (e) {
+    console.error("[AdminEmailThreads] Error:", e);
+    return res.status(500).json({ error: "Sync failed" });
+  }
+});
+
+// ---- Admin: Guest lookup by email (for new compose — avoids direct Supabase calls from frontend) ----
+app.get("/api/v1/admin/email/guest-lookup", requireAdminAuth, async (req, res) => {
+  try {
+    const { email } = req.query;
+    if (!email) return res.status(400).json({ error: "Missing email" });
+
+    const { data: guest, error } = await supabase
+      .from("guests")
+      .select("id, first_name, last_name, email")
+      .eq("email", String(email).trim().toLowerCase())
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!guest) return res.status(404).json({ error: "Guest not found" });
+
+    return res.json({ guest });
+  } catch (e) {
+    console.error("[AdminGuestLookup] Error:", e);
+    return res.status(500).json({ error: "Lookup failed" });
+  }
+});
+
+// LEGACY: keep old /inbox route alive so nothing else 404s, but scope it to Eyes Only types too
 app.get("/api/v1/admin/email/inbox", requireAdminAuth, async (req, res) => {
   try {
     const { data, error } = await supabase
       .from("emails_log")
       .select("*, guest:guests(id, first_name, last_name, email)")
-      // We must include 'two_way_comm' and 'invite' to see sent history
-      .in("type", ["inbound_comm", "two_way_comm", "invite", "survey"]) 
+      .in("type", ["inbound_comm", "two_way_comm"])
       .order("sent_at", { ascending: false });
 
     if (error) throw error;
@@ -2050,6 +2123,7 @@ app.get("/api/v1/admin/email/inbox", requireAdminAuth, async (req, res) => {
     return res.status(500).json({ error: "Sync failed" });
   }
 });
+
 
 // =====================================================
 // PHASE 2 — ARTIFACT AUTH & INVITES
@@ -2220,13 +2294,11 @@ BIG LOVE, S&G`;
 }
 
 // ---- Admin: Send Phase 2 Artifact Invite ----
-// Protected automatically by app.use("/api/v1/admin", requireAdminAuth)
 app.post("/api/v1/admin/artifact-invites/send", async (req, res) => {
   try {
     const { guest_id } = req.body || {};
     if (!guest_id) return res.status(400).json({ error: "Missing guest_id" });
 
-    // 1. Load guest
     const { data: guest, error: gErr } = await supabase
       .from("guests")
       .select("*")
@@ -2236,7 +2308,6 @@ app.post("/api/v1/admin/artifact-invites/send", async (req, res) => {
     if (gErr || !guest) return res.status(404).json({ error: "Guest not found" });
     if (guest.phase !== 2) return res.status(403).json({ error: "Guest is not Phase 2 eligible" });
 
-    // 2. Reuse existing token if one exists — never generate duplicates
     let tokenRow;
     let reused = false;
 
@@ -2253,7 +2324,6 @@ app.post("/api/v1/admin/artifact-invites/send", async (req, res) => {
       reused = true;
       console.log(`[ArtifactInviteSend] Reusing token for guest ${guest_id}`);
     } else {
-      // Generate fresh token + random combination (source indices 0–11)
       const token = crypto.randomUUID();
       const combination = [
         Math.floor(Math.random() * 12),
@@ -2276,7 +2346,6 @@ app.post("/api/v1/admin/artifact-invites/send", async (req, res) => {
       console.log(`[ArtifactInviteSend] Created new token for guest ${guest_id}`);
     }
 
-    // 3. Build URL and render email
     const artifactUrl = `${PUBLIC_URL}/artifact?token=${encodeURIComponent(tokenRow.token)}`;
     const { html, text } = renderArtifactEmail({
       guest,
@@ -2284,7 +2353,6 @@ app.post("/api/v1/admin/artifact-invites/send", async (req, res) => {
       combination: tokenRow.combination,
     });
 
-    // 4. Send
     await sendEmail({
       to: guest.email,
       subject: "🌵 PHASE II — YOUR ARTIFACT AWAITS",
@@ -2292,13 +2360,11 @@ app.post("/api/v1/admin/artifact-invites/send", async (req, res) => {
       text,
     });
 
-    // 5. Mark as sent
     await supabase
       .from("artifact_tokens")
       .update({ delivery_status: "sent" })
       .eq("id", tokenRow.id);
 
-    // 6. Log activity
     await supabase.from("user_activity").insert([{
       guest_id: guest.id,
       kind: reused ? "artifact_invite_resent" : "artifact_invite_sent",
@@ -2315,7 +2381,6 @@ app.post("/api/v1/admin/artifact-invites/send", async (req, res) => {
 });
 
 // ---- Auth: Verify Artifact Combination ----
-// Public route — token + combination is the credential
 app.post("/api/v1/auth/artifact-verify", async (req, res) => {
   try {
     const { token, combination } = req.body || {};
@@ -2335,7 +2400,6 @@ app.post("/api/v1/auth/artifact-verify", async (req, res) => {
       return res.status(404).json({ error: "Token not found" });
     }
 
-    // Compare combination arrays
     const stored = row.combination;
     const match =
       stored[0] === combination[0] &&
@@ -2352,13 +2416,11 @@ app.post("/api/v1/auth/artifact-verify", async (req, res) => {
       return res.status(401).json({ error: "Invalid combination" });
     }
 
-    // Mark responded (idempotent — token is permanent and reusable)
     await supabase
       .from("artifact_tokens")
       .update({ delivery_status: "responded" })
       .eq("id", row.id);
 
-    // Issue JWT with phase claim
     const jwt = await issueJWT({
       guest_id: row.guest.id,
       email: row.guest.email,
@@ -2381,7 +2443,6 @@ app.post("/api/v1/auth/artifact-verify", async (req, res) => {
 });
 
 // ---- Auth: Re-link (self-service lost access) ----
-// Always returns 200 — never confirms whether an email exists
 app.post("/api/v1/auth/artifact-relink", async (req, res) => {
   try {
     const { email } = req.body || {};
@@ -2438,7 +2499,6 @@ app.post("/api/v1/auth/artifact-relink", async (req, res) => {
 
   } catch (e) {
     console.error("[ArtifactRelink] error", e);
-    // Swallow — always return 200
   }
 
   return res.json({ ok: true });
