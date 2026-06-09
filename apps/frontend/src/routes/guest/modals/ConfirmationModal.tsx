@@ -41,7 +41,7 @@ export default function ConfirmationModal({ isOpen, onConfirm, onCancel, data }:
               <p className="text-white text-lg uppercase tracking-[0.2em] font-light italic">
                 {data.arrival_day ? `${data.arrival_day} Aug 2026` : "Pending..."}
               </p>
-            </div>
+            </div>a
 
             <div className="bg-white/5 rounded-2xl p-6 border border-white/5 backdrop-blur-md">
               <p className="text-[9px] text-[#00ffff]/40 uppercase tracking-[0.3em] mb-4 text-center">Neural Imprints</p>

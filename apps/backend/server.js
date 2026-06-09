@@ -2125,6 +2125,124 @@ app.get("/api/v1/admin/email/inbox", requireAdminAuth, async (req, res) => {
 });
 
 
+
+// ---- Admin: GET confirmed/maybe guests for Eyes Only recipient picker ----
+app.get("/api/v1/admin/email/recipients", requireAdminAuth, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("guests")
+      .select("id, first_name, last_name, email, rsvps(status)")
+      .order("last_name", { ascending: true });
+
+    if (error) throw error;
+
+    // Separate confirmed/maybe from the rest so the UI can group them
+    const confirmed = [];
+    const others = [];
+
+    for (const g of data || []) {
+      const status = g.rsvps?.[0]?.status ?? null;
+      const entry = { id: g.id, first_name: g.first_name, last_name: g.last_name, email: g.email, rsvp_status: status };
+      if (status === "yes" || status === "maybe") confirmed.push(entry);
+      else others.push(entry);
+    }
+
+    return res.json({ confirmed, others });
+  } catch (e) {
+    console.error("[AdminEmailRecipients] Error:", e);
+    return res.status(500).json({ error: "Failed to fetch recipients" });
+  }
+});
+
+// ---- Admin: GET all drafts ----
+app.get("/api/v1/admin/email/drafts", requireAdminAuth, async (req, res) => {
+  try {
+    const { guest_id, context } = req.query;
+    let query = supabase
+      .from("email_drafts")
+      .select("*")
+      .order("updated_at", { ascending: false });
+
+    if (guest_id)  query = query.eq("guest_id", guest_id);
+    if (context)   query = query.eq("context", context);
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    return res.json({ drafts: data || [] });
+  } catch (e) {
+    console.error("[AdminDraftsFetch] Error:", e);
+    return res.status(500).json({ error: "Failed to fetch drafts" });
+  }
+});
+
+// ---- Admin: POST create draft ----
+app.post("/api/v1/admin/email/drafts", requireAdminAuth, async (req, res) => {
+  try {
+    const { guest_id, subject, body, is_html, context } = req.body || {};
+
+    const { data, error } = await supabase
+      .from("email_drafts")
+      .insert([{
+        guest_id:  guest_id ?? null,
+        subject:   subject ?? null,
+        body:      body ?? null,
+        is_html:   !!is_html,
+        context:   context ?? "new",
+        updated_at: new Date().toISOString(),
+      }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return res.json({ ok: true, draft: data });
+  } catch (e) {
+    console.error("[AdminDraftCreate] Error:", e);
+    return res.status(500).json({ error: "Failed to create draft" });
+  }
+});
+
+// ---- Admin: PATCH update draft ----
+app.patch("/api/v1/admin/email/drafts/:id", requireAdminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { guest_id, subject, body, is_html, context } = req.body || {};
+
+    const updates = { updated_at: new Date().toISOString() };
+    if (guest_id  !== undefined) updates.guest_id  = guest_id;
+    if (subject   !== undefined) updates.subject   = subject;
+    if (body      !== undefined) updates.body       = body;
+    if (is_html   !== undefined) updates.is_html    = !!is_html;
+    if (context   !== undefined) updates.context    = context;
+
+    const { data, error } = await supabase
+      .from("email_drafts")
+      .update(updates)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return res.json({ ok: true, draft: data });
+  } catch (e) {
+    console.error("[AdminDraftUpdate] Error:", e);
+    return res.status(500).json({ error: "Failed to update draft" });
+  }
+});
+
+// ---- Admin: DELETE draft ----
+app.delete("/api/v1/admin/email/drafts/:id", requireAdminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { error } = await supabase.from("email_drafts").delete().eq("id", id);
+    if (error) throw error;
+    return res.json({ ok: true });
+  } catch (e) {
+    console.error("[AdminDraftDelete] Error:", e);
+    return res.status(500).json({ error: "Failed to delete draft" });
+  }
+});
+
 // =====================================================
 // PHASE 2 — ARTIFACT AUTH & INVITES
 // =====================================================
