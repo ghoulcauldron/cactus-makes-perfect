@@ -20,6 +20,8 @@ import {
   EyeIcon,
   BookmarkIcon,
   CheckIcon,
+  ArrowsPointingOutIcon,
+  ArrowsPointingInIcon,
 } from "@heroicons/react/20/solid";
 
 // @ts-ignore
@@ -299,6 +301,198 @@ function RecipientPicker({ value, confirmed, others, lookupState, onChange, onSe
   );
 }
 
+
+// ---------------------------------------------------------------------------
+// DRAFT STATUS BADGE
+// ---------------------------------------------------------------------------
+function DraftBadge({ saving, saved }: { saving: boolean; saved: boolean }) {
+  if (saving) return (
+    <span className="flex items-center gap-1 text-[8px] text-[#45CC2D]/40">
+      <ArrowPathIcon className="h-2.5 w-2.5 animate-spin" /> SAVING...
+    </span>
+  );
+  if (saved) return (
+    <span className="flex items-center gap-1 text-[8px] text-[#45CC2D]/50">
+      <CheckIcon className="h-2.5 w-2.5" /> DRAFT SAVED
+    </span>
+  );
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// HTML MESSAGE POPOUT MODAL (for viewing sent HTML in thread)
+// ---------------------------------------------------------------------------
+interface HtmlViewModalProps {
+  subject: string;
+  body: string;
+  sentAt: string;
+  onClose: () => void;
+}
+
+function HtmlViewModal({ subject, body, sentAt, onClose }: HtmlViewModalProps) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+      <div className="w-full max-w-2xl bg-black border border-[#45CC2D]/30 shadow-2xl flex flex-col max-h-[90vh]">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#45CC2D]/20 shrink-0">
+          <div className="min-w-0">
+            <h2 className="text-xs font-black uppercase tracking-widest text-[#45CC2D] truncate">{subject || "[SECURE TRANSMISSION]"}</h2>
+            <p className="text-[8px] opacity-40 mt-0.5">DISPATCHED {sentAt.toUpperCase()}</p>
+          </div>
+          <button onClick={onClose} className="text-[#45CC2D]/40 hover:text-[#45CC2D] transition-colors ml-4 shrink-0">
+            <XMarkIcon className="h-5 w-5" />
+          </button>
+        </div>
+        {/* Full iframe */}
+        <div className="flex-1 overflow-hidden bg-white">
+          <iframe
+            title="transmission-view"
+            srcDoc={body}
+            className="w-full h-full border-none"
+            style={{ minHeight: "400px" }}
+            sandbox="allow-same-origin"
+          />
+        </div>
+        <div className="px-5 py-3 border-t border-[#45CC2D]/20 flex justify-end shrink-0">
+          <button onClick={onClose}
+            className="text-[9px] font-bold uppercase text-[#45CC2D]/50 hover:text-[#45CC2D] border border-[#45CC2D]/20 hover:border-[#45CC2D]/50 px-4 py-1.5 transition-all">
+            CLOSE
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// REPLY POPOUT MODAL (HTML compose + preview, matching SendCommunicationModal style)
+// ---------------------------------------------------------------------------
+interface ReplyModalProps {
+  initialBody: string;
+  isHtml: boolean;
+  subject: string;
+  guestName: string;
+  sending: boolean;
+  sendError: string | null;
+  onBodyChange: (v: string) => void;
+  onModeChange: (v: boolean) => void;
+  onSend: () => void;
+  onClose: () => void;
+  onSaveDraft: () => void;
+  draftSaving: boolean;
+  draftSaved: boolean;
+  draftId: string | null;
+}
+
+function ReplyModal({
+  initialBody, isHtml, subject, guestName, sending, sendError,
+  onBodyChange, onModeChange, onSend, onClose, onSaveDraft,
+  draftSaving, draftSaved, draftId,
+}: ReplyModalProps) {
+  const [localPreview, setLocalPreview] = useState(false);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+      <div className="w-full max-w-2xl bg-black border border-[#45CC2D]/30 shadow-2xl flex flex-col max-h-[90vh]">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#45CC2D]/20 shrink-0">
+          <div className="min-w-0">
+            <h2 className="text-xs font-black uppercase tracking-widest text-[#45CC2D]">
+              REPLY — {guestName}
+            </h2>
+            <p className="text-[8px] opacity-40 mt-0.5 truncate">RE: {subject}</p>
+          </div>
+          <div className="flex items-center gap-3 shrink-0 ml-4">
+            <DraftBadge saving={draftSaving} saved={draftSaved} />
+            <button onClick={onClose} className="text-[#45CC2D]/40 hover:text-[#45CC2D] transition-colors">
+              <XMarkIcon className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Mode toolbar */}
+        <div className="flex items-center gap-1 px-5 py-2 border-b border-[#45CC2D]/10 bg-black/60 shrink-0">
+          <button
+            onClick={() => { onModeChange(false); setLocalPreview(false); }}
+            className={`flex items-center gap-1 px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest transition-all
+              ${!isHtml ? "bg-[#45CC2D] text-black" : "text-[#45CC2D]/40 hover:text-[#45CC2D]"}`}
+          >
+            <DocumentTextIcon className="h-3 w-3" /> TEXT
+          </button>
+          <button
+            onClick={() => { onModeChange(true); setLocalPreview(false); }}
+            className={`flex items-center gap-1 px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest transition-all
+              ${isHtml && !localPreview ? "bg-[#45CC2D] text-black" : "text-[#45CC2D]/40 hover:text-[#45CC2D]"}`}
+          >
+            <CodeBracketIcon className="h-3 w-3" /> HTML
+          </button>
+          {isHtml && (
+            <button
+              onClick={() => setLocalPreview(p => !p)}
+              className={`flex items-center gap-1 px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest transition-all
+                ${localPreview ? "bg-[#45CC2D] text-black" : "text-[#45CC2D]/40 hover:text-[#45CC2D]"}`}
+            >
+              <EyeIcon className="h-3 w-3" /> PREVIEW
+            </button>
+          )}
+          <span className="ml-auto text-[7px] opacity-20 tracking-widest">
+            {isHtml ? "HTML MODE" : "PLAIN TEXT"} // {initialBody.length} CHARS
+          </span>
+        </div>
+
+        {/* Editor / Preview */}
+        <div className="flex-1 overflow-hidden">
+          {localPreview && isHtml ? (
+            <iframe
+              title="reply-preview"
+              srcDoc={initialBody || "<div style='font-family:monospace;color:#666;padding:20px'>[No content]</div>"}
+              className="w-full h-full border-none bg-white"
+              style={{ minHeight: "300px" }}
+              sandbox="allow-same-origin"
+            />
+          ) : (
+            <textarea
+              value={initialBody}
+              onChange={e => onBodyChange(e.target.value)}
+              placeholder={isHtml ? "<!-- ENTER HTML... -->" : "ENTER REPLY..."}
+              className="w-full h-full bg-transparent text-xs text-[#45CC2D] placeholder-[#45CC2D]/20
+                outline-none resize-none p-5 font-mono leading-relaxed"
+              style={{ minHeight: "300px" }}
+              autoFocus
+            />
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between px-5 py-4 border-t border-[#45CC2D]/20 bg-neutral-900/30 shrink-0">
+          <div className="flex items-center gap-3">
+            <button onClick={onSaveDraft} disabled={draftSaving || !initialBody.trim()}
+              className="flex items-center gap-1.5 border border-[#45CC2D]/30 px-3 py-1.5 text-[9px] font-bold uppercase
+                text-[#45CC2D]/60 hover:text-[#45CC2D] hover:border-[#45CC2D]/60 transition-all disabled:opacity-20">
+              <BookmarkIcon className="h-3 w-3" />
+              {draftId ? "UPDATE DRAFT" : "SAVE DRAFT"}
+            </button>
+            {sendError && <span className="text-[9px] text-red-400">{sendError}</span>}
+          </div>
+          <div className="flex items-center gap-3">
+            <button onClick={onClose} className="text-[9px] font-bold uppercase text-[#45CC2D]/40 hover:text-[#45CC2D] transition-colors">
+              ABORT
+            </button>
+            <button onClick={onSend} disabled={sending || !initialBody.trim()}
+              className={`flex items-center gap-2 px-6 py-2 text-[10px] font-bold uppercase transition-all
+                ${sending || !initialBody.trim()
+                  ? "bg-neutral-800 text-neutral-500 cursor-not-allowed"
+                  : "bg-[#45CC2D] text-black hover:scale-105"}`}>
+              <PaperAirplaneIcon className="h-3.5 w-3.5" />
+              {sending ? "TRANSMITTING..." : "CONFIRM DISPATCH"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // MAIN COMPONENT
 // ---------------------------------------------------------------------------
@@ -339,6 +533,10 @@ export default function InboxManager() {
   // Shared send state
   const [sending, setSending]             = useState(false);
   const [sendError, setSendError]         = useState<string | null>(null);
+
+  // Modal state
+  const [htmlViewMsg, setHtmlViewMsg]     = useState<EyesOnlyMessage | null>(null);
+  const [replyModalOpen, setReplyModalOpen] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -634,6 +832,9 @@ export default function InboxManager() {
       });
       // Delete the draft now that it's sent
       if (replyDraftId) { await deleteReplyDraft(replyDraftId); setReplyDraftId(null); setReplyDraftSaved(false); }
+      // Reset to empty text mode on successful send
+      setReplyIsHtml(false);
+      setReplyModalOpen(false);
     } catch {
       setSendError("DISPATCH FAILED — CHECK CONNECTION");
       setThreads(prev => prev.map(t =>
@@ -737,21 +938,7 @@ export default function InboxManager() {
   };
 
   // ---------------------------------------------------------------------------
-  // DRAFT STATUS BADGE
-  // ---------------------------------------------------------------------------
-  function DraftBadge({ saving, saved }: { saving: boolean; saved: boolean }) {
-    if (saving) return (
-      <span className="flex items-center gap-1 text-[8px] text-[#45CC2D]/40">
-        <ArrowPathIcon className="h-2.5 w-2.5 animate-spin" /> SAVING...
-      </span>
-    );
-    if (saved) return (
-      <span className="flex items-center gap-1 text-[8px] text-[#45CC2D]/50">
-        <CheckIcon className="h-2.5 w-2.5" /> DRAFT SAVED
-      </span>
-    );
-    return null;
-  }
+
 
   // ---------------------------------------------------------------------------
   // RENDER
@@ -997,8 +1184,15 @@ export default function InboxManager() {
               {activeThread.messages.map(msg => {
                 const isInbound = msg.type === "inbound_comm";
                 const body = msgBody(msg);
-                // Detect HTML in outbound messages (starts with < or contains HTML tags)
                 const isHtmlContent = !isInbound && (body.trimStart().startsWith("<") || /<[a-z][\s\S]*>/i.test(body));
+                // Strip HTML tags for the abbreviated preview
+                const textPreview = isHtmlContent
+                  ? body.replace(/<style[\s\S]*?<\/style>/gi, "")
+                       .replace(/<[^>]+>/g, " ")
+                       .replace(/\s+/g, " ")
+                       .trim()
+                       .slice(0, 120)
+                  : null;
                 return (
                   <div key={msg.id}
                     className={`flex flex-col max-w-[85%] lg:max-w-[70%] ${isInbound ? "self-start items-start" : "self-end items-end ml-auto"}`}>
@@ -1010,13 +1204,21 @@ export default function InboxManager() {
                     </div>
                     <div className={`border ${isInbound ? "border-[#45CC2D]/30 bg-black text-[#45CC2D]" : "border-[#45CC2D]/15 bg-[#45CC2D]/5 text-[#45CC2D]/80"}`}>
                       {isHtmlContent ? (
-                        <iframe
-                          title={`msg-${msg.id}`}
-                          srcDoc={body}
-                          className="w-full min-h-[120px] border-none bg-white"
-                          style={{ minWidth: "300px" }}
-                          sandbox="allow-same-origin"
-                        />
+                        <div className="px-4 py-3 space-y-2">
+                          {/* Abbreviated text preview */}
+                          <p className="text-[10px] leading-relaxed opacity-60 italic">
+                            {textPreview}{textPreview && textPreview.length >= 120 ? "..." : ""}
+                          </p>
+                          {/* View full HTML button */}
+                          <button
+                            onClick={() => setHtmlViewMsg(msg)}
+                            className="flex items-center gap-1.5 text-[8px] font-bold uppercase tracking-widest
+                              border border-[#45CC2D]/30 px-2 py-1 hover:bg-[#45CC2D]/10 hover:border-[#45CC2D]/60 transition-all"
+                          >
+                            <ArrowsPointingOutIcon className="h-3 w-3" />
+                            VIEW TRANSMISSION
+                          </button>
+                        </div>
                       ) : (
                         <div className="px-4 py-3 text-xs leading-relaxed whitespace-pre-wrap break-words">{body}</div>
                       )}
@@ -1028,26 +1230,41 @@ export default function InboxManager() {
             </div>
 
             {/* Reply composer */}
-            <div className="shrink-0 border-t border-[#45CC2D]/20 bg-black px-4 lg:px-6 py-3 space-y-2">
-              {/* Draft status */}
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[8px] opacity-20 uppercase tracking-widest">REPLY</span>
-                <DraftBadge saving={replyDraftSaving} saved={replyDraftSaved} />
+            <div className="shrink-0 border-t border-[#45CC2D]/20 bg-black px-4 lg:px-6 py-3">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-[8px] opacity-20 uppercase tracking-widest">REPLY</span>
+                  {replyDraftId && <DraftBadge saving={replyDraftSaving} saved={replyDraftSaved} />}
+                </div>
+                {/* Pop-out button */}
+                <button
+                  onClick={() => setReplyModalOpen(true)}
+                  className="flex items-center gap-1 text-[8px] font-bold uppercase text-[#45CC2D]/30 hover:text-[#45CC2D] transition-all"
+                  title="Open in full editor"
+                >
+                  <ArrowsPointingOutIcon className="h-3.5 w-3.5" />
+                  EXPAND
+                </button>
               </div>
 
+              {/* Inline text-only reply (minimized; HTML mode opens modal automatically) */}
               <HtmlEditor
                 body={replyBody}
                 isHtml={replyIsHtml}
                 placeholder="ENTER REPLY... (⌘↵ to send)"
                 onBodyChange={v => { setReplyBody(v); setReplyDraftSaved(false); }}
-                onModeChange={setReplyIsHtml}
-                minHeight="h-28 lg:h-32"
+                onModeChange={v => {
+                  setReplyIsHtml(v);
+                  // Switching to HTML mode pops the modal open immediately
+                  if (v) setReplyModalOpen(true);
+                }}
+                minHeight="h-20"
                 onKeyDown={handleReplyKeyDown}
               />
 
-              {sendError && <p className="text-[9px] text-red-400">{sendError}</p>}
+              {sendError && <p className="text-[9px] text-red-400 mt-1">{sendError}</p>}
 
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mt-2">
                 <button onClick={saveReplyDraft}
                   disabled={replyDraftSaving || !replyBody.trim()}
                   className="flex items-center gap-1.5 border border-[#45CC2D]/30 px-3 py-1.5 text-[9px] font-bold uppercase
@@ -1074,6 +1291,44 @@ export default function InboxManager() {
           </div>
         )}
       </div>
+
+      {/* ================================================================= */}
+      {/* MODALS (portal-style, rendered outside column layout)             */}
+      {/* ================================================================= */}
+
+      {/* HTML View Modal — popout for viewing sent HTML messages */}
+      {htmlViewMsg && (
+        <HtmlViewModal
+          subject={htmlViewMsg.subject ?? ""}
+          body={msgBody(htmlViewMsg)}
+          sentAt={relTime(htmlViewMsg.sent_at)}
+          onClose={() => setHtmlViewMsg(null)}
+        />
+      )}
+
+      {/* Reply Popout Modal — full editor for HTML replies */}
+      {replyModalOpen && activeThread && (
+        <ReplyModal
+          initialBody={replyBody}
+          isHtml={replyIsHtml}
+          subject={threadSubject(activeThread)}
+          guestName={guestLabel(activeThread)}
+          sending={sending}
+          sendError={sendError}
+          onBodyChange={v => { setReplyBody(v); setReplyDraftSaved(false); }}
+          onModeChange={v => setReplyIsHtml(v)}
+          onSend={sendReply}
+          onClose={() => {
+            setReplyModalOpen(false);
+            // If closing without sending while in HTML mode, stay in HTML mode
+            // but show the inline editor. User can switch back to text manually.
+          }}
+          onSaveDraft={saveReplyDraft}
+          draftSaving={replyDraftSaving}
+          draftSaved={replyDraftSaved}
+          draftId={replyDraftId}
+        />
+      )}
     </div>
   );
 }
