@@ -314,13 +314,15 @@ export default function InboxManager() {
   const [otherRecipients, setOtherRecipients]         = useState<Recipient[]>([]);
 
   // Compose state
-  const [composing, setComposing]           = useState(false);
-  const [composeEmail, setComposeEmail]     = useState("");
-  const [composeSubject, setComposeSubject] = useState("");
-  const [composeBody, setComposeBody]       = useState("");
-  const [composeIsHtml, setComposeIsHtml]   = useState(false);
+  const [composing, setComposing]               = useState(false);
+  // Multi-recipient: confirmed list of Recipient objects
+  const [composeRecipients, setComposeRecipients] = useState<Recipient[]>([]);
+  // Input field for adding the next recipient
+  const [composeInputEmail, setComposeInputEmail] = useState("");
   const [composeLookupState, setComposeLookupState] = useState<"idle"|"loading"|"found"|"notfound">("idle");
-  const [composeGuestId, setComposeGuestId] = useState<string | null>(null);
+  const [composeSubject, setComposeSubject]     = useState("");
+  const [composeBody, setComposeBody]           = useState("");
+  const [composeIsHtml, setComposeIsHtml]       = useState(false);
   // Draft tracking for compose
   const [composeDraftId, setComposeDraftId]   = useState<string | null>(null);
   const [composeDraftSaved, setComposeDraftSaved] = useState(false);
@@ -440,12 +442,14 @@ export default function InboxManager() {
   const saveComposeDraft = useCallback(async () => {
     if (!composeBody.trim() && !composeSubject.trim()) return;
     setComposeDraftSaving(true);
+    // Store first recipient's guest_id for draft association; full list in meta
+    const primaryGuestId = composeRecipients[0]?.id ?? null;
     try {
       if (composeDraftId) {
         await apiFetch(`/admin/email/drafts/${composeDraftId}`, {
           method: "PATCH",
           body: JSON.stringify({
-            guest_id: composeGuestId,
+            guest_id: primaryGuestId,
             subject:  composeSubject,
             body:     composeBody,
             is_html:  composeIsHtml,
@@ -456,7 +460,7 @@ export default function InboxManager() {
         const res = await apiFetch("/admin/email/drafts", {
           method: "POST",
           body: JSON.stringify({
-            guest_id: composeGuestId,
+            guest_id: primaryGuestId,
             subject:  composeSubject,
             body:     composeBody,
             is_html:  composeIsHtml,
@@ -471,7 +475,7 @@ export default function InboxManager() {
     } finally {
       setComposeDraftSaving(false);
     }
-  }, [composeDraftId, composeGuestId, composeSubject, composeBody, composeIsHtml]);
+  }, [composeDraftId, composeRecipients, composeSubject, composeBody, composeIsHtml]);
 
   const saveReplyDraft = useCallback(async () => {
     if (!replyBody.trim() || !activeThread) return;
@@ -540,12 +544,11 @@ export default function InboxManager() {
         setComposeIsHtml(draft.is_html);
         setComposeDraftId(draft.id);
         setComposeDraftSaved(true);
-        // Try to pre-fill recipient if draft has guest_id
+        // Try to pre-fill primary recipient from draft
         if (draft.guest_id) {
-          setComposeGuestId(draft.guest_id);
           const all = [...confirmedRecipients, ...otherRecipients];
           const match = all.find(r => r.id === draft.guest_id);
-          if (match) { setComposeEmail(match.email); setComposeLookupState("found"); }
+          if (match) setComposeRecipients([match]);
         }
       }
     } catch {}
@@ -645,31 +648,35 @@ export default function InboxManager() {
   }, [replyBody, replyIsHtml, replyDraftId, activeThread, deleteReplyDraft]);
 
   const sendNewMessage = useCallback(async () => {
-    if (!composeBody.trim() || !composeGuestId) return;
+    if (!composeBody.trim() || composeRecipients.length === 0) return;
     setSending(true);
     setSendError(null);
     try {
-      await apiFetch("/admin/email/send", {
-        method: "POST",
-        body: JSON.stringify({
-          guest_id: composeGuestId,
-          subject:  composeSubject || "[SECURE TRANSMISSION]",
-          text:     composeIsHtml ? "" : composeBody,
-          html:     composeIsHtml ? composeBody : undefined,
-        }),
-      });
+      // Fire one send per recipient in parallel
+      await Promise.all(composeRecipients.map(r =>
+        apiFetch("/admin/email/send", {
+          method: "POST",
+          body: JSON.stringify({
+            guest_id: r.id,
+            subject:  composeSubject || "[SECURE TRANSMISSION]",
+            text:     composeIsHtml ? "" : composeBody,
+            html:     composeIsHtml ? composeBody : undefined,
+          }),
+        })
+      ));
       // Delete draft on send
       if (composeDraftId) { await apiFetch(`/admin/email/drafts/${composeDraftId}`, { method: "DELETE" }); }
       setComposing(false);
       setComposeDraftId(null);
       await fetchThreads();
-      setActiveGuestId(composeGuestId);
+      // Open the first recipient's thread
+      setActiveGuestId(composeRecipients[0].id);
     } catch {
       setSendError("DISPATCH FAILED — CHECK CONNECTION");
     } finally {
       setSending(false);
     }
-  }, [composeBody, composeIsHtml, composeGuestId, composeSubject, composeDraftId, fetchThreads]);
+  }, [composeBody, composeIsHtml, composeRecipients, composeSubject, composeDraftId, fetchThreads]);
 
   // ---------------------------------------------------------------------------
   // COMPOSE FLOW
@@ -677,12 +684,12 @@ export default function InboxManager() {
   const startCompose = useCallback(() => {
     setActiveGuestId(null);
     setComposing(true);
-    setComposeEmail("");
+    setComposeRecipients([]);
+    setComposeInputEmail("");
     setComposeSubject("");
     setComposeBody("");
     setComposeIsHtml(false);
     setComposeLookupState("idle");
-    setComposeGuestId(null);
     setComposeDraftId(null);
     setComposeDraftSaved(false);
     setSendError(null);
@@ -695,18 +702,34 @@ export default function InboxManager() {
     setComposeLookupState("loading");
     try {
       const res = await apiFetch(`/admin/email/guest-lookup?email=${encodeURIComponent(email.trim())}`);
-      setComposeGuestId(res.guest.id);
-      setComposeLookupState("found");
+      const guest: Recipient = {
+        id: res.guest.id,
+        first_name: res.guest.first_name,
+        last_name:  res.guest.last_name,
+        email:      res.guest.email,
+        rsvp_status: null,
+      };
+      // Add if not already in list
+      setComposeRecipients(prev =>
+        prev.find(r => r.id === guest.id) ? prev : [...prev, guest]
+      );
+      setComposeInputEmail("");
+      setComposeLookupState("idle");
     } catch {
-      setComposeGuestId(null);
       setComposeLookupState("notfound");
     }
   }, []);
 
   const selectRecipient = useCallback((r: Recipient) => {
-    setComposeEmail(r.email);
-    setComposeGuestId(r.id);
-    setComposeLookupState("found");
+    setComposeRecipients(prev =>
+      prev.find(x => x.id === r.id) ? prev : [...prev, r]
+    );
+    setComposeInputEmail("");
+    setComposeLookupState("idle");
+  }, []);
+
+  const removeRecipient = useCallback((id: string) => {
+    setComposeRecipients(prev => prev.filter(r => r.id !== id));
   }, []);
 
   const handleReplyKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -859,17 +882,46 @@ export default function InboxManager() {
             <div className="flex-1 flex flex-col p-4 lg:p-6 gap-3 overflow-y-auto scrollbar-hide">
               {/* TO + SUB fields */}
               <div className="border border-[#45CC2D]/20 bg-black">
-                <div className="flex items-center gap-2 px-3 py-2 border-b border-[#45CC2D]/10">
-                  <span className="text-[9px] opacity-40 font-bold w-8 shrink-0">TO:</span>
-                  <RecipientPicker
-                    value={composeEmail}
-                    confirmed={confirmedRecipients}
-                    others={otherRecipients}
-                    lookupState={composeLookupState}
-                    onChange={v => { setComposeEmail(v); setComposeLookupState("idle"); setComposeGuestId(null); }}
-                    onSelect={selectRecipient}
-                    onLookup={lookupGuest}
-                  />
+                {/* Recipient tags + picker */}
+                <div className="px-3 py-2 border-b border-[#45CC2D]/10">
+                  <div className="flex items-start gap-2">
+                    <span className="text-[9px] opacity-40 font-bold w-8 shrink-0 pt-1">TO:</span>
+                    <div className="flex-1 flex flex-wrap gap-1.5 items-center min-h-[24px]">
+                      {/* Recipient tags */}
+                      {composeRecipients.map(r => (
+                        <span key={r.id}
+                          className="inline-flex items-center gap-1 bg-[#45CC2D]/10 border border-[#45CC2D]/30 px-2 py-0.5 text-[9px] font-bold uppercase">
+                          <span className="max-w-[120px] truncate">{r.first_name} {r.last_name}</span>
+                          {r.rsvp_status && (
+                            <span className={`text-[7px] opacity-60 ${r.rsvp_status === 'yes' ? 'text-[#45CC2D]' : 'text-yellow-400'}`}>
+                              {r.rsvp_status.toUpperCase()}
+                            </span>
+                          )}
+                          <button
+                            onClick={() => removeRecipient(r.id)}
+                            className="opacity-40 hover:opacity-100 transition-opacity ml-0.5"
+                          >
+                            <XMarkIcon className="h-2.5 w-2.5" />
+                          </button>
+                        </span>
+                      ))}
+                      {/* Input to add next recipient */}
+                      <RecipientPicker
+                        value={composeInputEmail}
+                        confirmed={confirmedRecipients.filter(r => !composeRecipients.find(x => x.id === r.id))}
+                        others={otherRecipients.filter(r => !composeRecipients.find(x => x.id === r.id))}
+                        lookupState={composeLookupState}
+                        onChange={v => { setComposeInputEmail(v); setComposeLookupState("idle"); }}
+                        onSelect={selectRecipient}
+                        onLookup={lookupGuest}
+                      />
+                    </div>
+                  </div>
+                  {composeRecipients.length > 1 && (
+                    <p className="text-[8px] opacity-30 mt-1.5 pl-10">
+                      {composeRecipients.length} RECIPIENTS — message sends individually to each
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 px-3 py-2">
                   <span className="text-[9px] opacity-40 font-bold w-8 shrink-0">SUB:</span>
@@ -902,11 +954,11 @@ export default function InboxManager() {
                   {composeDraftId ? "UPDATE DRAFT" : "SAVE DRAFT"}
                 </button>
                 <button onClick={sendNewMessage}
-                  disabled={sending || !composeBody.trim() || composeLookupState !== "found"}
+                  disabled={sending || !composeBody.trim() || composeRecipients.length === 0}
                   className="flex items-center gap-2 border border-[#45CC2D] px-5 py-2 text-[10px] font-bold uppercase
                     hover:bg-[#45CC2D] hover:text-black transition-all disabled:opacity-20">
                   <PaperAirplaneIcon className="h-4 w-4" />
-                  {sending ? "DISPATCHING..." : "DISPATCH"}
+                  {sending ? "DISPATCHING..." : composeRecipients.length > 1 ? `DISPATCH (${composeRecipients.length})` : "DISPATCH"}
                 </button>
               </div>
             </div>
