@@ -1962,36 +1962,42 @@ app.get("/api/v1/admin/surveys", requireAdminAuth, async (req, res) => {
 // ---- Admin: SEND Message to Guest (Eyes Only) ----
 app.post("/api/v1/admin/email/send", requireAdminAuth, async (req, res) => {
   try {
-    const { guest_id, subject, text } = req.body;
+    const { guest_id, subject, text, html } = req.body;
     const { data: guest } = await supabase.from("guests").select("email").eq("id", guest_id).single();
-    
+
     if (!guest) return res.status(404).json({ error: "Guest node not found" });
 
+    // Require at least one body field
+    if (!text && !html) {
+      return res.status(400).json({ error: "Missing body: provide 'text' or 'html'" });
+    }
+
     await sendEmail({
-      to: guest.email,
-      from: "eyesonly@cactusmakesperfect.org", 
+      to:      guest.email,
       subject: `[EYES ONLY] ${subject}`,
-      text
+      text:    text || undefined,
+      html:    html || undefined,
     });
 
-    // CRITICAL: We must save the 'text' into 'meta.body' so the frontend can see it
+    // Store whichever body was sent so the thread view can render it
     await supabase.from("emails_log").insert([{
       guest_id,
-      type: "two_way_comm", // Sent messages are 'two_way_comm'
+      type:       "two_way_comm",
       subject,
-      provider: "mailgun",
-      status: "sent",
-      sent_at: new Date().toISOString(),
-      is_read: true,      // Admin obviously read their own sent mail
+      provider:   "mailgun",
+      status:     "sent",
+      sent_at:    new Date().toISOString(),
+      is_read:    true,
       is_archived: false,
-      meta: { 
+      meta: {
         alias: "eyesonly",
-        body: text // <--- This was missing!
+        body:  html || text,   // prefer html body for rendering; fall back to text
       }
     }]);
 
     return res.json({ ok: true });
   } catch (e) {
+    console.error("[AdminEmailSend] error", e);
     return res.status(500).json({ error: "Transmission failed" });
   }
 });
