@@ -6,18 +6,21 @@ import { PhaseController } from "./components/World/PhaseController";
 import { InteractiveArtifact, CosmicBackground, ConstellationManager } from "./components/Cryptex";
 import { ResponsiveCamera } from "./components/UI/ResponsiveCamera";
 import { MothershipHUD } from "./components/UI/MothershipHUD";
+import { PatternScramble } from "./components/UI/PatternScramble"; // Adjust path to match your structure
+import { CYBERPUNK_THEME } from "./constants/themes";
 
 // ─── No-access soft block ────────────────────────────────────────────────────
 
-function ArtifactNoAccess() {
-  const [email, setEmail]       = useState('');
-  const [sent, setSent]         = useState(false);
+export function ArtifactNoAccess() {
+  const [email, setEmail] = useState('');
+  const [sent, setSent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const handleRelink = async () => {
     if (!email.trim() || submitting) return;
     setSubmitting(true);
     try {
+      // API call logic remains untouched
       await fetch('/api/v1/auth/artifact-relink', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -28,99 +31,89 @@ function ArtifactNoAccess() {
     setSubmitting(false);
   };
 
-  const container: React.CSSProperties = {
-    background: '#000',
-    height: '100vh',
-    width: '100vw',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontFamily: "'Courier New', Courier, monospace",
-    color: '#aa00ff',
-  };
-
-  const card: React.CSSProperties = {
-    border: '2px solid #aa00ff',
-    padding: '40px',
-    maxWidth: '400px',
-    width: '90%',
-    textAlign: 'center',
-  };
-
-  const label: React.CSSProperties = {
-    fontSize: '10px',
-    letterSpacing: '4px',
-    marginBottom: '24px',
-    opacity: 0.5,
-    textTransform: 'uppercase',
-  };
-
-  const body: React.CSSProperties = {
-    fontSize: '12px',
-    letterSpacing: '1px',
-    lineHeight: 1.7,
-    marginBottom: '24px',
-  };
-
-  const input: React.CSSProperties = {
-    background: 'transparent',
-    border: '1px solid #aa00ff',
-    color: '#aa00ff',
-    padding: '10px 12px',
-    width: '100%',
-    fontFamily: 'inherit',
-    fontSize: '12px',
-    marginBottom: '12px',
-    boxSizing: 'border-box',
-    outline: 'none',
-  };
-
-  const button: React.CSSProperties = {
-    background: '#aa00ff',
-    color: '#000',
-    border: 'none',
-    padding: '10px 20px',
-    fontFamily: 'inherit',
-    fontWeight: 'bold',
-    fontSize: '11px',
-    letterSpacing: '2px',
-    cursor: submitting ? 'not-allowed' : 'pointer',
-    width: '100%',
-    textTransform: 'uppercase',
-    opacity: submitting ? 0.6 : 1,
-  };
-
   return (
-    <div style={container}>
-      <div style={card}>
-        <div style={label}>/// Phase II ///</div>
-        {sent ? (
-          <p style={body}>
-            IF YOUR COORDINATES ARE ON FILE,<br />
-            A TRANSMISSION HAS BEEN DISPATCHED.
-          </p>
-        ) : (
-          <>
-            <p style={body}>
-              PORTAL ACCESS REQUIRES YOUR UNIQUE LINK.<br />
-              CHECK YOUR TRANSMISSION ARCHIVE.
-            </p>
-            <p style={{ ...body, fontSize: '10px', opacity: 0.5, marginBottom: '16px' }}>
-              OR ENTER YOUR EMAIL TO RECEIVE IT AGAIN:
-            </p>
-            <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleRelink()}
-              placeholder="YOUR EMAIL"
-              style={input}
+    <div className="fixed inset-0 z-[11000] flex items-center justify-center p-4 font-mono">
+      {/* Deep Void Backdrop */}
+      <div className="absolute inset-0 bg-[#020617]/95 backdrop-blur-2xl" />
+      
+      {/* Organic "Living Chrome" Container */}
+      <div className="relative w-full max-w-md bg-gradient-to-br from-white/10 to-transparent border border-white/20 rounded-[40px] shadow-[0_0_100px_rgba(170,0,255,0.15)] p-10 overflow-hidden backdrop-blur-xl">
+        
+        {/* Floating Ethereal Orbs - Adjusted to Magenta/Cyan for "Locked" aesthetic */}
+        <div className="absolute top-[-10%] left-[-10%] w-40 h-40 bg-[#aa00ff]/15 blur-[80px] rounded-full animate-pulse" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-40 h-40 bg-[#00ffff]/10 blur-[80px] rounded-full animate-pulse" />
+
+        <div className="relative z-10 flex flex-col items-center">
+          
+          {/* Telemetry Header */}
+          <h3 className="text-[#aa00ff] text-[10px] tracking-[0.8em] uppercase mb-10 text-center opacity-80">
+            <PatternScramble 
+              text="PHASE_II_LOCKED" 
+              {...CYBERPUNK_THEME} 
+              startTrigger={true} 
             />
-            <button onClick={handleRelink} disabled={submitting} style={button}>
-              {submitting ? 'DISPATCHING...' : 'SEND MY PORTAL LINK'}
+          </h3>
+
+          <div className="w-full space-y-8 mb-8">
+            <div className="bg-white/5 rounded-2xl p-6 border border-white/5 backdrop-blur-md text-center">
+              {sent ? (
+                <div className="space-y-2">
+                  <p className="text-[10px] text-[#39FF14] uppercase tracking-[0.3em] animate-biopulse-green">
+                    <PatternScramble text="TRANSMISSION_DISPATCHED" {...CYBERPUNK_THEME} startTrigger={sent} />
+                  </p>
+                  <p className="text-white/50 text-[9px] uppercase tracking-widest leading-relaxed">
+                    If coordinates are on file, check your archive.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <p className="text-[10px] text-[#aa00ff]/80 uppercase tracking-[0.3em]">
+                      <PatternScramble text="AUTHENTICATION_REQUIRED" {...CYBERPUNK_THEME} startTrigger={true} />
+                    </p>
+                    <p className="text-white/50 text-[9px] uppercase tracking-widest leading-relaxed">
+                      Portal access requires your unique link. <br/>
+                      Check your transmission archive.
+                    </p>
+                  </div>
+
+                  <div className="space-y-3">
+                    <p className="text-[8px] text-[#00ffff]/40 uppercase tracking-[0.4em]">
+                      // Input Relink Coordinates
+                    </p>
+                    
+                    {/* Restyled Input Field */}
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && handleRelink()}
+                      placeholder="ENTER_EMAIL_VECTOR"
+                      className="w-full bg-black/40 border border-[#aa00ff]/30 text-[#00ffff] px-4 py-3 rounded-lg text-[10px] tracking-widest placeholder:text-white/20 focus:outline-none focus:border-[#00ffff]/60 focus:bg-white/5 transition-all duration-300 text-center"
+                      disabled={submitting}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Action Button */}
+          {!sent && (
+            <button 
+              onClick={handleRelink} 
+              disabled={submitting}
+              className={`w-full py-4 rounded-full text-[10px] font-bold uppercase tracking-[0.5em] transition-all duration-700 
+                ${submitting 
+                  ? 'bg-white/10 text-white/30 cursor-not-allowed' 
+                  : 'bg-white/90 text-black hover:bg-[#aa00ff] hover:text-white hover:shadow-[0_0_30px_rgba(170,0,255,0.6)]'
+                }`}
+            >
+              {submitting ? '[ DISPATCHING... ]' : '[ REQUEST_NEW_LINK ]'}
             </button>
-          </>
-        )}
+          )}
+          
+        </div>
       </div>
     </div>
   );
