@@ -416,7 +416,7 @@ export function InteractiveArtifact({ setHasInteracted, token, onVerified }: {
     >
       <animated.group scale={uiOpacity} visible={uiOpacity.to(o => o > 0.01)}>
         <LiquidLayer />
-        <PurpleDisc opacity={uiOpacity} />
+        <VoidDisc opacity={uiOpacity} />
         <CenterButton
           isReady={allRingsTouched}
           hasError={verifyState === 'error'}
