@@ -27,11 +27,12 @@ export function CenterButton({ isReady, onClick, hasError }: { isReady: boolean,
     <mesh ref={meshRef} position={[0, 0, -0.06]} rotation={[0, Math.PI, 0]}
       onClick={(e) => { if (isReady && !hasError) { e.stopPropagation(); onClick(); } }}>
       <circleGeometry args={[0.3, 32]} />
+      {/* PHASE II: Slate dark state, Cyan ready state */}
       <meshStandardMaterial
-        color={hasError ? "#ff0044" : isReady ? "#00ff88" : "#1a0033"}
-        emissive={hasError ? "#ff0044" : isReady ? "#00ff88" : "#000000"}
-        emissiveIntensity={hasError ? 4 : isReady ? 3 : 0}
-        metalness={0.8} roughness={0.2}
+        color={hasError ? "#ff0044" : isReady ? "#00ffff" : "#020617"}
+        emissive={hasError ? "#ff0044" : isReady ? "#00ffff" : "#000000"}
+        emissiveIntensity={hasError ? 4 : isReady ? 2 : 0}
+        metalness={0.9} roughness={0.1}
       />
     </mesh>
   );
@@ -70,8 +71,9 @@ export function LiquidLayer() {
   return (
     <mesh position={[0, 0, 0.03]}>
       <planeGeometry args={[3, 3, 512, 512]} />
+      {/* PHASE II: Changed base color from light purple to dark slate */}
       <meshPhysicalMaterial 
-        color="#e0e0ff" metalness={1.0} roughness={0.6} clearcoat={0.0}
+        color="#0f172a" metalness={1.0} roughness={0.6} clearcoat={0.0}
         envMapIntensity={1.0} iridescence={1.0} iridescenceIOR={1.3} iridescenceThicknessRange={[0, 600]}
         map={texture} transparent alphaTest={0.3} side={THREE.DoubleSide} 
         displacementMap={texture} displacementScale={-0.3} displacementBias={0.15} 
@@ -81,23 +83,31 @@ export function LiquidLayer() {
   );
 }
 
-export function PurpleDisc({ opacity = 1 }: { opacity?: any }) {
+// Renamed from PurpleDisc to VoidDisc
+export function VoidDisc({ opacity = 1 }: { opacity?: any }) {
   return (
     <animated.mesh rotation={[Math.PI / 2, 0, 0]}>
       <cylinderGeometry args={[1.6, 1.6, 0.05, 64]} />
-      <animated.meshPhysicalMaterial color="#330066" transparent opacity={opacity} metalness={1.0} roughness={0.15} />
+      {/* PHASE II: Deep space void color */}
+      <animated.meshPhysicalMaterial color="#020617" transparent opacity={opacity} metalness={1.0} roughness={0.15} />
     </animated.mesh>
   );
 }
 
 // --- CAROUSEL ENGINE ---
-function CarouselIcon({ texture, index, activeIndex, radius, baseColor }: any) {
+function CarouselIcon({ texture, index, activeIndex, radius }: any) {
   const angle = index * (Math.PI / 6);
   const isActive = index === activeIndex;
+  
+  // PHASE II LOGIC: Dormant = Small, White, Dim | Active = Large, Cyan, Bright
+  const scale = isActive ? [1.25, 1.25, 1] : [0.85, 0.85, 1];
+  const color = isActive ? "#00ffff" : "#ffffff";
+  const opacity = isActive ? 1.0 : 0.4;
+
   return (
-    <mesh position={[Math.sin(angle) * radius, Math.cos(angle) * radius, 0.005]} rotation={[0, 0, -angle]} scale={isActive ? [1.15, 1.15, 1] : [1, 1, 1]}>
+    <mesh position={[Math.sin(angle) * radius, Math.cos(angle) * radius, 0.005]} rotation={[0, 0, -angle]} scale={scale}>
       <planeGeometry args={[0.22, 0.22]} />
-      <meshBasicMaterial map={texture} transparent opacity={isActive ? 1.0 : 0.6} color={isActive ? "#ffffff" : baseColor} toneMapped={false} depthWrite={false} />
+      <meshBasicMaterial map={texture} transparent opacity={opacity} color={color} toneMapped={false} depthWrite={false} />
     </mesh>
   );
 }
@@ -162,29 +172,32 @@ export function CryptexRing({ ringIndex, radiusInner, radiusOuter, iconRadius, z
   return (
     <animated.group rotation-z={spring.rotationZ} position={[0, 0, zPos]} rotation-y={Math.PI} {...(bind() as any)}
       onPointerOver={() => !dragRef.current && setHovered(true)} onPointerOut={() => setHovered(false)}>
-      {/* Main Purple Ring */}
+      
+      {/* PHASE II: Main Ring is now dark chrome/slate instead of purple */}
       <mesh>
         <ringGeometry args={[radiusInner, radiusOuter, 64]} />
-        <meshStandardMaterial color="#8e59c3" metalness={0.9} roughness={0.2} emissive="#8e59c3" emissiveIntensity={hovered ? 1.8 : 0} side={THREE.DoubleSide} />
+        <meshStandardMaterial color="#0B1221" metalness={0.9} roughness={0.2} emissive="#00ffff" emissiveIntensity={hovered ? 0.3 : 0} side={THREE.DoubleSide} />
       </mesh>
       
-      {/* RESTORED: Inner Cyan Glow Border [cite: 37] */}
+      {/* Inner Cyan Glow Border */}
       <mesh position={[0, 0, 0.002]}>
         <ringGeometry args={[radiusInner, radiusInner + 0.02, 64]} />
-        <meshBasicMaterial color={color} toneMapped={false} side={THREE.DoubleSide} />
+        <meshBasicMaterial color="#00ffff" toneMapped={false} side={THREE.DoubleSide} />
       </mesh>
       
-      {/* RESTORED: Outer Cyan Glow Border [cite: 38] */}
+      {/* Outer Cyan Glow Border */}
       <mesh position={[0, 0, 0.002]}>
         <ringGeometry args={[radiusOuter - 0.02, radiusOuter, 64]} />
-        <meshBasicMaterial color={color} toneMapped={false} side={THREE.DoubleSide} />
+        <meshBasicMaterial color="#00ffff" toneMapped={false} side={THREE.DoubleSide} />
       </mesh>
 
       <mesh position={[0,0,0.01]}>
         <ringGeometry args={[radiusInner, radiusOuter, 64]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} side={THREE.DoubleSide} />
       </mesh>
-      {shuffledIcons.map((tex, i) => <CarouselIcon key={i} texture={tex} index={i} activeIndex={activeIndex} radius={iconRadius} baseColor={color} />)}
+      
+      {/* Removed baseColor prop as CarouselIcon handles it internally now */}
+      {shuffledIcons.map((tex, i) => <CarouselIcon key={i} texture={tex} index={i} activeIndex={activeIndex} radius={iconRadius} />)}
     </animated.group>
   );
 }
@@ -207,7 +220,13 @@ function ShootingStar() {
 export function CosmicBackground() {
   const shaderRef = useRef<THREE.ShaderMaterial>(null);
   const shaderData = useMemo(() => ({
-    uniforms: { uTime: { value: 0 }, uColor1: { value: new THREE.Color("#000000") }, uColor2: { value: new THREE.Color("#10002b") }, uColor3: { value: new THREE.Color("#5a189a") } },
+    // PHASE II: Swapped purples for Deep Slate Void and Teal nebula dust
+    uniforms: { 
+      uTime: { value: 0 }, 
+      uColor1: { value: new THREE.Color("#000000") }, 
+      uColor2: { value: new THREE.Color("#020617") }, 
+      uColor3: { value: new THREE.Color("#0891B2") } 
+    },
     vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
     fragmentShader: `
       uniform float uTime; uniform vec3 uColor1, uColor2, uColor3; varying vec2 vUv;
