@@ -83,11 +83,13 @@ export function LiquidLayer() {
   );
 }
 
-export function PurpleDisc({ opacity = 1 }: { opacity?: any }) {
+// Renamed from PurpleDisc to VoidDisc
+export function VoidDisc({ opacity = 1 }: { opacity?: any }) {
   return (
     <animated.mesh rotation={[Math.PI / 2, 0, 0]}>
       <cylinderGeometry args={[1.6, 1.6, 0.05, 64]} />
-      <animated.meshPhysicalMaterial color="#330066" transparent opacity={opacity} metalness={1.0} roughness={0.15} />
+      {/* PHASE II: Deep space void color */}
+      <animated.meshPhysicalMaterial color="#020617" transparent opacity={opacity} metalness={1.0} roughness={0.15} />
     </animated.mesh>
   );
 }
@@ -414,7 +416,7 @@ export function InteractiveArtifact({ setHasInteracted, token, onVerified }: {
     >
       <animated.group scale={uiOpacity} visible={uiOpacity.to(o => o > 0.01)}>
         <LiquidLayer />
-        <PurpleDisc opacity={uiOpacity} />
+        <VoidDisc opacity={uiOpacity} />
         <CenterButton
           isReady={allRingsTouched}
           hasError={verifyState === 'error'}
