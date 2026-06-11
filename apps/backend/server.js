@@ -2279,6 +2279,8 @@ function renderArtifactEmail({ guest, artifactUrl, combination }) {
     body { margin:0; padding:0; background-color:#F8FAFC !important; }
     .bg-lab { background-color:#F8FAFC !important; background-image:linear-gradient(#F8FAFC,#F8FAFC) !important; }
     .bg-paper { background-color:#FFFFFF !important; background-image:linear-gradient(#FFFFFF,#FFFFFF) !important; }
+    /* Force iOS to keep this block dark so the white PNGs stay visible */
+    .force-terminal { background-color:#0F172A !important; background-image:linear-gradient(#0F172A,#0F172A) !important; }
   </style>
 </head>
 <body class="bg-lab" style="margin:0;padding:0;background-color:#F8FAFC;font-family:'Courier New',Courier,monospace;color:#475569;">
@@ -2310,12 +2312,12 @@ function renderArtifactEmail({ guest, artifactUrl, combination }) {
               The Artifact awaits your alignment.
             </p>
 
-            <table width="100%" border="0" cellpadding="0" cellspacing="0"
-              role="presentation" style="margin:0 0 30px 0;border:1px solid #E2E8F0;background-color:#F8FAFC;border-radius:12px;">
+            <table width="100%" border="0" cellpadding="0" cellspacing="0" class="force-terminal"
+              role="presentation" style="margin:0 0 30px 0;border:2px solid #0F172A;background-color:#0F172A;border-radius:12px;">
               
               <tr>
                 <td colspan="5" align="center" style="padding:16px 0 0 0;">
-                  <div style="color:#0891B2;font-size:10px;letter-spacing:4px;text-transform:uppercase;opacity:0.8;font-weight:bold;">
+                  <div style="color:#38BDF8;font-size:10px;letter-spacing:4px;text-transform:uppercase;opacity:0.9;font-weight:bold;">
                     [ NEURAL_IMPRINTS ]
                   </div>
                 </td>
@@ -2325,19 +2327,19 @@ function renderArtifactEmail({ guest, artifactUrl, combination }) {
                 <td align="center" width="33%" style="padding:20px 8px;">
                   <img src="${img1}" width="64" height="64" alt="Ring I"
                     style="display:block;margin:0 auto 12px auto;width:64px;height:64px;object-fit:contain;" />
-                  <div style="font-size:11px;letter-spacing:3px;color:#0891B2;text-transform:uppercase;font-weight:bold;">RING_I</div>
+                  <div style="font-size:11px;letter-spacing:3px;color:#38BDF8;text-transform:uppercase;font-weight:bold;">RING_I</div>
                 </td>
-                <td align="center" style="color:#CBD5E1;font-size:18px;padding:0;white-space:nowrap;">//</td>
+                <td align="center" style="color:#475569;font-size:18px;padding:0;white-space:nowrap;">//</td>
                 <td align="center" width="33%" style="padding:20px 8px;">
                   <img src="${img2}" width="64" height="64" alt="Ring II"
                     style="display:block;margin:0 auto 12px auto;width:64px;height:64px;object-fit:contain;" />
-                  <div style="font-size:11px;letter-spacing:3px;color:#0891B2;text-transform:uppercase;font-weight:bold;">RING_II</div>
+                  <div style="font-size:11px;letter-spacing:3px;color:#38BDF8;text-transform:uppercase;font-weight:bold;">RING_II</div>
                 </td>
-                <td align="center" style="color:#CBD5E1;font-size:18px;padding:0;white-space:nowrap;">//</td>
+                <td align="center" style="color:#475569;font-size:18px;padding:0;white-space:nowrap;">//</td>
                 <td align="center" width="33%" style="padding:20px 8px;">
                   <img src="${img3}" width="64" height="64" alt="Ring III"
                     style="display:block;margin:0 auto 12px auto;width:64px;height:64px;object-fit:contain;" />
-                  <div style="font-size:11px;letter-spacing:3px;color:#0891B2;text-transform:uppercase;font-weight:bold;">RING_III</div>
+                  <div style="font-size:11px;letter-spacing:3px;color:#38BDF8;text-transform:uppercase;font-weight:bold;">RING_III</div>
                 </td>
               </tr>
             </table>
