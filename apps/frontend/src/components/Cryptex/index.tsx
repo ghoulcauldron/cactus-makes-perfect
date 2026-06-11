@@ -83,13 +83,11 @@ export function LiquidLayer() {
   );
 }
 
-// Renamed from PurpleDisc to VoidDisc
-export function VoidDisc({ opacity = 1 }: { opacity?: any }) {
+export function PurpleDisc({ opacity = 1 }: { opacity?: any }) {
   return (
     <animated.mesh rotation={[Math.PI / 2, 0, 0]}>
       <cylinderGeometry args={[1.6, 1.6, 0.05, 64]} />
-      {/* PHASE II: Deep space void color */}
-      <animated.meshPhysicalMaterial color="#020617" transparent opacity={opacity} metalness={1.0} roughness={0.15} />
+      <animated.meshPhysicalMaterial color="#330066" transparent opacity={opacity} metalness={1.0} roughness={0.15} />
     </animated.mesh>
   );
 }
@@ -100,12 +98,12 @@ function CarouselIcon({ texture, index, activeIndex, radius }: any) {
   const isActive = index === activeIndex;
   
   // PHASE II LOGIC: Dormant = Small, White, Dim | Active = Large, Cyan, Bright
-  const scale = isActive ? [1.25, 1.25, 1] : [0.85, 0.85, 1];
+  const scale: [number, number, number] = isActive ? [1.25, 1.25, 1] : [0.85, 0.85, 1];
   const color = isActive ? "#00ffff" : "#ffffff";
   const opacity = isActive ? 1.0 : 0.4;
 
   return (
-    <mesh position={[Math.sin(angle) * radius, Math.cos(angle) * radius, 0.005]} rotation={[0, 0, -angle]} scale={scale}>
+    <mesh position={[Math.sin(angle) * radius, Math.cos(angle) * radius, 0.005] as [number, number, number]} rotation={[0, 0, -angle] as [number, number, number]} scale={scale}>
       <planeGeometry args={[0.22, 0.22]} />
       <meshBasicMaterial map={texture} transparent opacity={opacity} color={color} toneMapped={false} depthWrite={false} />
     </mesh>
@@ -416,7 +414,7 @@ export function InteractiveArtifact({ setHasInteracted, token, onVerified }: {
     >
       <animated.group scale={uiOpacity} visible={uiOpacity.to(o => o > 0.01)}>
         <LiquidLayer />
-        <VoidDisc opacity={uiOpacity} />
+        <PurpleDisc opacity={uiOpacity} />
         <CenterButton
           isReady={allRingsTouched}
           hasError={verifyState === 'error'}
