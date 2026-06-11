@@ -2273,48 +2273,49 @@ function renderArtifactEmail({ guest, artifactUrl, combination }) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="color-scheme" content="light dark">
+  <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
   <style>
-    body { margin:0; padding:0; background-color:#020617 !important; }
-    .bg-void { background-color:#020617 !important; background-image:linear-gradient(#020617,#020617) !important; }
-    .bg-glass { background-color:#0B1221 !important; background-image:linear-gradient(#0B1221,#0B1221) !important; }
+    body { margin:0; padding:0; background-color:#F8FAFC !important; }
+    .bg-lab { background-color:#F8FAFC !important; background-image:linear-gradient(#F8FAFC,#F8FAFC) !important; }
+    .bg-paper { background-color:#FFFFFF !important; background-image:linear-gradient(#FFFFFF,#FFFFFF) !important; }
   </style>
 </head>
-<body class="bg-void" style="margin:0;padding:0;background-color:#020617;font-family:'Courier New',Courier,monospace;color:#94a3b8;">
-  <table width="100%" border="0" cellpadding="0" cellspacing="0" class="bg-void"
-    style="background-color:#020617;" role="presentation">
+<body class="bg-lab" style="margin:0;padding:0;background-color:#F8FAFC;font-family:'Courier New',Courier,monospace;color:#475569;">
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" class="bg-lab"
+    style="background-color:#F8FAFC;" role="presentation">
     <tr><td align="center" style="padding:40px 20px;">
 
-      <table width="600" border="0" cellpadding="0" cellspacing="0" class="bg-glass"
-        bgcolor="#0B1221" role="presentation"
-        style="max-width:600px;width:100%;background-color:#0B1221;border:1px solid #1E293B;border-radius:16px;text-align:left;overflow:hidden;">
+      <table width="600" border="0" cellpadding="0" cellspacing="0" class="bg-paper"
+        bgcolor="#FFFFFF" role="presentation"
+        style="max-width:600px;width:100%;background-color:#FFFFFF;border:1px solid #E2E8F0;border-radius:16px;text-align:left;overflow:hidden;">
 
         <tr>
-          <td align="center" style="padding:24px 20px;border-bottom:1px solid #1E293B;">
-            <div style="color:#00ffff;font-size:10px;letter-spacing:6px;font-weight:bold;text-transform:uppercase;opacity:0.8;">
+          <td align="center" style="padding:24px 20px;border-bottom:1px solid #E2E8F0;background-color:#F1F5F9;">
+            <div style="color:#0891B2;font-size:12px;letter-spacing:6px;font-weight:bold;text-transform:uppercase;opacity:0.9;">
               /// SYNAPTIC_TRANSMISSION ///
             </div>
           </td>
         </tr>
 
         <tr>
-          <td style="padding:40px 30px;font-size:11px;line-height:1.8;color:#94a3b8;font-family:'Courier New',Courier,monospace;">
+          <td style="padding:40px 30px;font-size:13px;line-height:1.8;color:#475569;font-family:'Courier New',Courier,monospace;">
 
-            <p style="margin:0 0 20px 0;color:#39FF14;font-weight:bold;font-size:12px;letter-spacing:2px;text-transform:uppercase;">
+            <p style="margin:0 0 20px 0;color:#059669;font-weight:bold;font-size:14px;letter-spacing:2px;text-transform:uppercase;">
               > ARRIVAL_VECTOR: ${firstName}_
             </p>
 
-            <p style="margin:0 0 24px 0;letter-spacing:1px;color:#cbd5e1;">
+            <p style="margin:0 0 24px 0;letter-spacing:1px;color:#334155;">
               A new phase has begun. Your coordinates have been updated.<br/>
               The Artifact awaits your alignment.
             </p>
 
             <table width="100%" border="0" cellpadding="0" cellspacing="0"
-              role="presentation" style="margin:0 0 30px 0;border:1px solid #1E293B;background-color:#030816;border-radius:12px;">
+              role="presentation" style="margin:0 0 30px 0;border:1px solid #E2E8F0;background-color:#F8FAFC;border-radius:12px;">
               
               <tr>
                 <td colspan="5" align="center" style="padding:16px 0 0 0;">
-                  <div style="color:#00ffff;font-size:8px;letter-spacing:4px;text-transform:uppercase;opacity:0.6;">
+                  <div style="color:#0891B2;font-size:10px;letter-spacing:4px;text-transform:uppercase;opacity:0.8;font-weight:bold;">
                     [ NEURAL_IMPRINTS ]
                   </div>
                 </td>
@@ -2324,24 +2325,24 @@ function renderArtifactEmail({ guest, artifactUrl, combination }) {
                 <td align="center" width="33%" style="padding:20px 8px;">
                   <img src="${img1}" width="64" height="64" alt="Ring I"
                     style="display:block;margin:0 auto 12px auto;width:64px;height:64px;object-fit:contain;" />
-                  <div style="font-size:9px;letter-spacing:3px;color:#00ffff;text-transform:uppercase;font-weight:bold;">RING_I</div>
+                  <div style="font-size:11px;letter-spacing:3px;color:#0891B2;text-transform:uppercase;font-weight:bold;">RING_I</div>
                 </td>
-                <td align="center" style="color:#1E293B;font-size:16px;padding:0;white-space:nowrap;">//</td>
+                <td align="center" style="color:#CBD5E1;font-size:18px;padding:0;white-space:nowrap;">//</td>
                 <td align="center" width="33%" style="padding:20px 8px;">
                   <img src="${img2}" width="64" height="64" alt="Ring II"
                     style="display:block;margin:0 auto 12px auto;width:64px;height:64px;object-fit:contain;" />
-                  <div style="font-size:9px;letter-spacing:3px;color:#00ffff;text-transform:uppercase;font-weight:bold;">RING_II</div>
+                  <div style="font-size:11px;letter-spacing:3px;color:#0891B2;text-transform:uppercase;font-weight:bold;">RING_II</div>
                 </td>
-                <td align="center" style="color:#1E293B;font-size:16px;padding:0;white-space:nowrap;">//</td>
+                <td align="center" style="color:#CBD5E1;font-size:18px;padding:0;white-space:nowrap;">//</td>
                 <td align="center" width="33%" style="padding:20px 8px;">
                   <img src="${img3}" width="64" height="64" alt="Ring III"
                     style="display:block;margin:0 auto 12px auto;width:64px;height:64px;object-fit:contain;" />
-                  <div style="font-size:9px;letter-spacing:3px;color:#00ffff;text-transform:uppercase;font-weight:bold;">RING_III</div>
+                  <div style="font-size:11px;letter-spacing:3px;color:#0891B2;text-transform:uppercase;font-weight:bold;">RING_III</div>
                 </td>
               </tr>
             </table>
 
-            <p style="margin:0 0 32px 0;letter-spacing:1px;color:#cbd5e1;">
+            <p style="margin:0 0 32px 0;letter-spacing:1px;color:#334155;">
               Align the three rings to your symbols. Press the center to unlock.
             </p>
 
@@ -2350,8 +2351,8 @@ function renderArtifactEmail({ guest, artifactUrl, combination }) {
               <tr>
                 <td align="center">
                   <a href="${artifactUrl}"
-                    style="background-color:#ffffff;color:#000000;text-decoration:none;
-                    padding:16px 32px;font-weight:bold;text-transform:uppercase;font-size:10px;
+                    style="background-color:#0F172A;color:#FFFFFF;text-decoration:none;
+                    padding:16px 32px;font-weight:bold;text-transform:uppercase;font-size:12px;
                     border-radius:30px;display:inline-block;font-family:'Courier New',Courier,monospace;letter-spacing:4px;">
                     [ COMMENCE_LINK ]
                   </a>
@@ -2359,20 +2360,20 @@ function renderArtifactEmail({ guest, artifactUrl, combination }) {
               </tr>
             </table>
 
-            <p style="margin:0 0 24px 0;font-size:9px;color:#64748b;letter-spacing:1px;line-height:1.6;text-align:center;">
+            <p style="margin:0 0 24px 0;font-size:11px;color:#64748b;letter-spacing:1px;line-height:1.6;text-align:center;">
               Your portal link is unique to you. Bookmark it once you've entered.<br/>
               Your sequence is required upon return from any new hardware.
             </p>
 
-            <p style="margin:0;font-size:10px;color:#39FF14;letter-spacing:2px;text-align:center;">
+            <p style="margin:0;font-size:12px;color:#059669;letter-spacing:2px;text-align:center;font-weight:bold;">
               BIG LOVE, S&amp;G
             </p>
           </td>
         </tr>
 
         <tr>
-          <td align="center" style="border-top:1px solid #1E293B;padding:16px 20px;font-size:8px;
-            text-transform:uppercase;color:#475569;letter-spacing:4px;
+          <td align="center" style="border-top:1px solid #E2E8F0;padding:16px 20px;font-size:10px;
+            text-transform:uppercase;color:#94A3B8;letter-spacing:4px;
             font-family:'Courier New',Courier,monospace;">
             DISCONNECT_FEED // SECURE_CHANNEL
           </td>
