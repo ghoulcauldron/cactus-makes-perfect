@@ -2257,7 +2257,9 @@ const ARTIFACT_MEDIA_BASE =
   "https://nuocergcapwdrngodpip.supabase.co/storage/v1/object/public/media/artifact/";
 
 function artifactImageUrl(ring, sourceIdx) {
-  return `${ARTIFACT_MEDIA_BASE}r${ring}_${String(sourceIdx).padStart(2, "0")}.png`;
+  // THE FIX: Append ?v=phase2 to permanently break the cache of the old images
+  // across Supabase's CDN, Gmail's Image Proxy, and Apple's Privacy Proxy.
+  return `${ARTIFACT_MEDIA_BASE}r${ring}_${String(sourceIdx).padStart(2, "0")}.png?v=phase2`;
 }
 
 function renderArtifactEmail({ guest, artifactUrl, combination }) {
