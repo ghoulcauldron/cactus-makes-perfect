@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { PatternScramble } from './components/UI/PatternScramble';
+import { CYBERPUNK_THEME } from './constants/themes';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -37,8 +39,6 @@ async function sha256Hex(file: File): Promise<string> {
 const isHeic = (f: File) =>
   /image\/hei[cf]/i.test(f.type) || /\.hei[cf]$/i.test(f.name);
 
-// Convert HEIC → JPEG in the browser. Loaded lazily so the library
-// only downloads for users who actually need it.
 async function convertHeic(file: File): Promise<File> {
   const heic2any = (await import('heic2any')).default as any;
   const blob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.92 });
@@ -60,33 +60,126 @@ function uploadWithProgress(url: string, file: File, onProgress: (p: number) => 
     };
     xhr.onload  = () => (xhr.status >= 200 && xhr.status < 300)
       ? resolve()
-      : reject(new Error(`Upload failed: ${xhr.status}`));
-    xhr.onerror = () => reject(new Error('Network error'));
+      : reject(new Error(`HTTP ${xhr.status}`));
+    xhr.onerror = () => reject(new Error('NETWORK_FAULT'));
     xhr.send(file);
   });
 }
 
-// ─── Styles ──────────────────────────────────────────────────────────────────
+// ─── Access denied panel ─────────────────────────────────────────────────────
 
-const C = {
-  bg: '#000', accent: '#aa00ff', cyan: '#00ffff',
-  text: '#e0d0ff', dim: 'rgba(224,208,255,0.5)',
-  mono: "'Courier New', Courier, monospace",
-};
+function NoAccessPanel() {
+  const [email, setEmail]           = useState('');
+  const [sent, setSent]             = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-// ─── Component ───────────────────────────────────────────────────────────────
+  const handleRelink = async () => {
+    if (!email.trim() || submitting) return;
+    setSubmitting(true);
+    try {
+      await fetch('/api/v1/auth/artifact-relink', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+    } catch { /* always report sent */ }
+    setSent(true);
+    setSubmitting(false);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[11000] flex items-center justify-center p-4 font-mono">
+      <div className="absolute inset-0 bg-[#020617]/95 backdrop-blur-2xl" />
+
+      <div className="relative w-full max-w-md bg-gradient-to-br from-white/10 to-transparent
+        border border-white/20 rounded-[40px] shadow-[0_0_100px_rgba(170,0,255,0.15)]
+        p-10 overflow-hidden backdrop-blur-xl">
+
+        <div className="absolute top-[-10%] left-[-10%] w-40 h-40 bg-[#aa00ff]/15 blur-[80px] rounded-full animate-pulse" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-40 h-40 bg-[#00ffff]/10 blur-[80px] rounded-full animate-pulse" />
+
+        <div className="relative z-10 flex flex-col items-center">
+          <h3 className="text-[#aa00ff] text-[10px] tracking-[0.8em] uppercase mb-10 text-center opacity-80">
+            <PatternScramble text="ARCHIVE_LOCKED" {...CYBERPUNK_THEME} startTrigger={true} />
+          </h3>
+
+          <div className="w-full mb-8">
+            <div className="bg-white/5 rounded-2xl p-6 border border-white/5 backdrop-blur-md text-center">
+              {sent ? (
+                <div className="space-y-2">
+                  <p className="text-[10px] text-[#39FF14] uppercase tracking-[0.3em] animate-biopulse-green">
+                    <PatternScramble text="TRANSMISSION_DISPATCHED" {...CYBERPUNK_THEME} startTrigger={sent} />
+                  </p>
+                  <p className="text-white/50 text-[9px] uppercase tracking-widest leading-relaxed">
+                    If coordinates are on file, check your archive.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <p className="text-[10px] text-[#aa00ff]/80 uppercase tracking-[0.3em]">
+                      <PatternScramble text="AUTHENTICATION_REQUIRED" {...CYBERPUNK_THEME} startTrigger={true} />
+                    </p>
+                    <p className="text-white/50 text-[9px] uppercase tracking-widest leading-relaxed">
+                      Archive access requires your unique link.<br />
+                      Check your transmission archive.
+                    </p>
+                  </div>
+
+                  <div className="space-y-3">
+                    <p className="text-[8px] text-[#00ffff]/40 uppercase tracking-[0.4em]">
+                      // Input Relink Coordinates
+                    </p>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && handleRelink()}
+                      placeholder="ENTER_EMAIL_VECTOR"
+                      disabled={submitting}
+                      className="w-full bg-black/40 border border-[#aa00ff]/30 text-[#00ffff]
+                        px-4 py-3 rounded-lg text-[10px] tracking-widest placeholder:text-white/20
+                        focus:outline-none focus:border-[#00ffff]/60 focus:bg-white/5
+                        transition-all duration-300 text-center"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {!sent && (
+            <button
+              onClick={handleRelink}
+              disabled={submitting}
+              className={`w-full py-4 rounded-full text-[10px] font-bold uppercase tracking-[0.5em]
+                transition-all duration-700
+                ${submitting
+                  ? 'bg-white/10 text-white/30 cursor-not-allowed'
+                  : 'bg-white/90 text-black hover:bg-[#aa00ff] hover:text-white hover:shadow-[0_0_30px_rgba(170,0,255,0.6)]'
+                }`}
+            >
+              {submitting ? '[ DISPATCHING... ]' : '[ REQUEST_NEW_LINK ]'}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main ────────────────────────────────────────────────────────────────────
 
 export default function UploadPortal() {
-  const [token, setToken]       = useState<string | null>(null);
-  const [ready, setReady]       = useState(false);
-  const [guestName, setGuestName] = useState<string>('');
-  const [mine, setMine]         = useState<MediaItem[]>([]);
-  const [queue, setQueue]       = useState<QueueItem[]>([]);
-  const [lightbox, setLightbox] = useState<MediaItem | null>(null);
+  const [token, setToken]         = useState<string | null>(null);
+  const [ready, setReady]         = useState(false);
+  const [guestName, setGuestName] = useState('');
+  const [mine, setMine]           = useState<MediaItem[]>([]);
+  const [queue, setQueue]         = useState<QueueItem[]>([]);
+  const [lightbox, setLightbox]   = useState<MediaItem | null>(null);
   const [authError, setAuthError] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Token resolution: URL param → localStorage
   useEffect(() => {
     const url      = new URL(window.location.href);
     const urlToken = url.searchParams.get('token');
@@ -112,7 +205,6 @@ export default function UploadPortal() {
 
   useEffect(() => { if (token) loadMine(token); }, [token, loadMine]);
 
-  // Poll while anything is still processing
   useEffect(() => {
     if (!token) return;
     if (!mine.some(m => m.status === 'processing')) return;
@@ -125,15 +217,12 @@ export default function UploadPortal() {
 
     let list = Array.from(files);
 
-    // HEIC → JPEG before hashing, so the hash matches what we store
     const converted: File[] = [];
     for (const f of list) {
       if (isHeic(f)) {
         try { converted.push(await convertHeic(f)); }
         catch { converted.push(f); }
-      } else {
-        converted.push(f);
-      }
+      } else converted.push(f);
     }
     list = converted;
 
@@ -143,7 +232,6 @@ export default function UploadPortal() {
     }
     setQueue(q => [...q, ...items]);
 
-    // Sequential upload keeps memory and connections sane on mobile
     for (const item of items) {
       const mark = (patch: Partial<QueueItem>) =>
         setQueue(q => q.map(x => x.sha256 === item.sha256 ? { ...x, ...patch } : x));
@@ -177,7 +265,7 @@ export default function UploadPortal() {
 
         mark({ status: 'done' });
       } catch (e: any) {
-        mark({ status: 'error', error: e?.message || 'Failed' });
+        mark({ status: 'error', error: e?.message || 'FAILED' });
       }
     }
 
@@ -185,177 +273,225 @@ export default function UploadPortal() {
     setTimeout(() => setQueue([]), 4000);
   };
 
-  // ── No token ──
-  if (ready && (!token || authError)) {
-    return (
-      <div style={{ ...s.page, justifyContent: 'center' }}>
-        <div style={s.card}>
-          <div style={s.kicker}>/// ACCESS REQUIRED ///</div>
-          <p style={s.body}>
-            This portal needs your unique link.<br />
-            Check your email for the transmission.
-          </p>
-          <p style={{ ...s.body, fontSize: 11, opacity: 0.5, marginTop: 20 }}>
-            Lost it? Email <span style={{ color: C.cyan }}>eyesonly@cactusmakesperfect.org</span><br />
-            with subject <span style={{ color: C.cyan }}>upload</span> and we'll resend it.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!ready) return <div style={{ background: C.bg, minHeight: '100vh' }} />;
+  if (!ready) return <div className="fixed inset-0 bg-[#020617]" />;
+  if (!token || authError) return <NoAccessPanel />;
 
   const active = queue.filter(q => q.status !== 'done' && q.status !== 'duplicate');
   const dupes  = queue.filter(q => q.status === 'duplicate');
+  const busy   = active.length > 0;
 
   return (
-    <div style={s.page}>
-      <div style={s.inner}>
+    <div className="min-h-screen bg-[#020617] font-mono relative overflow-x-hidden">
 
-        <div style={s.kicker}>/// CACTUS MAKES PERFECT ///</div>
-        <h1 style={s.h1}>THE TIME CAPSULE</h1>
-        <p style={s.body}>
-          {guestName ? `${guestName.toUpperCase()}, ` : ''}
-          add your photos and videos from the weekend.
-          Everything you upload becomes part of the shared archive.
-        </p>
+      {/* Ambient field */}
+      <div className="fixed top-[-10%] left-[-15%] w-[500px] h-[500px] bg-[#aa00ff]/10 blur-[120px] rounded-full animate-pulse pointer-events-none" />
+      <div className="fixed bottom-[-15%] right-[-15%] w-[500px] h-[500px] bg-[#00ffff]/8 blur-[120px] rounded-full animate-pulse pointer-events-none" />
 
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/*,video/*"
-          multiple
-          style={{ display: 'none' }}
-          onChange={e => { handleFiles(e.target.files); e.currentTarget.value = ''; }}
-        />
+      <div className="relative z-10 mx-auto max-w-3xl px-4 py-12 md:py-20">
 
-        <button style={s.cta} onClick={() => fileRef.current?.click()}>
-          + SELECT PHOTOS &amp; VIDEOS
-        </button>
-
-        {/* Upload queue */}
-        {active.length > 0 && (
-          <div style={s.queue}>
-            {active.map(q => (
-              <div key={q.sha256} style={s.queueRow}>
-                <span style={s.queueName}>{q.file.name}</span>
-                <span style={s.queueStatus}>
-                  {q.status === 'uploading'  && `${Math.round(q.progress * 100)}%`}
-                  {q.status === 'processing' && 'PROCESSING'}
-                  {q.status === 'pending'    && 'QUEUED'}
-                  {q.status === 'error'      && (q.error || 'FAILED')}
-                </span>
-              </div>
-            ))}
+        {/* ── Header ── */}
+        <div className="flex flex-col items-center text-center mb-12">
+          <div className="text-[9px] tracking-[0.6em] uppercase text-[#aa00ff]/70 mb-6">
+            <PatternScramble text="/// CACTUS_MAKES_PERFECT ///" {...CYBERPUNK_THEME} startTrigger={true} />
           </div>
-        )}
 
-        {dupes.length > 0 && (
-          <div style={s.note}>
-            {dupes.length} file{dupes.length > 1 ? 's were' : ' was'} already
-            in the archive — skipped, no need to re-upload.
-          </div>
-        )}
+          <h1 className="text-4xl md:text-5xl font-light tracking-[0.2em] italic uppercase
+            text-white leading-none mb-6">
+            The <span className="text-[#00ffff] drop-shadow-[0_0_15px_rgba(0,255,255,0.4)]">Capsule</span>
+          </h1>
 
-        {/* Existing uploads */}
-        <div style={s.countRow}>
-          <span>YOUR UPLOADS</span>
-          <span style={{ color: C.cyan }}>{mine.length}</span>
+          <p className="text-white/40 text-[9px] uppercase tracking-[0.25em] leading-relaxed max-w-sm">
+            {guestName && (
+              <span className="text-[#39FF14]/70 animate-biopulse-green">{guestName}</span>
+            )}
+            {guestName && <br />}
+            Deposit your imprints of the weekend.<br />
+            The archive persists.
+          </p>
+        </div>
+
+        {/* ── Upload console ── */}
+        <div className="bg-gradient-to-br from-white/10 to-transparent border border-white/20
+          rounded-[40px] shadow-[0_0_80px_rgba(170,0,255,0.12)] p-8 md:p-10
+          backdrop-blur-xl overflow-hidden mb-10">
+
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*,video/*"
+            multiple
+            className="hidden"
+            onChange={e => { handleFiles(e.target.files); e.currentTarget.value = ''; }}
+          />
+
+          <button
+            onClick={() => fileRef.current?.click()}
+            disabled={busy}
+            className={`w-full py-5 rounded-full text-[10px] font-bold uppercase tracking-[0.5em]
+              transition-all duration-700
+              ${busy
+                ? 'bg-white/10 text-white/30 cursor-not-allowed'
+                : 'bg-white/90 text-black hover:bg-[#aa00ff] hover:text-white hover:shadow-[0_0_30px_rgba(170,0,255,0.6)]'
+              }`}
+          >
+            {busy ? '[ TRANSMITTING... ]' : '[ SELECT_IMPRINTS ]'}
+          </button>
+
+          <p className="text-white/20 text-[8px] uppercase tracking-[0.3em] text-center mt-4 leading-relaxed">
+            Photos & video // Phone or terminal // Multi-select supported
+          </p>
+
+          {/* Queue */}
+          {active.length > 0 && (
+            <div className="mt-8 bg-white/5 rounded-2xl border border-white/5 backdrop-blur-md p-5 space-y-3">
+              <p className="text-[8px] text-[#00ffff]/40 uppercase tracking-[0.4em] mb-1">
+                // Uplink Queue [{active.length}]
+              </p>
+              {active.map(q => (
+                <div key={q.sha256} className="space-y-1.5">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-white/40 text-[9px] tracking-wider truncate flex-1">
+                      {q.file.name}
+                    </span>
+                    <span className={`text-[8px] uppercase tracking-[0.2em] shrink-0
+                      ${q.status === 'error' ? 'text-[#ff0055]' : 'text-[#00ffff]'}`}>
+                      {q.status === 'uploading'  && `${Math.round(q.progress * 100)}%`}
+                      {q.status === 'processing' && 'RENDERING'}
+                      {q.status === 'pending'    && 'QUEUED'}
+                      {q.status === 'error'      && (q.error || 'FAULT')}
+                    </span>
+                  </div>
+                  <div className="h-[2px] w-full bg-white/5 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full transition-all duration-300 rounded-full
+                        ${q.status === 'error' ? 'bg-[#ff0055]' : 'bg-[#00ffff] shadow-[0_0_8px_#00ffff]'}`}
+                      style={{ width: `${q.progress * 100}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Duplicates */}
+          {dupes.length > 0 && (
+            <div className="mt-6 bg-[#39FF14]/5 rounded-2xl border border-[#39FF14]/20 p-5 text-center">
+              <p className="text-[9px] text-[#39FF14]/80 uppercase tracking-[0.3em] animate-biopulse-green">
+                {dupes.length} DUPLICATE{dupes.length > 1 ? 'S' : ''} DETECTED
+              </p>
+              <p className="text-white/30 text-[8px] uppercase tracking-widest mt-2">
+                Already in the archive — transmission skipped.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* ── Archive grid ── */}
+        <div className="flex items-baseline justify-between mb-6 px-2">
+          <span className="text-[9px] text-[#aa00ff]/60 uppercase tracking-[0.4em]">
+            <PatternScramble text="YOUR_IMPRINTS" {...CYBERPUNK_THEME} startTrigger={true} />
+          </span>
+          <span className="text-[#00ffff] text-[10px] tracking-[0.2em] animate-biopulse-cyan">
+            {String(mine.length).padStart(3, '0')}
+          </span>
         </div>
 
         {mine.length === 0 ? (
-          <p style={{ ...s.body, opacity: 0.4, textAlign: 'center', padding: '40px 0' }}>
-            Nothing yet.
-          </p>
+          <div className="bg-white/5 rounded-2xl border border-white/5 backdrop-blur-md py-16 text-center">
+            <p className="text-white/20 text-[9px] uppercase tracking-[0.4em] italic">
+              No signal detected
+            </p>
+          </div>
         ) : (
-          <div style={s.grid}>
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2.5">
             {mine.map(m => (
-              <div key={m.id} style={s.tile} onClick={() => m.status === 'ready' && setLightbox(m)}>
+              <button
+                key={m.id}
+                onClick={() => m.status === 'ready' && setLightbox(m)}
+                className="group relative aspect-square rounded-2xl overflow-hidden
+                  bg-white/5 border border-white/10 backdrop-blur-md
+                  hover:border-[#00ffff]/50 hover:shadow-[0_0_20px_rgba(0,255,255,0.2)]
+                  transition-all duration-500"
+              >
                 {m.kind === 'video' ? (
-                  <div style={s.videoTile}>
-                    <div style={{ fontSize: 24 }}>▶</div>
-                    <div style={{ fontSize: 8, letterSpacing: 1, marginTop: 4 }}>VIDEO</div>
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-1.5 text-[#aa00ff]/60">
+                    <svg viewBox="0 0 24 24" className="w-7 h-7" fill="currentColor">
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                    <span className="text-[7px] tracking-[0.3em] uppercase opacity-50">Video</span>
                   </div>
                 ) : m.thumb_url ? (
-                  <img src={m.thumb_url} loading="lazy" style={s.tileImg} alt="" />
+                  <img
+                    src={m.thumb_url}
+                    loading="lazy"
+                    alt=""
+                    className="w-full h-full object-cover opacity-80 group-hover:opacity-100
+                      group-hover:scale-105 transition-all duration-700"
+                  />
                 ) : (
-                  <div style={s.videoTile}>
-                    <div style={{ fontSize: 9 }}>
-                      {m.status === 'processing' ? '···' : '!'}
-                    </div>
+                  <div className="w-full h-full flex items-center justify-center">
+                    <span className="text-[8px] text-[#00ffff]/40 tracking-[0.3em] uppercase animate-pulse">
+                      {m.status === 'processing' ? '···' : 'ERR'}
+                    </span>
                   </div>
                 )}
-              </div>
+              </button>
             ))}
           </div>
         )}
+
+        {/* ── Footer ── */}
+        <p className="text-center text-white/15 text-[8px] uppercase tracking-[0.35em] mt-16 leading-relaxed">
+          Bookmark this vector — it is yours alone.<br />
+          Return anytime to deposit more.
+        </p>
       </div>
 
-      {/* Lightbox */}
+      {/* ── Lightbox ── */}
       {lightbox && (
-        <div style={s.lightbox} onClick={() => setLightbox(null)}>
-          {lightbox.kind === 'video' ? (
-            <video src={lightbox.original_url || ''} controls style={s.lightboxMedia} />
-          ) : (
-            <img src={lightbox.display_url || ''} style={s.lightboxMedia} alt="" />
-          )}
-          <div style={s.lightboxClose}>TAP TO CLOSE</div>
+        <div
+          className="fixed inset-0 z-[11000] flex flex-col items-center justify-center p-4 font-mono"
+          onClick={() => setLightbox(null)}
+        >
+          <div className="absolute inset-0 bg-[#020617]/97 backdrop-blur-2xl" />
+          <div className="relative z-10 flex flex-col items-center max-w-4xl w-full">
+            {lightbox.kind === 'video' ? (
+              <video
+                src={lightbox.original_url || ''}
+                controls
+                autoPlay
+                onClick={e => e.stopPropagation()}
+                className="max-w-full max-h-[80vh] rounded-2xl border border-white/10
+                  shadow-[0_0_60px_rgba(0,255,255,0.15)]"
+              />
+            ) : (
+              <img
+                src={lightbox.display_url || ''}
+                alt=""
+                onClick={e => e.stopPropagation()}
+                className="max-w-full max-h-[80vh] object-contain rounded-2xl
+                  border border-white/10 shadow-[0_0_60px_rgba(170,0,255,0.2)]"
+              />
+            )}
+            <p className="text-white/25 text-[8px] uppercase tracking-[0.5em] mt-6">
+              [ TAP_TO_DISCONNECT ]
+            </p>
+          </div>
         </div>
       )}
+
+      <style>{`
+        @keyframes biopulse-green {
+          0%, 100% { opacity: 0.5; text-shadow: 0 0 0px rgba(57,255,20,0); }
+          50%      { opacity: 1;   text-shadow: 0 0 8px rgba(57,255,20,0.8); }
+        }
+        @keyframes biopulse-cyan {
+          0%, 100% { opacity: 0.5; text-shadow: 0 0 0px rgba(0,255,255,0); }
+          50%      { opacity: 1;   text-shadow: 0 0 8px rgba(0,255,255,0.8); }
+        }
+        .animate-biopulse-green { animation: biopulse-green 4s ease-in-out infinite; }
+        .animate-biopulse-cyan  { animation: biopulse-cyan  4s ease-in-out infinite; animation-delay: 2s; }
+      `}</style>
     </div>
   );
 }
-
-// ─── Inline styles ───────────────────────────────────────────────────────────
-
-const s: Record<string, React.CSSProperties> = {
-  page: {
-    background: C.bg, minHeight: '100vh', color: C.text,
-    fontFamily: C.mono, display: 'flex', flexDirection: 'column',
-    alignItems: 'center', padding: '32px 16px 64px',
-  },
-  inner:  { width: '100%', maxWidth: 720 },
-  card:   { border: `2px solid ${C.accent}`, padding: 36, maxWidth: 400, textAlign: 'center' },
-  kicker: { fontSize: 10, letterSpacing: 4, opacity: 0.5, textTransform: 'uppercase', marginBottom: 12 },
-  h1:     { fontSize: 24, letterSpacing: 4, margin: '0 0 16px', color: '#fff', fontWeight: 700 },
-  body:   { fontSize: 13, lineHeight: 1.7, margin: '0 0 24px' },
-  cta: {
-    width: '100%', background: C.accent, color: '#000', border: 'none',
-    padding: '18px 24px', fontFamily: C.mono, fontWeight: 700, fontSize: 13,
-    letterSpacing: 2, cursor: 'pointer', textTransform: 'uppercase',
-  },
-  queue:      { marginTop: 20, border: `1px solid ${C.accent}`, padding: 12 },
-  queueRow:   { display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 11, padding: '4px 0' },
-  queueName:  { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, opacity: 0.7 },
-  queueStatus:{ color: C.cyan, whiteSpace: 'nowrap' },
-  note: {
-    marginTop: 16, padding: 12, border: `1px dashed ${C.cyan}`,
-    fontSize: 11, lineHeight: 1.6, color: C.cyan,
-  },
-  countRow: {
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    marginTop: 40, paddingBottom: 8, borderBottom: `1px solid ${C.accent}`,
-    fontSize: 11, letterSpacing: 2,
-  },
-  grid: {
-    display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))',
-    gap: 6, marginTop: 16,
-  },
-  tile: {
-    aspectRatio: '1', background: '#0a0a0a', border: '1px solid rgba(170,0,255,0.3)',
-    overflow: 'hidden', cursor: 'pointer',
-  },
-  tileImg:   { width: '100%', height: '100%', objectFit: 'cover', display: 'block' },
-  videoTile: {
-    width: '100%', height: '100%', display: 'flex', flexDirection: 'column',
-    alignItems: 'center', justifyContent: 'center', color: C.accent,
-  },
-  lightbox: {
-    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', zIndex: 100,
-    display: 'flex', flexDirection: 'column', alignItems: 'center',
-    justifyContent: 'center', padding: 20, cursor: 'pointer',
-  },
-  lightboxMedia: { maxWidth: '100%', maxHeight: '85vh', objectFit: 'contain' },
-  lightboxClose: { marginTop: 16, fontSize: 10, letterSpacing: 3, opacity: 0.5 },
-};
