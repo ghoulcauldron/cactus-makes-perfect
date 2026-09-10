@@ -2624,6 +2624,289 @@ app.post("/api/v1/auth/artifact-relink", async (req, res) => {
   return res.json({ ok: true });
 });
 
+// =====================================================
+// PHASE 2.5 — MEDIA UPLOAD (R2)
+// =====================================================
+
+import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import sharp from "sharp";
+import exifr from "exifr";
+
+const r2 = new S3Client({
+  region: "auto",
+  endpoint: process.env.R2_ENDPOINT,
+  credentials: {
+    accessKeyId:     process.env.R2_ACCESS_KEY_ID,
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+  },
+});
+
+const R2_BUCKET      = process.env.R2_BUCKET;
+const R2_PUBLIC_BASE = process.env.R2_PUBLIC_BASE;
+
+const publicUrl = (key) => key ? `${R2_PUBLIC_BASE}/${key}` : null;
+
+// Resolve an artifact token to a guest. Returns null if invalid.
+async function guestFromArtifactToken(token) {
+  if (!token) return null;
+  const { data, error } = await supabase
+    .from("artifact_tokens")
+    .select("guest:guest_id(*)")
+    .eq("token", token)
+    .maybeSingle();
+  if (error || !data?.guest) return null;
+  return data.guest;
+}
+
+// Credit a guest for a media item (idempotent via composite PK)
+async function creditUpload(mediaId, guestId, source = "portal") {
+  await supabase
+    .from("media_uploads")
+    .upsert(
+      { media_id: mediaId, guest_id: guestId, source },
+      { onConflict: "media_id,guest_id", ignoreDuplicates: true }
+    );
+}
+
+// Shape a media row for the client
+function serializeMedia(m) {
+  return {
+    id:         m.id,
+    kind:       m.kind,
+    status:     m.status,
+    thumb_url:  publicUrl(m.key_thumb),
+    display_url:publicUrl(m.key_display),
+    original_url: publicUrl(m.key_original),
+    width:      m.width,
+    height:     m.height,
+    taken_at:   m.taken_at,
+    filename:   m.original_filename,
+    duration_s: m.duration_s,
+  };
+}
+
+// ---- 1. Dedup check ----
+app.post("/api/v1/upload/check", async (req, res) => {
+  try {
+    const { token, hashes } = req.body || {};
+    const guest = await guestFromArtifactToken(token);
+    if (!guest) return res.status(401).json({ error: "Invalid token" });
+
+    if (!Array.isArray(hashes) || hashes.length === 0) {
+      return res.json({ existing: [] });
+    }
+
+    const { data: rows } = await supabase
+      .from("media")
+      .select("*, media_uploads(guest_id)")
+      .in("sha256", hashes.slice(0, 500))
+      .is("deleted_at", null);
+
+    const existing = (rows || []).map(m => ({
+      sha256: m.sha256,
+      ...serializeMedia(m),
+      uploaded_by_me: (m.media_uploads || []).some(u => u.guest_id === guest.id),
+    }));
+
+    return res.json({ existing });
+  } catch (e) {
+    console.error("[UploadCheck] error", e);
+    return res.status(500).json({ error: "Internal error" });
+  }
+});
+
+// ---- 2. Presign ----
+app.post("/api/v1/upload/presign", async (req, res) => {
+  try {
+    const { token, sha256, filename, mime, bytes } = req.body || {};
+    const guest = await guestFromArtifactToken(token);
+    if (!guest) return res.status(401).json({ error: "Invalid token" });
+
+    if (!sha256 || !mime) {
+      return res.status(400).json({ error: "Missing sha256 or mime" });
+    }
+
+    const kind = mime.startsWith("video/") ? "video"
+               : mime.startsWith("image/") ? "image"
+               : null;
+    if (!kind) return res.status(400).json({ error: "Unsupported file type" });
+
+    // Already have this file? Just credit the guest.
+    const { data: dupe } = await supabase
+      .from("media")
+      .select("*")
+      .eq("sha256", sha256)
+      .is("deleted_at", null)
+      .maybeSingle();
+
+    if (dupe) {
+      await creditUpload(dupe.id, guest.id);
+      return res.json({ duplicate: true, media: serializeMedia(dupe) });
+    }
+
+    // New file — create the row and hand back a presigned PUT
+    const ext = (filename?.split(".").pop() || "bin").toLowerCase().slice(0, 5);
+    const mediaId = crypto.randomUUID();
+    const key = `${kind}/${mediaId}/original.${ext}`;
+
+    const { data: row, error: insErr } = await supabase
+      .from("media")
+      .insert({
+        id: mediaId,
+        kind,
+        sha256,
+        key_original: key,
+        mime,
+        bytes: bytes || null,
+        original_filename: filename || null,
+        status: "processing",
+      })
+      .select()
+      .single();
+
+    if (insErr || !row) {
+      // Race: another request inserted the same hash microseconds ago
+      const { data: raced } = await supabase
+        .from("media").select("*").eq("sha256", sha256).maybeSingle();
+      if (raced) {
+        await creditUpload(raced.id, guest.id);
+        return res.json({ duplicate: true, media: serializeMedia(raced) });
+      }
+      console.error("[UploadPresign] insert failed", insErr);
+      return res.status(500).json({ error: "Failed to create media record" });
+    }
+
+    const put_url = await getSignedUrl(
+      r2,
+      new PutObjectCommand({ Bucket: R2_BUCKET, Key: key, ContentType: mime }),
+      { expiresIn: 3600 }
+    );
+
+    await creditUpload(mediaId, guest.id);
+
+    return res.json({ duplicate: false, media_id: mediaId, key, put_url });
+  } catch (e) {
+    console.error("[UploadPresign] error", e);
+    return res.status(500).json({ error: "Internal error" });
+  }
+});
+
+// ---- 3. Complete (generate derivatives) ----
+app.post("/api/v1/upload/complete", async (req, res) => {
+  try {
+    const { token, media_id } = req.body || {};
+    const guest = await guestFromArtifactToken(token);
+    if (!guest) return res.status(401).json({ error: "Invalid token" });
+
+    const { data: m } = await supabase
+      .from("media").select("*").eq("id", media_id).maybeSingle();
+    if (!m) return res.status(404).json({ error: "Media not found" });
+
+    // Video: store original only for now, poster backfilled in v3
+    if (m.kind === "video") {
+      const { data: updated } = await supabase
+        .from("media")
+        .update({ status: "ready" })
+        .eq("id", media_id)
+        .select()
+        .single();
+      return res.json({ media: serializeMedia(updated) });
+    }
+
+    // Image: pull the original back down and derive
+    const obj = await r2.send(new GetObjectCommand({
+      Bucket: R2_BUCKET, Key: m.key_original,
+    }));
+    const buf = Buffer.from(await obj.Body.transformToByteArray());
+
+    // EXIF (kept in full on the original; GPS stripped from derivatives)
+    let exif = {};
+    try { exif = (await exifr.parse(buf, { gps: true })) || {}; } catch {}
+
+    const meta = await sharp(buf).metadata();
+
+    const thumbBuf = await sharp(buf)
+      .rotate()
+      .resize(400, 400, { fit: "inside", withoutEnlargement: true })
+      .webp({ quality: 75 })
+      .toBuffer();
+
+    const displayBuf = await sharp(buf)
+      .rotate()
+      .resize(2048, 2048, { fit: "inside", withoutEnlargement: true })
+      .webp({ quality: 82 })
+      .toBuffer();
+
+    const keyThumb   = `image/${media_id}/thumb.webp`;
+    const keyDisplay = `image/${media_id}/display.webp`;
+
+    await r2.send(new PutObjectCommand({
+      Bucket: R2_BUCKET, Key: keyThumb, Body: thumbBuf,
+      ContentType: "image/webp", CacheControl: "public, max-age=31536000, immutable",
+    }));
+    await r2.send(new PutObjectCommand({
+      Bucket: R2_BUCKET, Key: keyDisplay, Body: displayBuf,
+      ContentType: "image/webp", CacheControl: "public, max-age=31536000, immutable",
+    }));
+
+    const { data: updated } = await supabase
+      .from("media")
+      .update({
+        key_thumb:   keyThumb,
+        key_display: keyDisplay,
+        width:       meta.width  || null,
+        height:      meta.height || null,
+        bytes:       buf.length,
+        taken_at:    exif.DateTimeOriginal || exif.CreateDate || null,
+        gps_lat:     exif.latitude  ?? null,
+        gps_lng:     exif.longitude ?? null,
+        camera:      [exif.Make, exif.Model].filter(Boolean).join(" ") || null,
+        status:      "ready",
+      })
+      .eq("id", media_id)
+      .select()
+      .single();
+
+    return res.json({ media: serializeMedia(updated) });
+  } catch (e) {
+    console.error("[UploadComplete] error", e);
+    await supabase.from("media")
+      .update({ status: "failed" })
+      .eq("id", req.body?.media_id);
+    return res.status(500).json({ error: "Processing failed" });
+  }
+});
+
+// ---- 4. My uploads ----
+app.get("/api/v1/upload/mine", async (req, res) => {
+  try {
+    const guest = await guestFromArtifactToken(req.query.token);
+    if (!guest) return res.status(401).json({ error: "Invalid token" });
+
+    const { data: rows } = await supabase
+      .from("media_uploads")
+      .select("uploaded_at, media:media_id(*)")
+      .eq("guest_id", guest.id)
+      .order("uploaded_at", { ascending: false })
+      .limit(2000);
+
+    const media = (rows || [])
+      .map(r => r.media)
+      .filter(m => m && !m.deleted_at)
+      .map(serializeMedia);
+
+    return res.json({
+      guest: { first_name: guest.first_name, id: guest.id },
+      count: media.length,
+      media,
+    });
+  } catch (e) {
+    console.error("[UploadMine] error", e);
+    return res.status(500).json({ error: "Internal error" });
+  }
+});
+
 // ---- Serve built frontend from /app/dist (we'll place it there in Docker) ----
 const distDir = path.join(__dirname, "public");
 app.use(express.static(distDir));

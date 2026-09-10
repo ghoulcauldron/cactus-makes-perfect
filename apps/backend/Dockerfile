@@ -23,6 +23,8 @@ WORKDIR /app
 # Install backend deps
 COPY apps/backend/package*.json ./
 RUN npm install --omit=dev
+# Force the linux-x64 sharp binary (lockfile is built on macOS)
+RUN npm install --os=linux --cpu=x64 --libc=glibc sharp
 
 # Copy backend code
 COPY apps/backend/server.js ./server.js
