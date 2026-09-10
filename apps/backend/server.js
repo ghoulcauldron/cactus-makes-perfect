@@ -134,6 +134,50 @@ app.post("/api/v1/webhooks/mailgun", express.urlencoded({ extended: true }), upl
       }
     }]);
 
+        // ---- Auto-resend upload link on subject "upload" ----
+    const wantsUploadLink = /^\s*(re:\s*)?upload\s*$/i.test(subject || "");
+
+    if (wantsUploadLink && guest) {
+      try {
+        const { data: g } = await supabase
+          .from("guests").select("*").eq("id", guest.id).single();
+
+        if (g && g.phase === 2) {
+          const { data: tokenRow } = await supabase
+            .from("artifact_tokens")
+            .select("*")
+            .eq("guest_id", g.id)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (tokenRow) {
+            const uploadUrl =
+              `${PUBLIC_URL}/upload?token=${encodeURIComponent(tokenRow.token)}`;
+            const { html, text } = renderUploadEmail({ guest: g, uploadUrl });
+
+            await sendEmail({
+              to: g.email,
+              subject: "🌵 YOUR UPLOAD PORTAL",
+              html,
+              text,
+            });
+
+            await supabase.from("user_activity").insert([{
+              guest_id: g.id,
+              kind: "upload_link_resent",
+              meta: { trigger: "inbound_email", from: fromEmail },
+            }]);
+
+            console.log(`[Mailgun Webhook] Auto-resent upload link to ${g.email}`);
+          }
+        }
+      } catch (e) {
+        console.error("[Mailgun Webhook] Auto-resend failed", e);
+        // Never fail the webhook over this
+      }
+    }
+
     return res.json({ ok: true });
   } catch (e) {
     console.error("[Mailgun Webhook Error]:", e);
@@ -2413,6 +2457,122 @@ BIG LOVE, S&G
   return { html, text };
 }
 
+function renderUploadEmail({ guest, uploadUrl }) {
+  const firstName = guest.first_name ? guest.first_name.toUpperCase() : "AGENT";
+
+  const html = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <style>
+    body { margin:0; padding:0; background-color:#000000 !important; }
+    .force-black { background-color:#000000 !important; background-image:linear-gradient(#000000,#000000) !important; }
+    .force-card  { background-color:#0a0a0a !important; background-image:linear-gradient(#0a0a0a,#0a0a0a) !important; }
+  </style>
+</head>
+<body class="force-black" style="margin:0;padding:0;background-color:#000000;font-family:'Courier New',Courier,monospace;color:#aa00ff;">
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" class="force-black"
+    style="background-color:#000000;" role="presentation">
+    <tr><td align="center" style="padding:40px 20px;">
+
+      <table width="600" border="0" cellpadding="0" cellspacing="0" class="force-card"
+        bgcolor="#0a0a0a" role="presentation"
+        style="max-width:600px;width:100%;background-color:#0a0a0a;border:2px solid #aa00ff;text-align:left;">
+
+        <tr>
+          <td bgcolor="#aa00ff" style="background-color:#aa00ff;color:#000000;padding:10px 20px;
+            font-weight:bold;text-transform:uppercase;font-size:14px;letter-spacing:2px;
+            font-family:'Courier New',Courier,monospace;">
+            /// THE TIME CAPSULE ///
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:30px;font-size:14px;line-height:1.7;color:#aa00ff;
+            font-family:'Courier New',Courier,monospace;">
+
+            <p style="margin:0 0 16px 0;color:#ffffff;font-weight:bold;">${firstName},</p>
+
+            <p style="margin:0 0 16px 0;">
+              The weekend happened. You were there. You have the receipts on your phone.
+            </p>
+
+            <p style="margin:0 0 16px 0;">
+              We're building the archive — every photo, every video, all of it in one place
+              that stays up forever. Your link below opens a portal where you can add yours.
+            </p>
+
+            <p style="margin:0 0 24px 0;font-size:12px;opacity:0.7;">
+              Works from your phone or computer. Select as many as you want at once.
+              If something's already in the archive, it'll tell you and skip it.
+            </p>
+
+            <table width="100%" border="0" cellpadding="0" cellspacing="0"
+              role="presentation" style="margin-bottom:28px;">
+              <tr>
+                <td align="center">
+                  <a href="${uploadUrl}"
+                    style="background-color:#aa00ff;color:#000000;text-decoration:none;
+                    padding:14px 32px;font-weight:bold;text-transform:uppercase;font-size:13px;
+                    border:1px solid #aa00ff;display:inline-block;
+                    font-family:'Courier New',Courier,monospace;letter-spacing:2px;">
+                    OPEN YOUR PORTAL
+                  </a>
+                </td>
+              </tr>
+            </table>
+
+            <p style="margin:0 0 16px 0;font-size:11px;color:#ffffff;opacity:0.5;line-height:1.6;">
+              This link is yours alone — it's how we know which photos are from you.
+              Bookmark it and you can come back and add more anytime.
+            </p>
+
+            <p style="margin:0;">BIG LOVE,<br/>S&amp;G</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="border-top:1px solid #aa00ff;padding:10px 20px;font-size:10px;
+            text-transform:uppercase;color:#aa00ff;opacity:0.5;
+            font-family:'Courier New',Courier,monospace;">
+            LOST THIS EMAIL? WRITE TO EYESONLY@CACTUSMAKESPERFECT.ORG<br/>
+            WITH SUBJECT "UPLOAD" AND WE'LL SEND IT AGAIN.
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+  const text = `THE TIME CAPSULE
+
+${firstName},
+
+The weekend happened. You were there. You have the receipts on your phone.
+
+We're building the archive — every photo, every video, all of it in one place
+that stays up forever. Your link below opens a portal where you can add yours.
+
+Works from your phone or computer. Select as many as you want at once.
+
+YOUR PORTAL: ${uploadUrl}
+
+This link is yours alone — it's how we know which photos are from you.
+Bookmark it and come back anytime.
+
+Lost this email? Write to eyesonly@cactusmakesperfect.org with subject
+"upload" and we'll send it again.
+
+BIG LOVE, S&G`;
+
+  return { html, text };
+}
+
 // ---- Admin: Send Phase 2 Artifact Invite ----
 app.post("/api/v1/admin/artifact-invites/send", async (req, res) => {
   try {
@@ -2496,6 +2656,71 @@ app.post("/api/v1/admin/artifact-invites/send", async (req, res) => {
 
   } catch (e) {
     console.error("[ArtifactInviteSend] error", e);
+    return res.status(500).json({ error: "Internal error" });
+  }
+});
+
+// ---- Admin: Send upload portal link ----
+app.post("/api/v1/admin/upload-invites/send", async (req, res) => {
+  try {
+    const { guest_id } = req.body || {};
+    if (!guest_id) return res.status(400).json({ error: "Missing guest_id" });
+
+    const { data: guest, error: gErr } = await supabase
+      .from("guests").select("*").eq("id", guest_id).single();
+
+    if (gErr || !guest) return res.status(404).json({ error: "Guest not found" });
+    if (guest.phase !== 2) return res.status(403).json({ error: "Guest is not Phase 2" });
+
+    // Reuse or mint the permanent token
+    let tokenRow;
+    const { data: existing } = await supabase
+      .from("artifact_tokens")
+      .select("*")
+      .eq("guest_id", guest_id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existing) {
+      tokenRow = existing;
+    } else {
+      const token = crypto.randomUUID();
+      const combination = [
+        Math.floor(Math.random() * 12),
+        Math.floor(Math.random() * 12),
+        Math.floor(Math.random() * 12),
+      ];
+      const { data: newRow, error: insErr } = await supabase
+        .from("artifact_tokens")
+        .insert({ guest_id, token, combination, delivery_status: "pending" })
+        .select()
+        .single();
+      if (insErr || !newRow) {
+        return res.status(500).json({ error: "Failed to create token" });
+      }
+      tokenRow = newRow;
+    }
+
+    const uploadUrl = `${PUBLIC_URL}/upload?token=${encodeURIComponent(tokenRow.token)}`;
+    const { html, text } = renderUploadEmail({ guest, uploadUrl });
+
+    await sendEmail({
+      to: guest.email,
+      subject: "🌵 THE TIME CAPSULE — ADD YOUR PHOTOS",
+      html,
+      text,
+    });
+
+    await supabase.from("user_activity").insert([{
+      guest_id: guest.id,
+      kind: "upload_invite_sent",
+      meta: { email: guest.email },
+    }]);
+
+    return res.json({ ok: true, upload_url: uploadUrl });
+  } catch (e) {
+    console.error("[UploadInviteSend] error", e);
     return res.status(500).json({ error: "Internal error" });
   }
 });
