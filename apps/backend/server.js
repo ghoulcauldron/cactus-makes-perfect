@@ -2458,7 +2458,7 @@ BIG LOVE, S&G
 }
 
 function renderUploadEmail({ guest, uploadUrl }) {
-  const firstName = guest.first_name ? guest.first_name.toUpperCase() : "AGENT";
+  const firstName = guest.first_name ? guest.first_name.toUpperCase() : "TRAVELER";
 
   const html = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -2467,108 +2467,211 @@ function renderUploadEmail({ guest, uploadUrl }) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
   <style>
-    body { margin:0; padding:0; background-color:#000000 !important; }
-    .force-black { background-color:#000000 !important; background-image:linear-gradient(#000000,#000000) !important; }
-    .force-card  { background-color:#0a0a0a !important; background-image:linear-gradient(#0a0a0a,#0a0a0a) !important; }
+    :root { color-scheme: light dark; supported-color-schemes: light dark; }
+    body { margin:0; padding:0; width:100% !important; -webkit-text-size-adjust:100%;
+           background-color:#020617 !important; }
+    .force-void { background-color:#020617 !important;
+                  background-image:linear-gradient(#020617,#020617) !important; }
+    .force-panel { background-color:#0a1020 !important;
+                   background-image:linear-gradient(#0a1020,#0a1020) !important; }
+    .force-inset { background-color:#070d1a !important;
+                   background-image:linear-gradient(#070d1a,#070d1a) !important; }
+    a { text-decoration:none; }
   </style>
 </head>
-<body class="force-black" style="margin:0;padding:0;background-color:#000000;font-family:'Courier New',Courier,monospace;color:#aa00ff;">
-  <table width="100%" border="0" cellpadding="0" cellspacing="0" class="force-black"
-    style="background-color:#000000;" role="presentation">
-    <tr><td align="center" style="padding:40px 20px;">
+<body class="force-void" style="margin:0;padding:0;background-color:#020617;
+  background-image:linear-gradient(#020617,#020617);
+  font-family:'Courier New',Courier,monospace;color:#ffffff;">
 
-      <table width="600" border="0" cellpadding="0" cellspacing="0" class="force-card"
-        bgcolor="#0a0a0a" role="presentation"
-        style="max-width:600px;width:100%;background-color:#0a0a0a;border:2px solid #aa00ff;text-align:left;">
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation"
+    class="force-void" style="background-color:#020617;
+    background-image:linear-gradient(#020617,#020617);width:100%;">
+    <tr><td align="center" style="padding:48px 16px;">
 
+      <!-- PANEL -->
+      <table width="560" border="0" cellpadding="0" cellspacing="0" role="presentation"
+        bgcolor="#0a1020" class="force-panel"
+        style="max-width:560px;width:100%;background-color:#0a1020;
+        background-image:linear-gradient(#0a1020,#0a1020);
+        border:1px solid rgba(255,255,255,0.18);border-radius:32px;">
+
+        <!-- HEADER -->
         <tr>
-          <td bgcolor="#aa00ff" style="background-color:#aa00ff;color:#000000;padding:10px 20px;
-            font-weight:bold;text-transform:uppercase;font-size:14px;letter-spacing:2px;
-            font-family:'Courier New',Courier,monospace;">
-            /// THE TIME CAPSULE ///
+          <td align="center" style="padding:40px 32px 0 32px;">
+            <div style="font-size:9px;letter-spacing:6px;text-transform:uppercase;
+              color:#aa00ff;font-family:'Courier New',Courier,monospace;">
+              /// CACTUS_MAKES_PERFECT ///
+            </div>
           </td>
         </tr>
 
+        <!-- TITLE -->
         <tr>
-          <td style="padding:30px;font-size:14px;line-height:1.7;color:#aa00ff;
-            font-family:'Courier New',Courier,monospace;">
+          <td align="center" style="padding:28px 32px 0 32px;">
+            <div style="font-size:34px;letter-spacing:6px;text-transform:uppercase;
+              color:#ffffff;font-family:'Courier New',Courier,monospace;
+              font-style:italic;font-weight:300;line-height:1.1;">
+              THE <span style="color:#00ffff;">CAPSULE</span>
+            </div>
+          </td>
+        </tr>
 
-            <p style="margin:0 0 16px 0;color:#ffffff;font-weight:bold;">${firstName},</p>
+        <!-- GREETING -->
+        <tr>
+          <td align="center" style="padding:24px 32px 0 32px;">
+            <div style="font-size:10px;letter-spacing:4px;text-transform:uppercase;
+              color:#39FF14;font-family:'Courier New',Courier,monospace;">
+              ${firstName}
+            </div>
+          </td>
+        </tr>
 
-            <p style="margin:0 0 16px 0;">
-              The weekend happened. You were there. You have the receipts on your phone.
-            </p>
-
-            <p style="margin:0 0 16px 0;">
-              We're building the archive — every photo, every video, all of it in one place
-              that stays up forever. Your link below opens a portal where you can add yours.
-            </p>
-
-            <p style="margin:0 0 24px 0;font-size:12px;opacity:0.7;">
-              Works from your phone or computer. Select as many as you want at once.
-              If something's already in the archive, it'll tell you and skip it.
-            </p>
-
-            <table width="100%" border="0" cellpadding="0" cellspacing="0"
-              role="presentation" style="margin-bottom:28px;">
+        <!-- BODY -->
+        <tr>
+          <td style="padding:28px 40px 0 40px;">
+            <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation"
+              bgcolor="#070d1a" class="force-inset"
+              style="background-color:#070d1a;background-image:linear-gradient(#070d1a,#070d1a);
+              border:1px solid rgba(255,255,255,0.08);border-radius:16px;">
               <tr>
-                <td align="center">
+                <td style="padding:26px 24px;text-align:center;">
+                  <div style="font-size:10px;line-height:2;letter-spacing:2px;
+                    text-transform:uppercase;color:rgba(255,255,255,0.55);
+                    font-family:'Courier New',Courier,monospace;">
+                    The weekend happened.<br/>
+                    You were there.<br/>
+                    Your device remembers.
+                  </div>
+
+                  <div style="height:20px;line-height:20px;font-size:0;">&nbsp;</div>
+
+                  <div style="font-size:9px;line-height:2;letter-spacing:2px;
+                    text-transform:uppercase;color:rgba(255,255,255,0.35);
+                    font-family:'Courier New',Courier,monospace;">
+                    We are assembling the archive —<br/>
+                    every imprint, one vector, permanent.
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- CTA -->
+        <tr>
+          <td align="center" style="padding:32px 40px 0 40px;">
+            <table border="0" cellpadding="0" cellspacing="0" role="presentation">
+              <tr>
+                <td align="center" bgcolor="#ffffff"
+                  style="background-color:#ffffff;border-radius:999px;">
                   <a href="${uploadUrl}"
-                    style="background-color:#aa00ff;color:#000000;text-decoration:none;
-                    padding:14px 32px;font-weight:bold;text-transform:uppercase;font-size:13px;
-                    border:1px solid #aa00ff;display:inline-block;
-                    font-family:'Courier New',Courier,monospace;letter-spacing:2px;">
-                    OPEN YOUR PORTAL
+                    style="display:inline-block;padding:16px 40px;color:#000000;
+                    font-size:10px;font-weight:bold;letter-spacing:5px;
+                    text-transform:uppercase;font-family:'Courier New',Courier,monospace;
+                    border-radius:999px;">
+                    [ OPEN_YOUR_PORTAL ]
                   </a>
                 </td>
               </tr>
             </table>
-
-            <p style="margin:0 0 16px 0;font-size:11px;color:#ffffff;opacity:0.5;line-height:1.6;">
-              This link is yours alone — it's how we know which photos are from you.
-              Bookmark it and you can come back and add more anytime.
-            </p>
-
-            <p style="margin:0;">BIG LOVE,<br/>S&amp;G</p>
           </td>
         </tr>
 
+        <!-- SPECS -->
         <tr>
-          <td style="border-top:1px solid #aa00ff;padding:10px 20px;font-size:10px;
-            text-transform:uppercase;color:#aa00ff;opacity:0.5;
-            font-family:'Courier New',Courier,monospace;">
-            LOST THIS EMAIL? WRITE TO EYESONLY@CACTUSMAKESPERFECT.ORG<br/>
-            WITH SUBJECT "UPLOAD" AND WE'LL SEND IT AGAIN.
+          <td align="center" style="padding:20px 40px 0 40px;">
+            <div style="font-size:8px;letter-spacing:3px;text-transform:uppercase;
+              color:rgba(255,255,255,0.2);font-family:'Courier New',Courier,monospace;
+              line-height:1.9;">
+              Photos &amp; video // Phone or terminal<br/>
+              Multi-select supported // Duplicates auto-detected
+            </div>
+          </td>
+        </tr>
+
+        <!-- DIVIDER -->
+        <tr>
+          <td style="padding:32px 40px 0 40px;">
+            <div style="height:1px;background-color:rgba(255,255,255,0.1);
+              font-size:0;line-height:1px;">&nbsp;</div>
+          </td>
+        </tr>
+
+        <!-- NOTE -->
+        <tr>
+          <td align="center" style="padding:24px 40px 0 40px;">
+            <div style="font-size:8px;letter-spacing:3px;text-transform:uppercase;
+              color:rgba(255,255,255,0.3);font-family:'Courier New',Courier,monospace;
+              line-height:2;">
+              This vector is yours alone.<br/>
+              It is how the archive knows your imprints.<br/>
+              Bookmark it — return anytime.
+            </div>
+          </td>
+        </tr>
+
+        <!-- SIGNOFF -->
+        <tr>
+          <td align="center" style="padding:28px 40px 40px 40px;">
+            <div style="font-size:9px;letter-spacing:4px;text-transform:uppercase;
+              color:#aa00ff;font-family:'Courier New',Courier,monospace;">
+              BIG LOVE<br/>
+              <span style="color:#00ffff;">S &amp; G</span>
+            </div>
           </td>
         </tr>
 
       </table>
+
+      <!-- FOOTER -->
+      <table width="560" border="0" cellpadding="0" cellspacing="0" role="presentation"
+        style="max-width:560px;width:100%;">
+        <tr>
+          <td align="center" style="padding:24px 20px 0 20px;">
+            <div style="font-size:7px;letter-spacing:3px;text-transform:uppercase;
+              color:rgba(255,255,255,0.18);font-family:'Courier New',Courier,monospace;
+              line-height:2;">
+              Signal lost? Transmit to
+              <span style="color:rgba(0,255,255,0.4);">EYESONLY@CACTUSMAKESPERFECT.ORG</span><br/>
+              Subject: <span style="color:rgba(0,255,255,0.4);">UPLOAD</span>
+              // Vector redispatched automatically
+            </div>
+          </td>
+        </tr>
+      </table>
+
     </td></tr>
   </table>
 </body>
 </html>`;
 
-  const text = `THE TIME CAPSULE
+  const text = `/// CACTUS_MAKES_PERFECT ///
+
+THE CAPSULE
 
 ${firstName},
 
-The weekend happened. You were there. You have the receipts on your phone.
+The weekend happened. You were there. Your device remembers.
 
-We're building the archive — every photo, every video, all of it in one place
-that stays up forever. Your link below opens a portal where you can add yours.
+We are assembling the archive — every imprint, one vector, permanent.
 
-Works from your phone or computer. Select as many as you want at once.
+OPEN YOUR PORTAL:
+${uploadUrl}
 
-YOUR PORTAL: ${uploadUrl}
+Photos & video. Phone or terminal. Multi-select supported.
+Duplicates are detected automatically.
 
-This link is yours alone — it's how we know which photos are from you.
-Bookmark it and come back anytime.
+This vector is yours alone. It is how the archive knows your
+imprints. Bookmark it — return anytime.
 
-Lost this email? Write to eyesonly@cactusmakesperfect.org with subject
-"upload" and we'll send it again.
+BIG LOVE
+S & G
 
-BIG LOVE, S&G`;
+---
+Signal lost? Transmit to eyesonly@cactusmakesperfect.org
+with subject "upload" and your vector is redispatched automatically.`;
 
   return { html, text };
 }
