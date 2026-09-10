@@ -6,6 +6,7 @@ import './index.css'
 import './fonts.css'
 import AmbientSound from './components/AmbientSound'
 import TheArtifact from './TheArtifact'
+import UploadPortal from './UploadPortal'
 
 const router = createBrowserRouter([
   {
@@ -15,6 +16,11 @@ const router = createBrowserRouter([
       if (localStorage.getItem('artifact_token')) return redirect('/artifact');
       return redirect('/artifact');
     },
+  },
+  {
+    // Upload portal
+    path: '/upload',
+    element: <UploadPortal />,
   },
   {
     // Primary Phase 2 entry point
