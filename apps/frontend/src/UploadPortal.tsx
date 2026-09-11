@@ -316,10 +316,28 @@ function Lightbox({
       {/* Media */}
       <div className="relative z-10 h-full flex flex-col items-center justify-center p-4 pointer-events-none">
         <div className="pointer-events-auto max-w-4xl w-full flex flex-col items-center">
-          {m.kind === 'video' ? (
-            <video key={m.id} src={m.original_url || ''} controls autoPlay
-              className="max-w-full max-h-[70vh] rounded-2xl border border-white/10
-                shadow-[0_0_60px_rgba(0,255,255,0.15)]" />
+                    {m.kind === 'video' ? (
+            <div
+              className="flex items-center justify-center"
+              style={
+                (m.rotation === 90 || m.rotation === 270)
+                  ? { width: '70vh', height: 'auto', maxWidth: '100%' }
+                  : undefined
+              }
+            >
+              <video
+                key={m.id}
+                src={m.original_url || ''}
+                controls
+                autoPlay
+                style={{
+                  transform: `rotate(${m.rotation || 0}deg)`,
+                  transformOrigin: 'center center',
+                }}
+                className="max-w-full max-h-[70vh] rounded-2xl border border-white/10
+                  shadow-[0_0_60px_rgba(0,255,255,0.15)] transition-transform duration-500"
+              />
+            </div>
           ) : (
             <img key={m.id + (m.rotation ?? 0)} src={m.display_url || ''} alt=""
               className="max-w-full max-h-[70vh] object-contain rounded-2xl
@@ -329,16 +347,16 @@ function Lightbox({
           {/* Controls */}
           <div className="flex items-center gap-3 mt-7">
             {m.kind === 'image' && (
-              <button onClick={() => onRotate(m)} disabled={busy}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-full text-[8px]
-                  uppercase tracking-[0.3em] bg-white/5 border border-white/15 backdrop-blur-md
-                  text-white/50 hover:text-[#00ffff] hover:border-[#00ffff]/50
-                  disabled:opacity-30 transition-all duration-500">
-                <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M21 2v6h-6M21 13a9 9 0 11-3-7.7L21 8" />
-                </svg>
-                Rotate
-              </button>
+            <button onClick={() => onRotate(m)} disabled={busy}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-full text-[8px]
+                uppercase tracking-[0.3em] bg-white/5 border border-white/15 backdrop-blur-md
+                text-white/50 hover:text-[#00ffff] hover:border-[#00ffff]/50
+                disabled:opacity-30 transition-all duration-500">
+              <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 2v6h-6M21 13a9 9 0 11-3-7.7L21 8" />
+              </svg>
+              Rotate
+            </button>
             )}
 
             {confirmDelete ? (

@@ -3282,12 +3282,42 @@ app.post("/api/v1/upload/rotate", async (req, res) => {
 
     const { data: m } = await supabase
       .from("media").select("*").eq("id", media_id).maybeSingle();
-    if (!m || m.kind !== "image") {
-      return res.status(400).json({ error: "Rotation only supported for images" });
-    }
+    if (!m) return res.status(404).json({ error: "Media not found" });
 
     const turn = ((m.rotation + (degrees || 90)) % 360 + 360) % 360;
 
+    // ---- VIDEO: metadata only, rendered via CSS ----
+    if (m.kind === "video") {
+      // Rotate the poster too, so grid and player agree
+      if (m.key_thumb) {
+        try {
+          const obj = await r2.send(new GetObjectCommand({
+            Bucket: R2_BUCKET, Key: m.key_thumb,
+          }));
+          const buf = Buffer.from(await obj.Body.transformToByteArray());
+          const rotated = await sharp(buf).rotate(turn).jpeg({ quality: 82 }).toBuffer();
+
+          await r2.send(new PutObjectCommand({
+            Bucket: R2_BUCKET, Key: m.key_thumb, Body: rotated,
+            ContentType: "image/jpeg",
+            CacheControl: "public, max-age=31536000, immutable",
+          }));
+        } catch (e) {
+          console.warn("[UploadRotate] poster rotation skipped", e.message);
+        }
+      }
+
+      const { data: updated } = await supabase
+        .from("media")
+        .update({ rotation: turn, updated_at: new Date().toISOString() })
+        .eq("id", media_id)
+        .select()
+        .single();
+
+      return res.json({ media: serializeMedia(updated) });
+    }
+
+    // ---- IMAGE: regenerate derivatives (existing behavior) ----
     const obj = await r2.send(new GetObjectCommand({
       Bucket: R2_BUCKET, Key: m.key_original,
     }));
