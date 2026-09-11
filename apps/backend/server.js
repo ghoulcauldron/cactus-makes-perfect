@@ -3331,6 +3331,63 @@ app.post("/api/v1/upload/rotate", async (req, res) => {
   }
 });
 
+// ---- Poster upload for a guest's video ----
+app.post("/api/v1/upload/poster", async (req, res) => {
+  try {
+    const { token, media_id } = req.body || {};
+    const guest = await guestFromArtifactToken(token);
+    if (!guest) return res.status(401).json({ error: "Invalid token" });
+
+    const { data: credit } = await supabase
+      .from("media_uploads")
+      .select("media_id")
+      .eq("media_id", media_id)
+      .eq("guest_id", guest.id)
+      .maybeSingle();
+    if (!credit) return res.status(403).json({ error: "Not your upload" });
+
+    const key = `video/${media_id}/poster.jpg`;
+    const put_url = await getSignedUrl(
+      r2,
+      new PutObjectCommand({ Bucket: R2_BUCKET, Key: key, ContentType: "image/jpeg" }),
+      { expiresIn: 3600 }
+    );
+
+    return res.json({ key, put_url });
+  } catch (e) {
+    console.error("[UploadPoster] error", e);
+    return res.status(500).json({ error: "Internal error" });
+  }
+});
+
+// ---- Confirm poster + video metadata ----
+app.post("/api/v1/upload/poster-complete", async (req, res) => {
+  try {
+    const { token, media_id, key, width, height, duration_s } = req.body || {};
+    const guest = await guestFromArtifactToken(token);
+    if (!guest) return res.status(401).json({ error: "Invalid token" });
+
+    const { data: updated, error } = await supabase
+      .from("media")
+      .update({
+        key_thumb:  key,
+        width:      width      || null,
+        height:     height     || null,
+        duration_s: duration_s || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", media_id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return res.json({ media: serializeMedia(updated) });
+  } catch (e) {
+    console.error("[UploadPosterComplete] error", e);
+    return res.status(500).json({ error: "Internal error" });
+  }
+});
+
 // ---- Admin: gallery bounded per guest ----
 app.get("/api/v1/admin/media", async (req, res) => {
   try {

@@ -37,6 +37,82 @@ async function sha256Hex(file: File): Promise<string> {
     .join('');
 }
 
+type VideoPoster = {
+  blob: Blob;
+  width: number;
+  height: number;
+  duration: number;
+};
+
+// Extract a poster frame from a video file using canvas.
+// Resolves null if the browser can't decode the format.
+function extractVideoPoster(file: File): Promise<VideoPoster | null> {
+  return new Promise(resolve => {
+    const url   = URL.createObjectURL(file);
+    const video = document.createElement('video');
+    let settled = false;
+
+    const finish = (result: VideoPoster | null) => {
+      if (settled) return;
+      settled = true;
+      URL.revokeObjectURL(url);
+      video.remove();
+      resolve(result);
+    };
+
+    // Don't hang the queue on a codec the browser won't touch
+    const timeout = setTimeout(() => finish(null), 15000);
+
+    video.preload      = 'metadata';
+    video.muted        = true;
+    video.playsInline  = true;
+    video.crossOrigin  = 'anonymous';
+
+    video.onloadedmetadata = () => {
+      // Very short clips: grab frame 0
+      video.currentTime = video.duration < 1.5 ? 0 : 1;
+    };
+
+    video.onseeked = () => {
+      try {
+        const vw = video.videoWidth;
+        const vh = video.videoHeight;
+        if (!vw || !vh) { clearTimeout(timeout); return finish(null); }
+
+        // Fit inside 400x400, preserving aspect
+        const scale = Math.min(400 / vw, 400 / vh, 1);
+        const canvas = document.createElement('canvas');
+        canvas.width  = Math.round(vw * scale);
+        canvas.height = Math.round(vh * scale);
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { clearTimeout(timeout); return finish(null); }
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        canvas.toBlob(
+          blob => {
+            clearTimeout(timeout);
+            finish(blob ? {
+              blob,
+              width: vw,
+              height: vh,
+              duration: video.duration || 0,
+            } : null);
+          },
+          'image/jpeg',
+          0.82
+        );
+      } catch {
+        clearTimeout(timeout);
+        finish(null);
+      }
+    };
+
+    video.onerror = () => { clearTimeout(timeout); finish(null); };
+    video.src = url;
+  });
+}
+
 const isHeic = (f: File) =>
   /image\/hei[cf]/i.test(f.type) || /\.hei[cf]$/i.test(f.name);
 
@@ -393,10 +469,48 @@ export default function UploadPortal() {
         await uploadWithProgress(pres.put_url, item.file, p => mark({ progress: p }));
         mark({ status: 'processing', progress: 1 });
 
-        await fetch('/api/v1/upload/complete', {
+                await fetch('/api/v1/upload/complete', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token, media_id: pres.media_id }),
         });
+
+        // Videos: generate and upload a poster frame client-side
+        if (item.file.type.startsWith('video/')) {
+          try {
+            mark({ status: 'processing' });
+            const poster = await extractVideoPoster(item.file);
+
+            if (poster) {
+              const pp = await fetch('/api/v1/upload/poster', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token, media_id: pres.media_id }),
+              }).then(r => r.json());
+
+              if (pp.put_url) {
+                await fetch(pp.put_url, {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'image/jpeg' },
+                  body: poster.blob,
+                });
+
+                await fetch('/api/v1/upload/poster-complete', {
+                  method: 'POST', headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    token,
+                    media_id:   pres.media_id,
+                    key:        pp.key,
+                    width:      poster.width,
+                    height:     poster.height,
+                    duration_s: poster.duration,
+                  }),
+                });
+              }
+            }
+          } catch {
+            // Poster is a nicety — never fail the upload over it
+          }
+        }
+
         mark({ status: 'done' });
       } catch (e: any) {
         mark({ status: 'error', error: e?.message || 'FAILED' });
