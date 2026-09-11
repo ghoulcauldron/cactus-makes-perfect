@@ -3368,6 +3368,80 @@ app.get("/api/v1/admin/media", async (req, res) => {
   }
 });
 
+// ---- Admin: presign a poster upload for an existing video ----
+app.post("/api/v1/admin/media/poster-presign", async (req, res) => {
+  try {
+    const { media_id } = req.body || {};
+    const { data: m } = await supabase
+      .from("media").select("*").eq("id", media_id).maybeSingle();
+
+    if (!m) return res.status(404).json({ error: "Media not found" });
+    if (m.kind !== "video") return res.status(400).json({ error: "Not a video" });
+
+    const key = `video/${media_id}/poster.jpg`;
+    const put_url = await getSignedUrl(
+      r2,
+      new PutObjectCommand({ Bucket: R2_BUCKET, Key: key, ContentType: "image/jpeg" }),
+      { expiresIn: 3600 }
+    );
+
+    return res.json({ key, put_url, original_url: publicUrl(m.key_original) });
+  } catch (e) {
+    console.error("[PosterPresign] error", e);
+    return res.status(500).json({ error: "Internal error" });
+  }
+});
+
+// ---- Admin: confirm poster + write video metadata ----
+app.post("/api/v1/admin/media/poster-complete", async (req, res) => {
+  try {
+    const { media_id, key, width, height, duration_s } = req.body || {};
+
+    const { data: updated, error } = await supabase
+      .from("media")
+      .update({
+        key_thumb:  key,
+        width:      width      || null,
+        height:     height     || null,
+        duration_s: duration_s || null,
+        status:     "ready",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", media_id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return res.json({ media: serializeMedia(updated) });
+  } catch (e) {
+    console.error("[PosterComplete] error", e);
+    return res.status(500).json({ error: "Internal error" });
+  }
+});
+
+// ---- Admin: list videos still missing a poster ----
+app.get("/api/v1/admin/media/pending-posters", async (req, res) => {
+  try {
+    const { data: rows } = await supabase
+      .from("media")
+      .select("id, original_filename, key_original, bytes")
+      .eq("kind", "video")
+      .is("key_thumb", null)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: true });
+
+    return res.json({
+      pending: (rows || []).map(r => ({
+        ...r,
+        original_url: publicUrl(r.key_original),
+      })),
+    });
+  } catch (e) {
+    console.error("[PendingPosters] error", e);
+    return res.status(500).json({ error: "Internal error" });
+  }
+});
+
 // ---- Serve built frontend from /app/dist (we'll place it there in Docker) ----
 const distDir = path.join(__dirname, "public");
 app.use(express.static(distDir));

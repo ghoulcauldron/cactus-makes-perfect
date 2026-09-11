@@ -355,22 +355,43 @@ export default function MediaGallery() {
             </div>
           ) : (
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
-              {filtered.map((m, i) => (
+                            {filtered.map((m, i) => (
                 <button key={`${m.id}-${m.guest_id}`} onClick={() => setLbIndex(i)}
                   className="group relative aspect-square bg-neutral-900 border border-[#45CC2D]/15
                     hover:border-[#45CC2D]/60 overflow-hidden transition-all">
-                  {m.kind === "video" ? (
+
+                  {m.thumb_url ? (
+                    <img src={m.thumb_url} loading="lazy" alt=""
+                      className="w-full h-full object-cover opacity-75 group-hover:opacity-100 transition-opacity" />
+                  ) : m.kind === "video" ? (
                     <div className="w-full h-full flex flex-col items-center justify-center gap-1 text-[#45CC2D]/40">
                       <VideoCameraIcon className="h-6 w-6" />
                       <span className="text-[7px] tracking-widest">VID</span>
                     </div>
-                  ) : m.thumb_url ? (
-                    <img src={m.thumb_url} loading="lazy" alt=""
-                      className="w-full h-full object-cover opacity-75 group-hover:opacity-100 transition-opacity" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-[#45CC2D]/20">
                       <PhotoIcon className="h-5 w-5" />
                     </div>
+                  )}
+
+                  {/* Play badge */}
+                  {m.kind === "video" && m.thumb_url && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <div className="w-7 h-7 rounded-full bg-black/50 border border-[#45CC2D]/50
+                        flex items-center justify-center group-hover:border-[#45CC2D] transition-all">
+                        <svg viewBox="0 0 24 24" className="w-3 h-3 text-[#45CC2D] ml-0.5" fill="currentColor">
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Duration */}
+                  {m.kind === "video" && m.duration_s && (
+                    <span className="absolute bottom-0.5 right-0.5 px-1 bg-black/80
+                      text-[6px] tracking-wider text-[#45CC2D]/70 pointer-events-none">
+                      {Math.floor(m.duration_s / 60)}:{String(Math.floor(m.duration_s % 60)).padStart(2, "0")}
+                    </span>
                   )}
 
                   {/* Attribution overlay — only in ALL view */}

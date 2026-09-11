@@ -549,28 +549,53 @@ export default function UploadPortal() {
           </div>
         ) : (
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2.5">
-            {mine.map((m, i) => (
+                        {mine.map((m, i) => (
               <button key={m.id}
                 onClick={() => m.status === 'ready' && setLbIndex(i)}
                 className="group relative aspect-square rounded-2xl overflow-hidden
                   bg-white/5 border border-white/10 backdrop-blur-md
                   hover:border-[#00ffff]/50 hover:shadow-[0_0_20px_rgba(0,255,255,0.2)]
                   transition-all duration-500">
-                {m.kind === 'video' ? (
+
+                {m.thumb_url ? (
+                  <img src={m.thumb_url} loading="lazy" alt=""
+                    className="w-full h-full object-cover opacity-80 group-hover:opacity-100
+                      group-hover:scale-105 transition-all duration-700" />
+                ) : m.kind === 'video' ? (
                   <div className="w-full h-full flex flex-col items-center justify-center gap-1.5 text-[#aa00ff]/60">
                     <svg viewBox="0 0 24 24" className="w-7 h-7" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
                     <span className="text-[7px] tracking-[0.3em] uppercase opacity-50">Video</span>
                   </div>
-                ) : m.thumb_url ? (
-                  <img src={m.thumb_url} loading="lazy" alt=""
-                    className="w-full h-full object-cover opacity-80 group-hover:opacity-100
-                      group-hover:scale-105 transition-all duration-700" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
                     <span className="text-[8px] text-[#00ffff]/40 tracking-[0.3em] uppercase animate-pulse">
                       {m.status === 'processing' ? '···' : 'ERR'}
                     </span>
                   </div>
+                )}
+
+                {/* Play badge on any video */}
+                {m.kind === 'video' && m.thumb_url && (
+                  <>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent pointer-events-none" />
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <div className="w-9 h-9 rounded-full bg-black/40 border border-white/30
+                        backdrop-blur-sm flex items-center justify-center
+                        group-hover:border-[#00ffff]/60 group-hover:bg-black/60 transition-all duration-500">
+                        <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 text-white/90 ml-0.5" fill="currentColor">
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Duration */}
+                {m.kind === 'video' && m.duration_s && (
+                  <span className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded
+                    bg-black/70 text-[7px] tracking-wider text-white/70 pointer-events-none">
+                    {Math.floor(m.duration_s / 60)}:{String(Math.floor(m.duration_s % 60)).padStart(2, '0')}
+                  </span>
                 )}
               </button>
             ))}
