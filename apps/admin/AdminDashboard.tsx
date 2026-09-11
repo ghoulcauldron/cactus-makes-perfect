@@ -5,17 +5,19 @@ import SurveyManager from "./components/SurveyManager";
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/react';
 import { ChevronDownIcon } from '@heroicons/react/20/solid';
 import InboxManager from "./components/InboxManager";
+import MediaGallery from "./components/MediaGallery";
 
-type Tab = "GUESTS" | "LODGING" | "SURVEYS" | "INBOX";
+type Tab = "GUESTS" | "LODGING" | "SURVEYS" | "INBOX" | "MEDIA"; // Added MEDIA tab
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<Tab>("GUESTS");
 
   const tabs: { id: Tab; label: string }[] = [
     { id: "GUESTS", label: "GUEST LIST" },
-    { id: "LODGING", label: "LODGING MGMT" },
-    { id: "SURVEYS", label: "SURVEY RESP" },
-    { id: "INBOX", label: "EYES ONLY" }
+    { id: "LODGING", label: "LODGING" },
+    { id: "SURVEYS", label: "SURVEYS" },
+    { id: "INBOX", label: "EYES ONLY" },
+    { id: "MEDIA", label: "THE CAPSULE" }, // Added MEDIA tab
   ];
 
   return (
@@ -88,6 +90,7 @@ export default function AdminDashboard() {
         {activeTab === "LODGING" && <LodgingManager />}
         {activeTab === "SURVEYS" && <SurveyManager />}
         {activeTab === "INBOX" && <InboxManager />}
+        {activeTab === "MEDIA" && <MediaGallery />}
       </div>
     </div>
   );
