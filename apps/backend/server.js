@@ -2999,18 +2999,20 @@ async function creditUpload(mediaId, guestId, source = "portal") {
 
 // Shape a media row for the client
 function serializeMedia(m) {
+  const v = m.updated_at ? `?v=${new Date(m.updated_at).getTime()}` : '';
   return {
-    id:         m.id,
-    kind:       m.kind,
-    status:     m.status,
-    thumb_url:  publicUrl(m.key_thumb),
-    display_url:publicUrl(m.key_display),
+    id:           m.id,
+    kind:         m.kind,
+    status:       m.status,
+    thumb_url:    m.key_thumb    ? `${publicUrl(m.key_thumb)}${v}`   : null,
+    display_url:  m.key_display  ? `${publicUrl(m.key_display)}${v}` : null,
     original_url: publicUrl(m.key_original),
-    width:      m.width,
-    height:     m.height,
-    taken_at:   m.taken_at,
-    filename:   m.original_filename,
-    duration_s: m.duration_s,
+    width:        m.width,
+    height:       m.height,
+    taken_at:     m.taken_at,
+    filename:     m.original_filename,
+    duration_s:   m.duration_s,
+    rotation:     m.rotation,
   };
 }
 
@@ -3231,6 +3233,137 @@ app.get("/api/v1/upload/mine", async (req, res) => {
     });
   } catch (e) {
     console.error("[UploadMine] error", e);
+    return res.status(500).json({ error: "Internal error" });
+  }
+});
+
+// ---- Soft delete ----
+app.post("/api/v1/upload/delete", async (req, res) => {
+  try {
+    const { token, media_id } = req.body || {};
+    const guest = await guestFromArtifactToken(token);
+    if (!guest) return res.status(401).json({ error: "Invalid token" });
+
+    // Only the uploader can delete
+    const { data: credit } = await supabase
+      .from("media_uploads")
+      .select("media_id")
+      .eq("media_id", media_id)
+      .eq("guest_id", guest.id)
+      .maybeSingle();
+
+    if (!credit) return res.status(403).json({ error: "Not your upload" });
+
+    await supabase.from("media")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", media_id);
+
+    return res.json({ ok: true });
+  } catch (e) {
+    console.error("[UploadDelete] error", e);
+    return res.status(500).json({ error: "Internal error" });
+  }
+});
+
+// ---- Rotate (regenerates derivatives) ----
+app.post("/api/v1/upload/rotate", async (req, res) => {
+  try {
+    const { token, media_id, degrees } = req.body || {};
+    const guest = await guestFromArtifactToken(token);
+    if (!guest) return res.status(401).json({ error: "Invalid token" });
+
+    const { data: credit } = await supabase
+      .from("media_uploads")
+      .select("media_id")
+      .eq("media_id", media_id)
+      .eq("guest_id", guest.id)
+      .maybeSingle();
+    if (!credit) return res.status(403).json({ error: "Not your upload" });
+
+    const { data: m } = await supabase
+      .from("media").select("*").eq("id", media_id).maybeSingle();
+    if (!m || m.kind !== "image") {
+      return res.status(400).json({ error: "Rotation only supported for images" });
+    }
+
+    const turn = ((m.rotation + (degrees || 90)) % 360 + 360) % 360;
+
+    const obj = await r2.send(new GetObjectCommand({
+      Bucket: R2_BUCKET, Key: m.key_original,
+    }));
+    const buf = Buffer.from(await obj.Body.transformToByteArray());
+
+    const thumbBuf = await sharp(buf).rotate().rotate(turn)
+      .resize(400, 400, { fit: "inside", withoutEnlargement: true })
+      .webp({ quality: 75 }).toBuffer();
+
+    const displayBuf = await sharp(buf).rotate().rotate(turn)
+      .resize(2048, 2048, { fit: "inside", withoutEnlargement: true })
+      .webp({ quality: 82 }).toBuffer();
+
+    await r2.send(new PutObjectCommand({
+      Bucket: R2_BUCKET, Key: m.key_thumb, Body: thumbBuf,
+      ContentType: "image/webp", CacheControl: "public, max-age=31536000, immutable",
+    }));
+    await r2.send(new PutObjectCommand({
+      Bucket: R2_BUCKET, Key: m.key_display, Body: displayBuf,
+      ContentType: "image/webp", CacheControl: "public, max-age=31536000, immutable",
+    }));
+
+    const meta = await sharp(displayBuf).metadata();
+
+    const { data: updated } = await supabase
+      .from("media")
+      .update({
+        rotation: turn,
+        width:  meta.width  || m.width,
+        height: meta.height || m.height,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", media_id)
+      .select()
+      .single();
+
+    return res.json({ media: serializeMedia(updated) });
+  } catch (e) {
+    console.error("[UploadRotate] error", e);
+    return res.status(500).json({ error: "Rotation failed" });
+  }
+});
+
+// ---- Admin: gallery bounded per guest ----
+app.get("/api/v1/admin/media", async (req, res) => {
+  try {
+    const { guest_id } = req.query;
+
+    let q = supabase
+      .from("admin_media_view")
+      .select("*")
+      .is("deleted_at", null)
+      .order("uploaded_at", { ascending: false })
+      .limit(3000);
+
+    if (guest_id) q = q.eq("guest_id", guest_id);
+
+    const { data: rows, error } = await q;
+    if (error) throw error;
+
+    const media = (rows || []).map(m => ({
+      ...serializeMedia(m),
+      guest_id:   m.guest_id,
+      guest_name: `${m.first_name} ${m.last_name}`,
+      source:     m.source,
+      uploaded_at: m.uploaded_at,
+    }));
+
+    const { data: stats } = await supabase
+      .from("admin_upload_stats")
+      .select("*")
+      .order("upload_count", { ascending: false });
+
+    return res.json({ media, contributors: stats || [] });
+  } catch (e) {
+    console.error("[AdminMedia] error", e);
     return res.status(500).json({ error: "Internal error" });
   }
 });
