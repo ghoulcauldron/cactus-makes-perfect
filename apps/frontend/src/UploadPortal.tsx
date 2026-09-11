@@ -326,7 +326,7 @@ function Lightbox({
               }
             >
               <video
-                key={m.id}
+                key={m.id + (m.rotation ?? 0)}
                 src={m.original_url || ''}
                 controls
                 autoPlay
@@ -346,7 +346,6 @@ function Lightbox({
 
           {/* Controls */}
           <div className="flex items-center gap-3 mt-7">
-            {m.kind === 'image' && (
             <button onClick={() => onRotate(m)} disabled={busy}
               className="flex items-center gap-2 px-5 py-2.5 rounded-full text-[8px]
                 uppercase tracking-[0.3em] bg-white/5 border border-white/15 backdrop-blur-md
@@ -357,7 +356,6 @@ function Lightbox({
               </svg>
               Rotate
             </button>
-            )}
 
             {confirmDelete ? (
               <div className="flex items-center gap-2">
