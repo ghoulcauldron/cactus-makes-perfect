@@ -414,6 +414,7 @@ export default function UploadPortal() {
   const [lbIndex, setLbIndex]     = useState<number | null>(null);
   const [authError, setAuthError] = useState(false);
   const [actionBusy, setActionBusy] = useState(false);
+  const [preparing, setPreparing] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -448,23 +449,56 @@ export default function UploadPortal() {
     return () => clearTimeout(id);
   }, [mine, token, loadMine]);
 
+    useEffect(() => {
+    if (!token) return;
+    if (!mine.some(m => m.status === 'processing')) return;
+    const id = setTimeout(() => loadMine(token), 3000);
+    return () => clearTimeout(id);
+  }, [mine, token, loadMine]);
+
+  // Keep the screen awake and warn before closing mid-upload
+  useEffect(() => {
+    const uploading = queue.some(q =>
+      q.status === 'pending' || q.status === 'uploading' || q.status === 'processing');
+    if (!uploading && preparing === 0) return;
+
+    let lock: any = null;
+    (navigator as any).wakeLock?.request('screen')
+      .then((l: any) => { lock = l; })
+      .catch(() => {});
+
+    const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ''; };
+    window.addEventListener('beforeunload', warn);
+
+    return () => {
+      lock?.release?.().catch(() => {});
+      window.removeEventListener('beforeunload', warn);
+    };
+  }, [queue, preparing]);
+
+  const handleFiles = async (files: FileList | null) => {
+
   const handleFiles = async (files: FileList | null) => {
     if (!files || !token) return;
-    let list = Array.from(files);
+    const raw = Array.from(files);
 
-    const converted: File[] = [];
-    for (const f of list) {
-      if (isHeic(f)) {
-        try { converted.push(await convertHeic(f)); } catch { converted.push(f); }
-      } else converted.push(f);
-    }
-    list = converted;
+    // Show the queue immediately so nothing looks frozen
+    setPreparing(raw.length);
 
     const items: QueueItem[] = [];
-    for (const file of list) {
-      items.push({ file, sha256: await sha256Hex(file), status: 'pending', progress: 0 });
+    for (const [i, f] of raw.entries()) {
+      setPreparing(raw.length - i);
+      let file = f;
+      if (isHeic(f)) {
+        try { file = await convertHeic(f); } catch { /* keep original */ }
+      }
+      const sha = await sha256Hex(file);
+      const item: QueueItem = { file, sha256: sha, status: 'pending', progress: 0 };
+      items.push(item);
+      setQueue(q => [...q, item]);   // append as each one is ready
+      await new Promise(r => setTimeout(r, 0)); // let the UI paint
     }
-    setQueue(q => [...q, ...items]);
+    setPreparing(0);
 
     for (const item of items) {
       const mark = (patch: Partial<QueueItem>) =>
@@ -485,46 +519,33 @@ export default function UploadPortal() {
         await uploadWithProgress(pres.put_url, item.file, p => mark({ progress: p }));
         mark({ status: 'processing', progress: 1 });
 
-                await fetch('/api/v1/upload/complete', {
+        await fetch('/api/v1/upload/complete', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token, media_id: pres.media_id }),
         });
 
-        // Videos: generate and upload a poster frame client-side
         if (item.file.type.startsWith('video/')) {
           try {
-            mark({ status: 'processing' });
             const poster = await extractVideoPoster(item.file);
-
             if (poster) {
               const pp = await fetch('/api/v1/upload/poster', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ token, media_id: pres.media_id }),
               }).then(r => r.json());
-
               if (pp.put_url) {
                 await fetch(pp.put_url, {
-                  method: 'PUT',
-                  headers: { 'Content-Type': 'image/jpeg' },
-                  body: poster.blob,
+                  method: 'PUT', headers: { 'Content-Type': 'image/jpeg' }, body: poster.blob,
                 });
-
                 await fetch('/api/v1/upload/poster-complete', {
                   method: 'POST', headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({
-                    token,
-                    media_id:   pres.media_id,
-                    key:        pp.key,
-                    width:      poster.width,
-                    height:     poster.height,
-                    duration_s: poster.duration,
+                    token, media_id: pres.media_id, key: pp.key,
+                    width: poster.width, height: poster.height, duration_s: poster.duration,
                   }),
                 });
               }
             }
-          } catch {
-            // Poster is a nicety — never fail the upload over it
-          }
+          } catch { /* poster is optional */ }
         }
 
         mark({ status: 'done' });
@@ -579,7 +600,7 @@ export default function UploadPortal() {
 
   const active = queue.filter(q => q.status !== 'done' && q.status !== 'duplicate');
   const dupes  = queue.filter(q => q.status === 'duplicate');
-  const busy   = active.length > 0;
+  const busy   = active.length > 0 || preparing > 0;
 
   return (
     <div className="min-h-screen bg-[#020617] font-mono relative overflow-x-hidden">
@@ -621,8 +642,23 @@ export default function UploadPortal() {
           </button>
 
           <p className="text-white/20 text-[8px] uppercase tracking-[0.3em] text-center mt-4 leading-relaxed">
-            Photos &amp; video // Phone or terminal // Multi-select supported
+            Photos &amp; video // Phone or terminal // Multi-select supported<br />
+            <span className="text-[#00ffff]/30">
+              Large batches take time — keep this page open until complete
+            </span>
           </p>
+
+          {preparing > 0 && (
+            <div className="mt-8 bg-[#00ffff]/5 rounded-2xl border border-[#00ffff]/25 p-5 text-center">
+              <p className="text-[10px] text-[#00ffff] uppercase tracking-[0.3em] animate-pulse">
+                PREPARING {preparing} FILE{preparing > 1 ? 'S' : ''}
+              </p>
+              <p className="text-white/40 text-[8px] uppercase tracking-widest mt-2 leading-relaxed">
+                Your phone is handing over the files.<br />
+                This can take a minute — keep this page open.
+              </p>
+            </div>
+          )}
 
           {active.length > 0 && (
             <div className="mt-8 bg-white/5 rounded-2xl border border-white/5 backdrop-blur-md p-5 space-y-3">

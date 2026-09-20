@@ -1,60 +1,49 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { createBrowserRouter, RouterProvider, redirect } from 'react-router-dom'
-import AccessDenied from './pages/AccessDenied'
 import './index.css'
 import './fonts.css'
-import AmbientSound from './components/AmbientSound'
-import TheArtifact from './TheArtifact'
 import UploadPortal from './UploadPortal'
 
 const router = createBrowserRouter([
   {
-    // Root: dispatch based on what's in localStorage
+    // Root: token in URL passes straight through to the portal
     path: '/',
-    loader: () => {
-      if (localStorage.getItem('artifact_token')) return redirect('/artifact');
-      return redirect('/artifact');
+    loader: ({ request }: { request: Request }) => {
+      const url   = new URL(request.url);
+      const token = url.searchParams.get('token');
+      return redirect(token ? `/upload?token=${token}` : '/upload');
     },
   },
   {
-    // Upload portal
     path: '/upload',
     element: <UploadPortal />,
   },
   {
-    // Primary Phase 2 entry point
+    // Phase 2 cryptex — closed for this phase, returns in v3
     path: '/artifact',
-    element: <TheArtifact />,
+    loader: ({ request }: { request: Request }) => {
+      const url   = new URL(request.url);
+      const token = url.searchParams.get('token');
+      return redirect(token ? `/upload?token=${token}` : '/upload');
+    },
   },
   {
-    // Legacy Phase 1 invite links — forward token to artifact
+    // Legacy Phase 1
     path: '/invite',
     loader: ({ request }: { request: Request }) => {
       const url   = new URL(request.url);
       const token = url.searchParams.get('token');
-      return redirect(token ? `/artifact?token=${token}` : '/artifact');
+      return redirect(token ? `/upload?token=${token}` : '/upload');
     },
   },
-  {
-    // Legacy Phase 1 login — forward to artifact
-    path: '/guest/login',
-    loader: () => redirect('/artifact'),
-  },
-  {
-    // Legacy Phase 1 welcome — forward to artifact
-    path: '/guest/welcome',
-    loader: () => redirect('/artifact'),
-  },
-  {
-    path: '/denied',
-    element: <AccessDenied />,
-  },
+  { path: '/guest/login',   loader: () => redirect('/upload') },
+  { path: '/guest/welcome', loader: () => redirect('/upload') },
+  { path: '*',              loader: () => redirect('/upload') },
 ])
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <AmbientSound />
     <RouterProvider router={router} />
   </React.StrictMode>
 )

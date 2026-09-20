@@ -2458,7 +2458,7 @@ BIG LOVE, S&G
 }
 
 function renderUploadEmail({ guest, uploadUrl }) {
-  const firstName = guest.first_name ? guest.first_name.toUpperCase() : "TRAVELER";
+  const firstName = guest.first_name || "Friend";
 
   const html = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -2466,112 +2466,99 @@ function renderUploadEmail({ guest, uploadUrl }) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="color-scheme" content="light dark">
-  <meta name="supported-color-schemes" content="light dark">
+  <meta name="color-scheme" content="light only">
+  <meta name="supported-color-schemes" content="light only">
   <style>
-    :root { color-scheme: light dark; supported-color-schemes: light dark; }
-    body { margin:0; padding:0; width:100% !important; -webkit-text-size-adjust:100%;
-           background-color:#020617 !important; }
-    .force-void { background-color:#020617 !important;
-                  background-image:linear-gradient(#020617,#020617) !important; }
-    .force-panel { background-color:#0a1020 !important;
-                   background-image:linear-gradient(#0a1020,#0a1020) !important; }
-    .force-inset { background-color:#070d1a !important;
-                   background-image:linear-gradient(#070d1a,#070d1a) !important; }
+    :root { color-scheme: light only; supported-color-schemes: light only; }
+    body { margin:0; padding:0; width:100% !important; background-color:#f4f2ee;
+           -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
     a { text-decoration:none; }
+    @media (max-width:600px) {
+      .pad { padding-left:24px !important; padding-right:24px !important; }
+      .title { font-size:28px !important; letter-spacing:4px !important; }
+    }
   </style>
 </head>
-<body class="force-void" style="margin:0;padding:0;background-color:#020617;
-  background-image:linear-gradient(#020617,#020617);
-  font-family:'Courier New',Courier,monospace;color:#ffffff;">
+<body style="margin:0;padding:0;background-color:#f4f2ee;
+  font-family:'Courier New',Courier,monospace;color:#1a1a2e;">
 
   <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation"
-    class="force-void" style="background-color:#020617;
-    background-image:linear-gradient(#020617,#020617);width:100%;">
-    <tr><td align="center" style="padding:48px 16px;">
+    bgcolor="#f4f2ee" style="background-color:#f4f2ee;width:100%;">
+    <tr><td align="center" style="padding:40px 16px;">
 
-      <!-- PANEL -->
       <table width="560" border="0" cellpadding="0" cellspacing="0" role="presentation"
-        bgcolor="#0a1020" class="force-panel"
-        style="max-width:560px;width:100%;background-color:#0a1020;
-        background-image:linear-gradient(#0a1020,#0a1020);
-        border:1px solid rgba(255,255,255,0.18);border-radius:32px;">
+        bgcolor="#ffffff"
+        style="max-width:560px;width:100%;background-color:#ffffff;
+        border:1px solid #d8d4cc;border-radius:8px;">
 
-        <!-- HEADER -->
+        <!-- ACCENT BAR -->
         <tr>
-          <td align="center" style="padding:40px 32px 0 32px;">
-            <div style="font-size:9px;letter-spacing:6px;text-transform:uppercase;
-              color:#aa00ff;font-family:'Courier New',Courier,monospace;">
-              /// CACTUS_MAKES_PERFECT ///
+          <td bgcolor="#7700cc" height="4"
+            style="background-color:#7700cc;height:4px;font-size:0;line-height:4px;">&nbsp;</td>
+        </tr>
+
+        <!-- KICKER -->
+        <tr>
+          <td class="pad" align="center" style="padding:36px 40px 0 40px;">
+            <div style="font-size:10px;letter-spacing:4px;text-transform:uppercase;
+              color:#7700cc;font-weight:bold;font-family:'Courier New',Courier,monospace;">
+              CACTUS MAKES PERFECT
             </div>
           </td>
         </tr>
 
         <!-- TITLE -->
         <tr>
-          <td align="center" style="padding:28px 32px 0 32px;">
-            <div style="font-size:34px;letter-spacing:6px;text-transform:uppercase;
-              color:#ffffff;font-family:'Courier New',Courier,monospace;
-              font-style:italic;font-weight:300;line-height:1.1;">
-              THE <span style="color:#00ffff;">CAPSULE</span>
+          <td class="pad" align="center" style="padding:20px 40px 0 40px;">
+            <div class="title" style="font-size:36px;letter-spacing:6px;
+              text-transform:uppercase;color:#1a1a2e;font-weight:bold;
+              font-family:'Courier New',Courier,monospace;line-height:1.15;">
+              THE CAPSULE
             </div>
           </td>
         </tr>
 
-        <!-- GREETING -->
+        <!-- RULE -->
         <tr>
-          <td align="center" style="padding:24px 32px 0 32px;">
-            <div style="font-size:10px;letter-spacing:4px;text-transform:uppercase;
-              color:#39FF14;font-family:'Courier New',Courier,monospace;">
-              ${firstName}
-            </div>
+          <td class="pad" align="center" style="padding:20px 40px 0 40px;">
+            <div style="width:60px;height:2px;background-color:#00707a;
+              font-size:0;line-height:2px;">&nbsp;</div>
           </td>
         </tr>
 
         <!-- BODY -->
         <tr>
-          <td style="padding:28px 40px 0 40px;">
-            <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation"
-              bgcolor="#070d1a" class="force-inset"
-              style="background-color:#070d1a;background-image:linear-gradient(#070d1a,#070d1a);
-              border:1px solid rgba(255,255,255,0.08);border-radius:16px;">
-              <tr>
-                <td style="padding:26px 24px;text-align:center;">
-                  <div style="font-size:10px;line-height:2;letter-spacing:2px;
-                    text-transform:uppercase;color:rgba(255,255,255,0.55);
-                    font-family:'Courier New',Courier,monospace;">
-                    The weekend happened.<br/>
-                    You were there.<br/>
-                    Your device remembers.
-                  </div>
-
-                  <div style="height:20px;line-height:20px;font-size:0;">&nbsp;</div>
-
-                  <div style="font-size:9px;line-height:2;letter-spacing:2px;
-                    text-transform:uppercase;color:rgba(255,255,255,0.35);
-                    font-family:'Courier New',Courier,monospace;">
-                    We are assembling the archive —<br/>
-                    every imprint, one vector, permanent.
-                  </div>
-                </td>
-              </tr>
-            </table>
+          <td class="pad" style="padding:28px 40px 0 40px;">
+            <p style="margin:0 0 20px 0;font-size:15px;line-height:1.7;color:#1a1a2e;
+              font-family:'Courier New',Courier,monospace;">
+              ${firstName},
+            </p>
+            <p style="margin:0 0 20px 0;font-size:15px;line-height:1.7;color:#333344;
+              font-family:'Courier New',Courier,monospace;">
+              The weekend happened. You were there. Your phone remembers.
+            </p>
+            <p style="margin:0 0 24px 0;font-size:15px;line-height:1.7;color:#333344;
+              font-family:'Courier New',Courier,monospace;">
+              We're building the archive &mdash; every photo, every video,
+              in one place that stays up for good. The link below opens
+              a portal where you can add yours.
+            </p>
           </td>
         </tr>
 
         <!-- CTA -->
         <tr>
-          <td align="center" style="padding:32px 40px 0 40px;">
+          <td align="center" style="padding:8px 40px 0 40px;">
             <table border="0" cellpadding="0" cellspacing="0" role="presentation">
               <tr>
-                <td align="center" bgcolor="#ffffff"
-                  style="background-color:#ffffff;border-radius:999px;">
+                <td align="center" bgcolor="#7700cc"
+                  style="background-color:#7700cc;border-radius:4px;">
                   <a href="${uploadUrl}"
-                    style="display:inline-block;padding:16px 40px;color:#000000;
-                    font-size:10px;font-weight:bold;letter-spacing:5px;
-                    text-transform:uppercase;font-family:'Courier New',Courier,monospace;
-                    border-radius:999px;">
-                    [ OPEN_YOUR_PORTAL ]
+                    style="display:inline-block;padding:16px 40px;color:#ffffff;
+                    font-size:13px;font-weight:bold;letter-spacing:3px;
+                    text-transform:uppercase;border-radius:4px;
+                    font-family:'Courier New',Courier,monospace;">
+                    OPEN YOUR PORTAL
                   </a>
                 </td>
               </tr>
@@ -2581,45 +2568,63 @@ function renderUploadEmail({ guest, uploadUrl }) {
 
         <!-- SPECS -->
         <tr>
-          <td align="center" style="padding:20px 40px 0 40px;">
-            <div style="font-size:8px;letter-spacing:3px;text-transform:uppercase;
-              color:rgba(255,255,255,0.2);font-family:'Courier New',Courier,monospace;
-              line-height:1.9;">
-              Photos &amp; video // Phone or terminal<br/>
-              Multi-select supported // Duplicates auto-detected
+          <td class="pad" align="center" style="padding:20px 40px 0 40px;">
+            <div style="font-size:12px;line-height:1.8;color:#666677;
+              font-family:'Courier New',Courier,monospace;">
+              Works on phone or computer<br/>
+              Select as many as you like at once<br/>
+              Duplicates are detected and skipped
             </div>
+          </td>
+        </tr>
+
+        <!-- IOS NOTE -->
+        <tr>
+          <td class="pad" style="padding:28px 40px 0 40px;">
+            <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation"
+              bgcolor="#fff8e6" style="background-color:#fff8e6;
+              border-left:3px solid #cc8800;border-radius:4px;">
+              <tr>
+                <td style="padding:16px 20px;">
+                  <div style="font-size:12px;line-height:1.7;color:#553300;
+                    font-family:'Courier New',Courier,monospace;">
+                    <strong>On iPhone:</strong> after you tap Add, your phone may sit
+                    still for up to a minute while it prepares the files. That's
+                    normal &mdash; keep the page open and don't close the browser.
+                    Uploading works best over wifi.
+                  </div>
+                </td>
+              </tr>
+            </table>
           </td>
         </tr>
 
         <!-- DIVIDER -->
         <tr>
-          <td style="padding:32px 40px 0 40px;">
-            <div style="height:1px;background-color:rgba(255,255,255,0.1);
-              font-size:0;line-height:1px;">&nbsp;</div>
+          <td class="pad" style="padding:32px 40px 0 40px;">
+            <div style="height:1px;background-color:#e4e0d8;font-size:0;line-height:1px;">&nbsp;</div>
           </td>
         </tr>
 
         <!-- NOTE -->
         <tr>
-          <td align="center" style="padding:24px 40px 0 40px;">
-            <div style="font-size:8px;letter-spacing:3px;text-transform:uppercase;
-              color:rgba(255,255,255,0.3);font-family:'Courier New',Courier,monospace;
-              line-height:2;">
-              This vector is yours alone.<br/>
-              It is how the archive knows your imprints.<br/>
-              Bookmark it — return anytime.
-            </div>
+          <td class="pad" style="padding:24px 40px 0 40px;">
+            <p style="margin:0;font-size:12px;line-height:1.8;color:#666677;
+              font-family:'Courier New',Courier,monospace;">
+              This link is yours alone &mdash; it's how the archive knows which
+              photos came from you. Bookmark it and come back anytime to add more.
+            </p>
           </td>
         </tr>
 
         <!-- SIGNOFF -->
         <tr>
-          <td align="center" style="padding:28px 40px 40px 40px;">
-            <div style="font-size:9px;letter-spacing:4px;text-transform:uppercase;
-              color:#aa00ff;font-family:'Courier New',Courier,monospace;">
-              BIG LOVE<br/>
-              <span style="color:#00ffff;">S &amp; G</span>
-            </div>
+          <td class="pad" style="padding:28px 40px 40px 40px;">
+            <p style="margin:0;font-size:14px;line-height:1.7;color:#1a1a2e;
+              font-family:'Courier New',Courier,monospace;">
+              Big love,<br/>
+              <strong style="color:#7700cc;">S &amp; G</strong>
+            </p>
           </td>
         </tr>
 
@@ -2630,13 +2635,12 @@ function renderUploadEmail({ guest, uploadUrl }) {
         style="max-width:560px;width:100%;">
         <tr>
           <td align="center" style="padding:24px 20px 0 20px;">
-            <div style="font-size:7px;letter-spacing:3px;text-transform:uppercase;
-              color:rgba(255,255,255,0.18);font-family:'Courier New',Courier,monospace;
-              line-height:2;">
-              Signal lost? Transmit to
-              <span style="color:rgba(0,255,255,0.4);">EYESONLY@CACTUSMAKESPERFECT.ORG</span><br/>
-              Subject: <span style="color:rgba(0,255,255,0.4);">UPLOAD</span>
-              // Vector redispatched automatically
+            <div style="font-size:11px;line-height:1.8;color:#8a8680;
+              font-family:'Courier New',Courier,monospace;">
+              Lost this email? Write to
+              <a href="mailto:eyesonly@cactusmakesperfect.org?subject=upload"
+                style="color:#7700cc;text-decoration:underline;">eyesonly@cactusmakesperfect.org</a><br/>
+              with the subject <strong>upload</strong> and we'll send your link again.
             </div>
           </td>
         </tr>
@@ -2647,31 +2651,36 @@ function renderUploadEmail({ guest, uploadUrl }) {
 </body>
 </html>`;
 
-  const text = `/// CACTUS_MAKES_PERFECT ///
-
+  const text = `CACTUS MAKES PERFECT
 THE CAPSULE
 
 ${firstName},
 
-The weekend happened. You were there. Your device remembers.
+The weekend happened. You were there. Your phone remembers.
 
-We are assembling the archive — every imprint, one vector, permanent.
+We're building the archive — every photo, every video, in one place
+that stays up for good. The link below opens a portal where you can
+add yours.
 
 OPEN YOUR PORTAL:
 ${uploadUrl}
 
-Photos & video. Phone or terminal. Multi-select supported.
-Duplicates are detected automatically.
+Works on phone or computer. Select as many as you like at once.
+Duplicates are detected and skipped.
 
-This vector is yours alone. It is how the archive knows your
-imprints. Bookmark it — return anytime.
+ON IPHONE: after you tap Add, your phone may sit still for up to a
+minute while it prepares the files. That's normal — keep the page
+open and don't close the browser. Uploading works best over wifi.
 
-BIG LOVE
+This link is yours alone — it's how the archive knows which photos
+came from you. Bookmark it and come back anytime to add more.
+
+Big love,
 S & G
 
 ---
-Signal lost? Transmit to eyesonly@cactusmakesperfect.org
-with subject "upload" and your vector is redispatched automatically.`;
+Lost this email? Write to eyesonly@cactusmakesperfect.org with the
+subject "upload" and we'll send your link again.`;
 
   return { html, text };
 }
@@ -2952,6 +2961,101 @@ app.post("/api/v1/auth/artifact-relink", async (req, res) => {
   return res.json({ ok: true });
 });
 
+// ---- Admin: mint tokens + send to every Phase 2 guest ----
+app.post("/api/v1/admin/upload-invites/send-all", async (req, res) => {
+  try {
+    const { dry_run, only_missing } = req.body || {};
+
+    const { data: guests } = await supabase
+      .from("guests")
+      .select("*")
+      .eq("phase", 2)
+      .order("last_name");
+
+    if (!guests?.length) return res.json({ ok: true, sent: 0, results: [] });
+
+    const results = [];
+
+    for (const guest of guests) {
+      try {
+        let { data: tokenRow } = await supabase
+          .from("artifact_tokens")
+          .select("*")
+          .eq("guest_id", guest.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        // Skip anyone already invited, if asked
+        if (only_missing && tokenRow?.delivery_status === "sent") {
+          results.push({ email: guest.email, status: "skipped" });
+          continue;
+        }
+
+        if (!tokenRow) {
+          if (dry_run) {
+            results.push({ email: guest.email, status: "would_create_and_send" });
+            continue;
+          }
+          const token = crypto.randomUUID();
+          const combination = [
+            Math.floor(Math.random() * 12),
+            Math.floor(Math.random() * 12),
+            Math.floor(Math.random() * 12),
+          ];
+          const { data: newRow, error: insErr } = await supabase
+            .from("artifact_tokens")
+            .insert({ guest_id: guest.id, token, combination, delivery_status: "pending" })
+            .select()
+            .single();
+          if (insErr || !newRow) throw new Error("token insert failed");
+          tokenRow = newRow;
+        }
+
+        if (dry_run) {
+          results.push({ email: guest.email, status: "would_send" });
+          continue;
+        }
+
+        const uploadUrl = `${PUBLIC_URL}/upload?token=${encodeURIComponent(tokenRow.token)}`;
+        const { html, text } = renderUploadEmail({ guest, uploadUrl });
+
+        await sendEmail({
+          to: guest.email,
+          subject: "The Capsule — add your photos from the weekend",
+          html,
+          text,
+        });
+
+        await supabase.from("artifact_tokens")
+          .update({ delivery_status: "sent" })
+          .eq("id", tokenRow.id);
+
+        await supabase.from("user_activity").insert([{
+          guest_id: guest.id,
+          kind: "upload_invite_sent",
+          meta: { email: guest.email, bulk: true },
+        }]);
+
+        results.push({ email: guest.email, status: "sent" });
+        console.log(`[BulkSend] ${guest.email}`);
+
+        // Stay clear of rate limits
+        await new Promise(r => setTimeout(r, 1200));
+      } catch (e) {
+        console.error(`[BulkSend] ${guest.email} failed`, e);
+        results.push({ email: guest.email, status: "failed", error: e.message });
+      }
+    }
+
+    const sent = results.filter(r => r.status === "sent").length;
+    return res.json({ ok: true, total: guests.length, sent, results });
+  } catch (e) {
+    console.error("[BulkSend] error", e);
+    return res.status(500).json({ error: "Internal error" });
+  }
+});
+
 // =====================================================
 // PHASE 2.5 — MEDIA UPLOAD (R2)
 // =====================================================
@@ -3062,20 +3166,50 @@ app.post("/api/v1/upload/presign", async (req, res) => {
                : null;
     if (!kind) return res.status(400).json({ error: "Unsupported file type" });
 
-    // Already have this file? Just credit the guest.
-    const { data: dupe } = await supabase
+    // Look up ANY existing row for this hash, deleted or not
+    const { data: existing } = await supabase
       .from("media")
       .select("*")
       .eq("sha256", sha256)
-      .is("deleted_at", null)
       .maybeSingle();
 
-    if (dupe) {
-      await creditUpload(dupe.id, guest.id);
-      return res.json({ duplicate: true, media: serializeMedia(dupe) });
+    // Genuine duplicate: live and fully processed
+    if (existing && !existing.deleted_at && existing.status === "ready") {
+      await creditUpload(existing.id, guest.id);
+      return res.json({ duplicate: true, media: serializeMedia(existing) });
     }
 
-    // New file — create the row and hand back a presigned PUT
+    // Tombstoned or stalled: revive the row and hand back a fresh PUT
+    if (existing) {
+      const ext = (filename?.split(".").pop() || "bin").toLowerCase().slice(0, 5);
+      const kindPath = existing.kind;
+      const key = existing.key_original || `${kindPath}/${existing.id}/original.${ext}`;
+
+      await supabase
+        .from("media")
+        .update({
+          deleted_at: null,
+          status: "processing",
+          key_original: key,
+          original_filename: filename || existing.original_filename,
+          mime: mime || existing.mime,
+          bytes: bytes || existing.bytes,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", existing.id);
+
+      const put_url = await getSignedUrl(
+        r2,
+        new PutObjectCommand({ Bucket: R2_BUCKET, Key: key, ContentType: mime }),
+        { expiresIn: 3600 }
+      );
+
+      await creditUpload(existing.id, guest.id);
+      console.log(`[UploadPresign] Revived media ${existing.id} (was ${existing.deleted_at ? "deleted" : existing.status})`);
+      return res.json({ duplicate: false, media_id: existing.id, key, put_url });
+    }
+
+    // Brand new file — original insert path continues below
     const ext = (filename?.split(".").pop() || "bin").toLowerCase().slice(0, 5);
     const mediaId = crypto.randomUUID();
     const key = `${kind}/${mediaId}/original.${ext}`;
@@ -3451,6 +3585,56 @@ app.get("/api/v1/admin/media", async (req, res) => {
     return res.json({ media, contributors: stats || [] });
   } catch (e) {
     console.error("[AdminMedia] error", e);
+    return res.status(500).json({ error: "Internal error" });
+  }
+});
+
+const { DeleteObjectsCommand } = require("@aws-sdk/client-s3");
+
+// ---- Admin: permanent purge ----
+app.post("/api/v1/admin/media/purge", async (req, res) => {
+  try {
+    const { media_id } = req.body || {};
+    if (!media_id) return res.status(400).json({ error: "Missing media_id" });
+
+    const { data: m } = await supabase
+      .from("media").select("*").eq("id", media_id).maybeSingle();
+    if (!m) return res.status(404).json({ error: "Media not found" });
+
+    const keys = [m.key_original, m.key_display, m.key_thumb, m.key_play]
+      .filter(Boolean)
+      .map(Key => ({ Key }));
+
+    if (keys.length) {
+      await r2.send(new DeleteObjectsCommand({
+        Bucket: R2_BUCKET,
+        Delete: { Objects: keys, Quiet: true },
+      }));
+    }
+
+    // Cascade removes media_uploads rows
+    await supabase.from("media").delete().eq("id", media_id);
+
+    console.log(`[AdminPurge] Removed ${media_id} (${keys.length} objects)`);
+    return res.json({ ok: true, objects_deleted: keys.length });
+  } catch (e) {
+    console.error("[AdminPurge] error", e);
+    return res.status(500).json({ error: "Purge failed" });
+  }
+});
+
+// ---- Admin: list soft-deleted media ----
+app.get("/api/v1/admin/media/trash", async (req, res) => {
+  try {
+    const { data: rows } = await supabase
+      .from("media")
+      .select("*")
+      .not("deleted_at", "is", null)
+      .order("deleted_at", { ascending: false });
+
+    return res.json({ media: (rows || []).map(serializeMedia) });
+  } catch (e) {
+    console.error("[AdminTrash] error", e);
     return res.status(500).json({ error: "Internal error" });
   }
 });
