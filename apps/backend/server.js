@@ -3060,7 +3060,7 @@ app.post("/api/v1/admin/upload-invites/send-all", async (req, res) => {
 // PHASE 2.5 — MEDIA UPLOAD (R2)
 // =====================================================
 
-import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectsCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import sharp from "sharp";
 import exifr from "exifr";
@@ -3588,8 +3588,6 @@ app.get("/api/v1/admin/media", async (req, res) => {
     return res.status(500).json({ error: "Internal error" });
   }
 });
-
-const { DeleteObjectsCommand } = require("@aws-sdk/client-s3");
 
 // ---- Admin: permanent purge ----
 app.post("/api/v1/admin/media/purge", async (req, res) => {
