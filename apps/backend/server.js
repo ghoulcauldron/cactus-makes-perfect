@@ -2459,6 +2459,7 @@ BIG LOVE, S&G
 
 function renderUploadEmail({ guest, uploadUrl }) {
   const firstName = guest.first_name || "Friend";
+  const SANS = "-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',Helvetica,Arial,sans-serif";
 
   const html = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -2470,95 +2471,110 @@ function renderUploadEmail({ guest, uploadUrl }) {
   <meta name="supported-color-schemes" content="light only">
   <style>
     :root { color-scheme: light only; supported-color-schemes: light only; }
-    body { margin:0; padding:0; width:100% !important; background-color:#f4f2ee;
+    body { margin:0; padding:0; width:100% !important; background-color:#f2f0f7;
            -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
     a { text-decoration:none; }
     @media (max-width:600px) {
-      .pad { padding-left:24px !important; padding-right:24px !important; }
-      .title { font-size:28px !important; letter-spacing:4px !important; }
+      .pad   { padding-left:26px !important; padding-right:26px !important; }
+      .title { font-size:30px !important; letter-spacing:5px !important; }
+      .kick  { letter-spacing:3px !important; font-size:9px !important; }
     }
   </style>
 </head>
-<body style="margin:0;padding:0;background-color:#f4f2ee;
-  font-family:'Courier New',Courier,monospace;color:#1a1a2e;">
+<body style="margin:0;padding:0;background-color:#f2f0f7;font-family:${SANS};color:#1c1b2e;">
 
+  <!-- OUTER: soft iridescent wash -->
   <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation"
-    bgcolor="#f4f2ee" style="background-color:#f4f2ee;width:100%;">
-    <tr><td align="center" style="padding:40px 16px;">
+    bgcolor="#f2f0f7"
+    style="background-color:#f2f0f7;
+    background-image:linear-gradient(160deg,#f7f0fb 0%,#f2f0f7 40%,#eef6f8 100%);
+    width:100%;">
+    <tr><td align="center" style="padding:44px 16px;">
 
-      <table width="560" border="0" cellpadding="0" cellspacing="0" role="presentation"
+      <!-- CARD -->
+      <table width="580" border="0" cellpadding="0" cellspacing="0" role="presentation"
         bgcolor="#ffffff"
-        style="max-width:560px;width:100%;background-color:#ffffff;
-        border:1px solid #d8d4cc;border-radius:8px;">
+        style="max-width:580px;width:100%;background-color:#ffffff;
+        border:1px solid #e3dff0;border-radius:24px;">
 
-        <!-- ACCENT BAR -->
+        <!-- IRIDESCENT BAR -->
         <tr>
-          <td bgcolor="#7700cc" height="4"
-            style="background-color:#7700cc;height:4px;font-size:0;line-height:4px;">&nbsp;</td>
+          <td bgcolor="#8b00d9" height="5"
+            style="background-color:#8b00d9;
+            background-image:linear-gradient(90deg,#8b00d9 0%,#b400ff 30%,#0aa5c4 70%,#1fbf6b 100%);
+            height:5px;font-size:0;line-height:5px;
+            border-radius:24px 24px 0 0;">&nbsp;</td>
         </tr>
 
         <!-- KICKER -->
         <tr>
-          <td class="pad" align="center" style="padding:36px 40px 0 40px;">
-            <div style="font-size:10px;letter-spacing:4px;text-transform:uppercase;
-              color:#7700cc;font-weight:bold;font-family:'Courier New',Courier,monospace;">
-              CACTUS MAKES PERFECT
+          <td class="pad" align="center" style="padding:40px 44px 0 44px;">
+            <div class="kick" style="font-size:10px;letter-spacing:5px;text-transform:uppercase;
+              color:#8b00d9;font-weight:700;font-family:${SANS};">
+              Cactus Makes Perfect
             </div>
           </td>
         </tr>
 
         <!-- TITLE -->
         <tr>
-          <td class="pad" align="center" style="padding:20px 40px 0 40px;">
-            <div class="title" style="font-size:36px;letter-spacing:6px;
-              text-transform:uppercase;color:#1a1a2e;font-weight:bold;
-              font-family:'Courier New',Courier,monospace;line-height:1.15;">
-              THE CAPSULE
+          <td class="pad" align="center" style="padding:18px 44px 0 44px;">
+            <div class="title" style="font-size:42px;letter-spacing:8px;line-height:1.1;
+              text-transform:uppercase;color:#1c1b2e;font-weight:300;
+              font-style:italic;font-family:${SANS};">
+              The Capsule
             </div>
           </td>
         </tr>
 
-        <!-- RULE -->
+        <!-- HAIRLINE -->
         <tr>
-          <td class="pad" align="center" style="padding:20px 40px 0 40px;">
-            <div style="width:60px;height:2px;background-color:#00707a;
-              font-size:0;line-height:2px;">&nbsp;</div>
+          <td align="center" style="padding:24px 44px 0 44px;">
+            <table border="0" cellpadding="0" cellspacing="0" role="presentation">
+              <tr>
+                <td width="70" height="2" bgcolor="#0aa5c4"
+                  style="width:70px;height:2px;background-color:#0aa5c4;
+                  background-image:linear-gradient(90deg,#b400ff,#0aa5c4);
+                  font-size:0;line-height:2px;">&nbsp;</td>
+              </tr>
+            </table>
           </td>
         </tr>
 
         <!-- BODY -->
         <tr>
-          <td class="pad" style="padding:28px 40px 0 40px;">
-            <p style="margin:0 0 20px 0;font-size:15px;line-height:1.7;color:#1a1a2e;
-              font-family:'Courier New',Courier,monospace;">
+          <td class="pad" style="padding:32px 44px 0 44px;">
+            <p style="margin:0 0 18px 0;font-size:17px;line-height:1.6;color:#1c1b2e;
+              font-weight:600;font-family:${SANS};">
               ${firstName},
             </p>
-            <p style="margin:0 0 20px 0;font-size:15px;line-height:1.7;color:#333344;
-              font-family:'Courier New',Courier,monospace;">
+            <p style="margin:0 0 18px 0;font-size:15px;line-height:1.75;color:#3d3b52;
+              font-family:${SANS};">
               The weekend happened. You were there. Your phone remembers.
             </p>
-            <p style="margin:0 0 24px 0;font-size:15px;line-height:1.7;color:#333344;
-              font-family:'Courier New',Courier,monospace;">
+            <p style="margin:0 0 28px 0;font-size:15px;line-height:1.75;color:#3d3b52;
+              font-family:${SANS};">
               We're building the archive &mdash; every photo, every video,
-              in one place that stays up for good. The link below opens
-              a portal where you can add yours.
+              in one place that stays up for good. The link below opens your
+              own portal where you can add yours.
             </p>
           </td>
         </tr>
 
         <!-- CTA -->
         <tr>
-          <td align="center" style="padding:8px 40px 0 40px;">
+          <td align="center" style="padding:0 44px 0 44px;">
             <table border="0" cellpadding="0" cellspacing="0" role="presentation">
               <tr>
-                <td align="center" bgcolor="#7700cc"
-                  style="background-color:#7700cc;border-radius:4px;">
+                <td align="center" bgcolor="#8b00d9"
+                  style="background-color:#8b00d9;
+                  background-image:linear-gradient(135deg,#8b00d9 0%,#b400ff 100%);
+                  border-radius:100px;">
                   <a href="${uploadUrl}"
-                    style="display:inline-block;padding:16px 40px;color:#ffffff;
-                    font-size:13px;font-weight:bold;letter-spacing:3px;
-                    text-transform:uppercase;border-radius:4px;
-                    font-family:'Courier New',Courier,monospace;">
-                    OPEN YOUR PORTAL
+                    style="display:inline-block;padding:17px 46px;color:#ffffff;
+                    font-size:13px;font-weight:700;letter-spacing:3px;
+                    text-transform:uppercase;border-radius:100px;font-family:${SANS};">
+                    Open Your Portal
                   </a>
                 </td>
               </tr>
@@ -2568,9 +2584,8 @@ function renderUploadEmail({ guest, uploadUrl }) {
 
         <!-- SPECS -->
         <tr>
-          <td class="pad" align="center" style="padding:20px 40px 0 40px;">
-            <div style="font-size:12px;line-height:1.8;color:#666677;
-              font-family:'Courier New',Courier,monospace;">
+          <td class="pad" align="center" style="padding:22px 44px 0 44px;">
+            <div style="font-size:13px;line-height:1.9;color:#6e6b85;font-family:${SANS};">
               Works on phone or computer<br/>
               Select as many as you like at once<br/>
               Duplicates are detected and skipped
@@ -2578,20 +2593,24 @@ function renderUploadEmail({ guest, uploadUrl }) {
           </td>
         </tr>
 
-        <!-- IOS NOTE -->
+        <!-- IPHONE NOTE -->
         <tr>
-          <td class="pad" style="padding:28px 40px 0 40px;">
+          <td class="pad" style="padding:30px 44px 0 44px;">
             <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation"
-              bgcolor="#fff8e6" style="background-color:#fff8e6;
-              border-left:3px solid #cc8800;border-radius:4px;">
+              bgcolor="#f6f2fd"
+              style="background-color:#f6f2fd;
+              background-image:linear-gradient(135deg,#f8f1fd 0%,#eef7fa 100%);
+              border-radius:14px;border:1px solid #e6dff5;">
               <tr>
-                <td style="padding:16px 20px;">
-                  <div style="font-size:12px;line-height:1.7;color:#553300;
-                    font-family:'Courier New',Courier,monospace;">
-                    <strong>On iPhone:</strong> after you tap Add, your phone may sit
-                    still for up to a minute while it prepares the files. That's
-                    normal &mdash; keep the page open and don't close the browser.
-                    Uploading works best over wifi.
+                <td style="padding:18px 22px;">
+                  <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;
+                    color:#8b00d9;font-weight:700;margin-bottom:6px;font-family:${SANS};">
+                    If you're on iPhone
+                  </div>
+                  <div style="font-size:13px;line-height:1.7;color:#3d3b52;font-family:${SANS};">
+                    After you tap Add, your phone may sit still for up to a minute
+                    while it hands over the files. That's normal &mdash; keep the page
+                    open and don't close the browser. Wifi works best.
                   </div>
                 </td>
               </tr>
@@ -2601,16 +2620,15 @@ function renderUploadEmail({ guest, uploadUrl }) {
 
         <!-- DIVIDER -->
         <tr>
-          <td class="pad" style="padding:32px 40px 0 40px;">
-            <div style="height:1px;background-color:#e4e0d8;font-size:0;line-height:1px;">&nbsp;</div>
+          <td class="pad" style="padding:34px 44px 0 44px;">
+            <div style="height:1px;background-color:#ece8f6;font-size:0;line-height:1px;">&nbsp;</div>
           </td>
         </tr>
 
         <!-- NOTE -->
         <tr>
-          <td class="pad" style="padding:24px 40px 0 40px;">
-            <p style="margin:0;font-size:12px;line-height:1.8;color:#666677;
-              font-family:'Courier New',Courier,monospace;">
+          <td class="pad" style="padding:24px 44px 0 44px;">
+            <p style="margin:0;font-size:13px;line-height:1.8;color:#6e6b85;font-family:${SANS};">
               This link is yours alone &mdash; it's how the archive knows which
               photos came from you. Bookmark it and come back anytime to add more.
             </p>
@@ -2619,11 +2637,10 @@ function renderUploadEmail({ guest, uploadUrl }) {
 
         <!-- SIGNOFF -->
         <tr>
-          <td class="pad" style="padding:28px 40px 40px 40px;">
-            <p style="margin:0;font-size:14px;line-height:1.7;color:#1a1a2e;
-              font-family:'Courier New',Courier,monospace;">
+          <td class="pad" style="padding:30px 44px 42px 44px;">
+            <p style="margin:0;font-size:15px;line-height:1.7;color:#1c1b2e;font-family:${SANS};">
               Big love,<br/>
-              <strong style="color:#7700cc;">S &amp; G</strong>
+              <span style="font-weight:700;letter-spacing:2px;color:#8b00d9;">S &amp; G</span>
             </p>
           </td>
         </tr>
@@ -2631,16 +2648,15 @@ function renderUploadEmail({ guest, uploadUrl }) {
       </table>
 
       <!-- FOOTER -->
-      <table width="560" border="0" cellpadding="0" cellspacing="0" role="presentation"
-        style="max-width:560px;width:100%;">
+      <table width="580" border="0" cellpadding="0" cellspacing="0" role="presentation"
+        style="max-width:580px;width:100%;">
         <tr>
-          <td align="center" style="padding:24px 20px 0 20px;">
-            <div style="font-size:11px;line-height:1.8;color:#8a8680;
-              font-family:'Courier New',Courier,monospace;">
+          <td align="center" style="padding:26px 20px 0 20px;">
+            <div style="font-size:12px;line-height:1.8;color:#8a87a0;font-family:${SANS};">
               Lost this email? Write to
               <a href="mailto:eyesonly@cactusmakesperfect.org?subject=upload"
-                style="color:#7700cc;text-decoration:underline;">eyesonly@cactusmakesperfect.org</a><br/>
-              with the subject <strong>upload</strong> and we'll send your link again.
+                style="color:#8b00d9;text-decoration:underline;">eyesonly@cactusmakesperfect.org</a><br/>
+              with the subject <strong style="color:#6e6b85;">upload</strong> and we'll send your link again.
             </div>
           </td>
         </tr>
@@ -2659,8 +2675,8 @@ ${firstName},
 The weekend happened. You were there. Your phone remembers.
 
 We're building the archive — every photo, every video, in one place
-that stays up for good. The link below opens a portal where you can
-add yours.
+that stays up for good. The link below opens your own portal where
+you can add yours.
 
 OPEN YOUR PORTAL:
 ${uploadUrl}
@@ -2668,9 +2684,9 @@ ${uploadUrl}
 Works on phone or computer. Select as many as you like at once.
 Duplicates are detected and skipped.
 
-ON IPHONE: after you tap Add, your phone may sit still for up to a
-minute while it prepares the files. That's normal — keep the page
-open and don't close the browser. Uploading works best over wifi.
+IF YOU'RE ON IPHONE: after you tap Add, your phone may sit still for
+up to a minute while it hands over the files. That's normal — keep
+the page open and don't close the browser. Wifi works best.
 
 This link is yours alone — it's how the archive knows which photos
 came from you. Bookmark it and come back anytime to add more.
@@ -2932,16 +2948,12 @@ app.post("/api/v1/auth/artifact-relink", async (req, res) => {
       return res.json({ ok: true });
     }
 
-    const artifactUrl = `${PUBLIC_URL}/artifact?token=${encodeURIComponent(tokenRow.token)}`;
-    const { html, text } = renderArtifactEmail({
-      guest,
-      artifactUrl,
-      combination: tokenRow.combination,
-    });
+    const uploadUrl = `${PUBLIC_URL}/upload?token=${encodeURIComponent(tokenRow.token)}`;
+    const { html, text } = renderUploadEmail({ guest, uploadUrl });
 
     await sendEmail({
       to: guest.email,
-      subject: "🌵 YOUR ARTIFACT PORTAL LINK",
+      subject: "The Capsule — your portal link",
       html,
       text,
     });
