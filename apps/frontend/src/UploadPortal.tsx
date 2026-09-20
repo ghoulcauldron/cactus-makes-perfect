@@ -449,13 +449,6 @@ export default function UploadPortal() {
     return () => clearTimeout(id);
   }, [mine, token, loadMine]);
 
-    useEffect(() => {
-    if (!token) return;
-    if (!mine.some(m => m.status === 'processing')) return;
-    const id = setTimeout(() => loadMine(token), 3000);
-    return () => clearTimeout(id);
-  }, [mine, token, loadMine]);
-
   // Keep the screen awake and warn before closing mid-upload
   useEffect(() => {
     const uploading = queue.some(q =>
@@ -475,8 +468,6 @@ export default function UploadPortal() {
       window.removeEventListener('beforeunload', warn);
     };
   }, [queue, preparing]);
-
-  const handleFiles = async (files: FileList | null) => {
 
   const handleFiles = async (files: FileList | null) => {
     if (!files || !token) return;
