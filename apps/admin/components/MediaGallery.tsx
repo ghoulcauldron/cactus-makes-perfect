@@ -29,6 +29,7 @@ interface MediaRow {
   guest_name: string;
   source: string;
   uploaded_at: string;
+  is_hidden: boolean;
 }
 
 interface Contributor {
@@ -68,22 +69,31 @@ function fullName(c: Contributor) {
 // LIGHTBOX
 // ---------------------------------------------------------------------------
 function Lightbox({
-  items, index, onClose, onNav,
+  items, index, onClose, onNav, onHide, onDelete, busy,
 }: {
   items: MediaRow[];
   index: number;
   onClose: () => void;
   onNav: (dir: -1 | 1) => void;
+  onHide: (m: MediaRow) => void;
+  onDelete: (m: MediaRow) => void;
+  busy: boolean;
 }) {
   const m = items[index];
   const touchX = useRef<number | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  useEffect(() => {
+    setConfirmDelete(false);
+  }, [index]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape")     onClose();
-      if (e.key === "ArrowLeft")  onNav(-1);
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowLeft") onNav(-1);
       if (e.key === "ArrowRight") onNav(1);
     };
+
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose, onNav]);
@@ -115,6 +125,38 @@ function Lightbox({
           <span className="text-[8px] text-[#45CC2D]/40 tracking-widest">
             {String(index + 1).padStart(3, "0")} / {String(items.length).padStart(3, "0")}
           </span>
+
+          <button onClick={() => onHide(m)} disabled={busy}
+            className={`px-2 py-1 text-[8px] font-bold uppercase tracking-widest border transition-all
+              disabled:opacity-30
+              ${m.is_hidden
+                ? "bg-yellow-500/20 border-yellow-500/60 text-yellow-400"
+                : "border-[#45CC2D]/30 text-[#45CC2D]/60 hover:border-yellow-500/60 hover:text-yellow-400"}`}>
+            {m.is_hidden ? "UNHIDE" : "HIDE"}
+          </button>
+
+          {confirmDelete ? (
+            <div className="flex items-center gap-1.5">
+              <button onClick={() => onDelete(m)} disabled={busy}
+                className="px-2 py-1 text-[8px] font-bold uppercase tracking-widest
+                  bg-[#ff0055] text-black disabled:opacity-30 transition-all">
+                CONFIRM
+              </button>
+              <button onClick={() => setConfirmDelete(false)}
+                className="px-1.5 py-1 text-[8px] uppercase tracking-widest
+                  text-[#45CC2D]/40 hover:text-[#45CC2D]">
+                ✕
+              </button>
+            </div>
+          ) : (
+            <button onClick={() => setConfirmDelete(true)}
+              className="px-2 py-1 text-[8px] font-bold uppercase tracking-widest
+                border border-[#ff0055]/40 text-[#ff0055]/70
+                hover:bg-[#ff0055] hover:text-black transition-all">
+              DELETE
+            </button>
+          )}
+
           <a href={m.original_url || "#"} download target="_blank" rel="noreferrer"
             className="text-[#45CC2D]/40 hover:text-[#45CC2D] transition-colors" title="Download original">
             <ArrowDownTrayIcon className="h-4 w-4" />
@@ -229,6 +271,35 @@ export default function MediaGallery() {
     }
     setPurging(null);
   }, [fetchMedia]);
+
+  const handleHide = useCallback(async (m: MediaRow) => {
+    setPurging(m.id);
+    try {
+      const res = await apiFetch("/admin/media/hide", {
+        method: "POST",
+        body: JSON.stringify({ media_id: m.id, hidden: !m.is_hidden }),
+      });
+      setMedia(list => list.map(x => x.id === m.id ? { ...x, is_hidden: res.is_hidden } : x));
+    } catch (e) {
+      console.error("[MediaGallery] hide failed", e);
+    }
+    setPurging(null);
+  }, []);
+
+  const handleAdminDelete = useCallback(async (m: MediaRow) => {
+    setPurging(m.id);
+    try {
+      await apiFetch("/admin/media/delete", {
+        method: "POST",
+        body: JSON.stringify({ media_id: m.id }),
+      });
+      setMedia(list => list.filter(x => x.id !== m.id));
+      setLbIndex(null);
+    } catch (e) {
+      console.error("[MediaGallery] delete failed", e);
+    }
+    setPurging(null);
+  }, []);
 
   const filtered = useMemo(() => {
     let list = media;
@@ -464,6 +535,16 @@ export default function MediaGallery() {
                       {m.source.slice(0, 2)}
                     </span>
                   )}
+
+                  {m.is_hidden && (
+                    <>
+                      <div className="absolute inset-0 bg-black/60 pointer-events-none" />
+                      <span className="absolute top-0.5 left-0.5 bg-yellow-500 text-black
+                        text-[6px] font-black px-1 uppercase">
+                        HIDDEN
+                      </span>
+                    </>
+                  )}
                 </button>
               ))}
             </div>
@@ -477,6 +558,9 @@ export default function MediaGallery() {
           index={lbIndex}
           onClose={() => setLbIndex(null)}
           onNav={navLightbox}
+          onHide={handleHide}
+          onDelete={handleAdminDelete}
+          busy={purging !== null}
         />
       )}
             {showTrash && (

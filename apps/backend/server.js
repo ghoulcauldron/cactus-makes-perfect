@@ -3629,6 +3629,7 @@ app.get("/api/v1/admin/media", async (req, res) => {
       guest_name: `${m.first_name} ${m.last_name}`,
       source:     m.source,
       uploaded_at: m.uploaded_at,
+      is_hidden: m.is_hidden,
     }));
 
     const { data: stats } = await supabase
@@ -3783,6 +3784,45 @@ app.get("/api/v1/admin/media/pending-posters", async (req, res) => {
   } catch (e) {
     console.error("[PendingPosters] error", e);
     return res.status(500).json({ error: "Internal error" });
+  }
+});
+
+// ---- Admin: hide / unhide ----
+app.post("/api/v1/admin/media/hide", async (req, res) => {
+  try {
+    const { media_id, hidden } = req.body || {};
+    if (!media_id) return res.status(400).json({ error: "Missing media_id" });
+
+    const { data: updated, error } = await supabase
+      .from("media")
+      .update({ is_hidden: !!hidden, updated_at: new Date().toISOString() })
+      .eq("id", media_id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return res.json({ ok: true, is_hidden: updated.is_hidden });
+  } catch (e) {
+    console.error("[AdminHide] error", e);
+    return res.status(500).json({ error: "Hide failed" });
+  }
+});
+
+// ---- Admin: soft-delete any item ----
+app.post("/api/v1/admin/media/delete", async (req, res) => {
+  try {
+    const { media_id } = req.body || {};
+    if (!media_id) return res.status(400).json({ error: "Missing media_id" });
+
+    await supabase
+      .from("media")
+      .update({ deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .eq("id", media_id);
+
+    return res.json({ ok: true });
+  } catch (e) {
+    console.error("[AdminDelete] error", e);
+    return res.status(500).json({ error: "Delete failed" });
   }
 });
 
