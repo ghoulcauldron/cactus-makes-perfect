@@ -3114,7 +3114,7 @@ app.post("/api/v1/admin/upload-invites/send-all", async (req, res) => {
 // PHASE 2.5 — MEDIA UPLOAD (R2)
 // =====================================================
 
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectsCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectsCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import sharp from "sharp";
 import exifr from "exifr";
@@ -3132,6 +3132,200 @@ const R2_BUCKET      = process.env.R2_BUCKET;
 const R2_PUBLIC_BASE = process.env.R2_PUBLIC_BASE;
 
 const publicUrl = (key) => key ? `${R2_PUBLIC_BASE}/${key}` : null;
+
+
+// ---- Media processing: memory limits ----
+// No libvips operation cache, one thread per image — keeps memory flat on small containers
+sharp.cache(false);
+sharp.concurrency(1);
+
+// At most 2 images are processed at once; the rest wait their turn
+const MAX_PROCESSING = 2;
+let processingActive = 0;
+const processingWaiters = [];
+
+async function withProcessingSlot(fn) {
+  while (processingActive >= MAX_PROCESSING) {
+    await new Promise(r => processingWaiters.push(r));
+  }
+  processingActive++;
+  try {
+    return await fn();
+  } finally {
+    processingActive--;
+    const next = processingWaiters.shift();
+    if (next) next();
+  }
+}
+
+// Byte size of an R2 object, or -1 if it doesn't exist
+async function r2ObjectSize(key) {
+  try {
+    const head = await r2.send(new HeadObjectCommand({ Bucket: R2_BUCKET, Key: key }));
+    return head.ContentLength ?? 0;
+  } catch {
+    return -1;
+  }
+}
+
+// The bytes never arrived, or arrived empty. Clean up and flag the row.
+async function markMissing(m, size) {
+  if (size === 0) {
+    await r2.send(new DeleteObjectsCommand({
+      Bucket: R2_BUCKET,
+      Delete: { Objects: [{ Key: m.key_original }], Quiet: true },
+    })).catch(() => {});
+  }
+  await supabase.from("media").update({
+    status: "missing",
+    last_error: size === 0 ? "EMPTY_OBJECT" : "NO_OBJECT",
+    updated_at: new Date().toISOString(),
+  }).eq("id", m.id);
+}
+
+// Build thumb + display from the original, with a single full-resolution decode
+async function generateImageDerivatives(m) {
+  const obj = await r2.send(new GetObjectCommand({ Bucket: R2_BUCKET, Key: m.key_original }));
+  const raw = Buffer.from(await obj.Body.transformToByteArray());
+
+  let exif = {};
+  try { exif = (await exifr.parse(raw, { gps: true })) || {}; } catch {}
+
+  // Header-only read for true dimensions
+  const srcMeta  = await sharp(raw).metadata();
+  const oriented = (srcMeta.orientation || 1) >= 5;
+  let w = oriented ? srcMeta.height : srcMeta.width;
+  let h = oriented ? srcMeta.width  : srcMeta.height;
+
+  // The only full-resolution decode, straight down to display size
+  const upright = await sharp(raw)
+    .rotate()
+    .resize(2048, 2048, { fit: "inside", withoutEnlargement: true })
+    .jpeg({ quality: 92 })
+    .toBuffer();
+
+  const rot = m.rotation || 0;
+  if (rot === 90 || rot === 270) [w, h] = [h, w];
+  const base = () => (rot ? sharp(upright).rotate(rot) : sharp(upright));
+
+  const displayBuf = await base().webp({ quality: 82 }).toBuffer();
+  const thumbBuf   = await base()
+    .resize(400, 400, { fit: "inside" })
+    .webp({ quality: 75 })
+    .toBuffer();
+
+  const keyThumb   = `image/${m.id}/thumb.webp`;
+  const keyDisplay = `image/${m.id}/display.webp`;
+  const cache = "public, max-age=31536000, immutable";
+
+  await r2.send(new PutObjectCommand({
+    Bucket: R2_BUCKET, Key: keyThumb, Body: thumbBuf, ContentType: "image/webp", CacheControl: cache,
+  }));
+  await r2.send(new PutObjectCommand({
+    Bucket: R2_BUCKET, Key: keyDisplay, Body: displayBuf, ContentType: "image/webp", CacheControl: cache,
+  }));
+
+  const { data: updated, error } = await supabase
+    .from("media")
+    .update({
+      key_thumb:   keyThumb,
+      key_display: keyDisplay,
+      width:       w || null,
+      height:      h || null,
+      bytes:       raw.length,
+      taken_at:    exif.DateTimeOriginal || exif.CreateDate || null,
+      gps_lat:     exif.latitude  ?? null,
+      gps_lng:     exif.longitude ?? null,
+      camera:      [exif.Make, exif.Model].filter(Boolean).join(" ") || null,
+      status:      "ready",
+      last_error:  null,
+      updated_at:  new Date().toISOString(),
+    })
+    .eq("id", m.id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return updated;
+}
+
+// Retry one stuck item. Returns "ready" | "missing" | "failed"
+async function reprocessMedia(m) {
+  const size = await r2ObjectSize(m.key_original);
+  if (size <= 0) {
+    await markMissing(m, size);
+    return "missing";
+  }
+
+  if (m.kind === "video") {
+    await supabase.from("media")
+      .update({ status: "ready", last_error: null, updated_at: new Date().toISOString() })
+      .eq("id", m.id);
+    return "ready";
+  }
+
+  try {
+    await withProcessingSlot(() => generateImageDerivatives(m));
+    return "ready";
+  } catch (e) {
+    console.error(`[Reprocess] ${m.id} failed`, e.message);
+    await supabase.from("media").update({
+      status: "failed",
+      last_error: String(e?.message || e).slice(0, 500),
+      updated_at: new Date().toISOString(),
+    }).eq("id", m.id);
+    return "failed";
+  }
+}
+
+// Stuck = processing or failed, untouched for 2+ minutes
+const STALE_MS = 2 * 60 * 1000;
+
+async function stuckMediaFor(guestId) {
+  const cutoff = Date.now() - STALE_MS;
+  const isStuck = (m) => m && !m.deleted_at
+    && (m.status === "processing" || m.status === "failed")
+    && new Date(m.updated_at || m.created_at).getTime() < cutoff;
+
+  if (guestId) {
+    const { data } = await supabase
+      .from("media_uploads").select("media:media_id(*)").eq("guest_id", guestId);
+    return (data || []).map(r => r.media).filter(isStuck);
+  }
+  const { data } = await supabase
+    .from("media").select("*")
+    .in("status", ["processing", "failed"])
+    .is("deleted_at", null);
+  return (data || []).filter(isStuck);
+}
+
+// Small batches keep each request short; call again while `remaining` > 0
+async function reprocessBatch(guestId, limit = 8) {
+  const candidates = await stuckMediaFor(guestId);
+  const batch = candidates.slice(0, limit);
+  const out = { recovered: 0, missing: 0, failed: 0 };
+  for (const m of batch) {
+    const r = await reprocessMedia(m);
+    if (r === "ready") out.recovered++;
+    else out[r]++;
+  }
+  return { ...out, remaining: candidates.length - batch.length };
+}
+
+// A guest re-selecting a lost photo may produce a new hash (iOS can re-encode).
+// Remove their old "missing" row with the same filename so it doesn't linger.
+async function clearSupersededMissing(guestId, filename, keepId) {
+  if (!filename) return;
+  const { data } = await supabase
+    .from("media_uploads")
+    .select("media:media_id(id, status, original_filename)")
+    .eq("guest_id", guestId);
+  const stale = (data || [])
+    .map(r => r.media)
+    .filter(m => m && m.id !== keepId && m.status === "missing" && m.original_filename === filename)
+    .map(m => m.id);
+  if (stale.length) await supabase.from("media").delete().in("id", stale);
+}
 
 // Resolve an artifact token to a guest. Returns null if invalid.
 async function guestFromArtifactToken(token) {
@@ -3213,6 +3407,9 @@ app.post("/api/v1/upload/presign", async (req, res) => {
 
     if (!sha256 || !mime) {
       return res.status(400).json({ error: "Missing sha256 or mime" });
+    }
+    if (!bytes || bytes <= 0) {
+      return res.status(400).json({ error: "EMPTY_FILE" });
     }
 
     const kind = mime.startsWith("video/") ? "video"
@@ -3302,6 +3499,7 @@ app.post("/api/v1/upload/presign", async (req, res) => {
     );
 
     await creditUpload(mediaId, guest.id);
+    await clearSupersededMissing(guest.id, filename, mediaId);
 
     return res.json({ duplicate: false, media_id: mediaId, key, put_url });
   } catch (e) {
@@ -3321,76 +3519,34 @@ app.post("/api/v1/upload/complete", async (req, res) => {
       .from("media").select("*").eq("id", media_id).maybeSingle();
     if (!m) return res.status(404).json({ error: "Media not found" });
 
-    // Video: store original only for now, poster backfilled in v3
+    // Refuse empty uploads: the portal sees 422 and asks the guest to re-select
+    const size = await r2ObjectSize(m.key_original);
+    if (size <= 0) {
+      await markMissing(m, size);
+      return res.status(422).json({ error: "EMPTY_UPLOAD" });
+    }
+
+    // Video: original only; the poster comes from the browser or the backfill script
     if (m.kind === "video") {
       const { data: updated } = await supabase
         .from("media")
-        .update({ status: "ready" })
+        .update({ status: "ready", last_error: null, updated_at: new Date().toISOString() })
         .eq("id", media_id)
         .select()
         .single();
       return res.json({ media: serializeMedia(updated) });
     }
 
-    // Image: pull the original back down and derive
-    const obj = await r2.send(new GetObjectCommand({
-      Bucket: R2_BUCKET, Key: m.key_original,
-    }));
-    const buf = Buffer.from(await obj.Body.transformToByteArray());
-
-    // EXIF (kept in full on the original; GPS stripped from derivatives)
-    let exif = {};
-    try { exif = (await exifr.parse(buf, { gps: true })) || {}; } catch {}
-
-    const meta = await sharp(buf).metadata();
-
-    const thumbBuf = await sharp(buf)
-      .rotate()
-      .resize(400, 400, { fit: "inside", withoutEnlargement: true })
-      .webp({ quality: 75 })
-      .toBuffer();
-
-    const displayBuf = await sharp(buf)
-      .rotate()
-      .resize(2048, 2048, { fit: "inside", withoutEnlargement: true })
-      .webp({ quality: 82 })
-      .toBuffer();
-
-    const keyThumb   = `image/${media_id}/thumb.webp`;
-    const keyDisplay = `image/${media_id}/display.webp`;
-
-    await r2.send(new PutObjectCommand({
-      Bucket: R2_BUCKET, Key: keyThumb, Body: thumbBuf,
-      ContentType: "image/webp", CacheControl: "public, max-age=31536000, immutable",
-    }));
-    await r2.send(new PutObjectCommand({
-      Bucket: R2_BUCKET, Key: keyDisplay, Body: displayBuf,
-      ContentType: "image/webp", CacheControl: "public, max-age=31536000, immutable",
-    }));
-
-    const { data: updated } = await supabase
-      .from("media")
-      .update({
-        key_thumb:   keyThumb,
-        key_display: keyDisplay,
-        width:       meta.width  || null,
-        height:      meta.height || null,
-        bytes:       buf.length,
-        taken_at:    exif.DateTimeOriginal || exif.CreateDate || null,
-        gps_lat:     exif.latitude  ?? null,
-        gps_lng:     exif.longitude ?? null,
-        camera:      [exif.Make, exif.Model].filter(Boolean).join(" ") || null,
-        status:      "ready",
-      })
-      .eq("id", media_id)
-      .select()
-      .single();
-
+    const updated = await withProcessingSlot(() => generateImageDerivatives(m));
     return res.json({ media: serializeMedia(updated) });
   } catch (e) {
     console.error("[UploadComplete] error", e);
     await supabase.from("media")
-      .update({ status: "failed" })
+      .update({
+        status: "failed",
+        last_error: String(e?.message || e).slice(0, 500),
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", req.body?.media_id);
     return res.status(500).json({ error: "Processing failed" });
   }
@@ -3823,6 +3979,19 @@ app.post("/api/v1/admin/media/delete", async (req, res) => {
   } catch (e) {
     console.error("[AdminDelete] error", e);
     return res.status(500).json({ error: "Delete failed" });
+  }
+});
+
+// ---- Admin: reprocess stuck media (one guest, or everyone) ----
+// Call repeatedly until `remaining` is 0.
+app.post("/api/v1/admin/media/reprocess", async (req, res) => {
+  try {
+    const result = await reprocessBatch(req.body?.guest_id || null);
+    console.log("[AdminReprocess]", result);
+    return res.json(result);
+  } catch (e) {
+    console.error("[AdminReprocess] error", e);
+    return res.status(500).json({ error: "Reprocess failed" });
   }
 });
 

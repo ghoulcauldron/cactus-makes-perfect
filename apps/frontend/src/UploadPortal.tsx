@@ -113,15 +113,6 @@ function extractVideoPoster(file: Blob): Promise<VideoPoster | null> {
   });
 }
 
-declare module 'heic2any' {
-  const heic2any: (options: {
-    blob: Blob;
-    toType: string;
-    quality?: number;
-  }) => Promise<Blob | Blob[]>;
-  export default heic2any;
-}
-
 const isHeic = (f: File) =>
   /image\/hei[cf]/i.test(f.type) || /\.hei[cf]$/i.test(f.name);
 
