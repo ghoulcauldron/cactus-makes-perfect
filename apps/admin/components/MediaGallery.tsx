@@ -10,6 +10,7 @@ import {
   VideoCameraIcon,
   ArrowDownTrayIcon,
   UsersIcon,
+  ExclamationTriangleIcon,
 } from "@heroicons/react/20/solid";
 
 // ---------------------------------------------------------------------------
@@ -30,6 +31,7 @@ interface MediaRow {
   source: string;
   uploaded_at: string;
   is_hidden: boolean;
+  last_error?: string | null;
 }
 
 interface Contributor {
@@ -63,6 +65,42 @@ function relTime(d: string | null): string {
 
 function fullName(c: Contributor) {
   return `${c.first_name} ${c.last_name}`;
+}
+
+// Stuck items the server can retry on its own (missing ones need the guest)
+const isRetryable = (m: MediaRow) => m.status === "processing" || m.status === "failed";
+
+// Hover text for a tile that isn't finished
+function statusTitle(m: MediaRow): string | undefined {
+  if (m.status === "ready") return undefined;
+  return m.last_error ? `${m.status.toUpperCase()} — ${m.last_error}` : m.status.toUpperCase();
+}
+
+// What an unfinished status means, and who can fix it
+const STATUS_HELP: Record<string, string> = {
+  missing:
+    "The file never arrived intact. Only the guest can fix this: their portal lists it and asks them to select it again.",
+  failed:
+    "The file arrived but couldn't be processed. Try REPROCESS. If it fails again, the error below says why.",
+  processing:
+    "Still processing, or stuck. If it has been more than two minutes, REPROCESS will finish it.",
+};
+
+// ---------------------------------------------------------------------------
+// STATUS TAG
+// ---------------------------------------------------------------------------
+function StatusTag({ status, large = false }: { status: string; large?: boolean }) {
+  if (status === "ready") return null;
+  const style =
+    status === "failed"  ? "bg-[#ff0055] text-black" :
+    status === "missing" ? "bg-yellow-500 text-black" :
+                           "bg-neutral-600 text-white";
+  const size = large ? "text-[10px] px-2 py-0.5" : "text-[7px] px-1";
+  return (
+    <span className={`font-black tracking-widest uppercase ${style} ${size}`}>
+      {status}
+    </span>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -184,7 +222,20 @@ function Lightbox({
           </>
         )}
 
-        {m.kind === "video" ? (
+        {m.status !== "ready" ? (
+          // Nothing to display yet: explain the state instead of a broken image
+          <div className="max-w-md text-center px-6">
+            <StatusTag status={m.status} large />
+            <p className="text-[10px] leading-relaxed text-[#45CC2D]/70 mt-4">
+              {STATUS_HELP[m.status] || "This item isn't finished."}
+            </p>
+            {m.last_error && (
+              <p className="text-[9px] leading-relaxed text-[#45CC2D]/40 mt-3 break-all">
+                ERROR: {m.last_error}
+              </p>
+            )}
+          </div>
+        ) : m.kind === "video" ? (
           <video key={m.id} src={m.original_url || ""} controls autoPlay
             className="max-w-full max-h-full border border-[#45CC2D]/20" />
         ) : (
@@ -213,6 +264,9 @@ export default function MediaGallery() {
   const [trash, setTrash]             = useState<MediaRow[]>([]);
   const [purging, setPurging]         = useState<string | null>(null);
   const [confirmPurge, setConfirmPurge] = useState<string | null>(null);
+  const [attentionOnly, setAttentionOnly] = useState(false);
+  const [reprocessing, setReprocessing]   = useState(false);
+  const [reprocessNote, setReprocessNote] = useState<string | null>(null);
 
   const fetchMedia = useCallback(async () => {
     setLoading(true);
@@ -301,9 +355,53 @@ export default function MediaGallery() {
     setPurging(null);
   }, []);
 
+  // Retry stuck items for the selected guest (or everyone), a batch at a time
+  const handleReprocess = useCallback(async () => {
+    setReprocessing(true);
+    setReprocessNote("REPROCESSING...");
+    const tally = { recovered: 0, missing: 0, failed: 0 };
+    try {
+      for (let pass = 0; pass < 30; pass++) {
+        const res = await apiFetch("/admin/media/reprocess", {
+          method: "POST",
+          body: JSON.stringify({ guest_id: activeGuest }),
+        });
+        tally.recovered += res.recovered || 0;
+        tally.missing   += res.missing   || 0;
+        tally.failed    += res.failed    || 0;
+        setReprocessNote(
+          `${tally.recovered} RECOVERED // ${tally.missing} MISSING // ${tally.failed} FAILED`
+        );
+        if (!res.remaining) break;
+      }
+    } catch (e) {
+      console.error("[MediaGallery] reprocess failed", e);
+      setReprocessNote("REPROCESS FAILED — CHECK SERVER LOGS");
+    }
+    await fetchMedia();
+    setReprocessing(false);
+  }, [activeGuest, fetchMedia]);
+
+  // Everything in the current guest scope, before kind/search/attention filters
+  const scoped = useMemo(
+    () => (activeGuest ? media.filter(m => m.guest_id === activeGuest) : media),
+    [media, activeGuest]
+  );
+  const attentionCount = useMemo(() => scoped.filter(m => m.status !== "ready").length, [scoped]);
+  const retryableCount = useMemo(() => scoped.filter(isRetryable).length, [scoped]);
+
+  // Unfinished items per guest, for the contributor rail
+  const problemsByGuest = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const m of media) {
+      if (m.status !== "ready") counts[m.guest_id] = (counts[m.guest_id] || 0) + 1;
+    }
+    return counts;
+  }, [media]);
+
   const filtered = useMemo(() => {
-    let list = media;
-    if (activeGuest) list = list.filter(m => m.guest_id === activeGuest);
+    let list = scoped;
+    if (attentionOnly) list = list.filter(m => m.status !== "ready");
     if (kindFilter !== "all") list = list.filter(m => m.kind === kindFilter);
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -317,7 +415,7 @@ export default function MediaGallery() {
       const bv = sortMode === "taken" ? (b.taken_at || b.uploaded_at) : b.uploaded_at;
       return new Date(bv).getTime() - new Date(av).getTime();
     });
-  }, [media, activeGuest, kindFilter, search, sortMode]);
+  }, [scoped, attentionOnly, kindFilter, search, sortMode]);
 
   const totals = useMemo(() => ({
     all:    media.length,
@@ -363,7 +461,7 @@ export default function MediaGallery() {
 
         <div className="flex-1 overflow-y-auto scrollbar-hide">
           {/* All */}
-          <button onClick={() => { setActiveGuest(null); setLbIndex(null); }}
+          <button onClick={() => { setActiveGuest(null); setLbIndex(null); setReprocessNote(null); }}
             className={`w-full text-left px-3 py-3 border-b border-[#45CC2D]/10 transition-all
               ${!activeGuest ? "bg-[#45CC2D]/10 border-l-2 border-l-[#45CC2D]" : "hover:bg-[#45CC2D]/5"}`}>
             <div className="flex items-center justify-between">
@@ -382,9 +480,10 @@ export default function MediaGallery() {
             .map(c => {
               const isActive = activeGuest === c.id;
               const hasUploads = c.upload_count > 0;
+              const problems = problemsByGuest[c.id] || 0;
               return (
                 <button key={c.id}
-                  onClick={() => { setActiveGuest(c.id); setLbIndex(null); }}
+                  onClick={() => { setActiveGuest(c.id); setLbIndex(null); setReprocessNote(null); }}
                   className={`w-full text-left px-3 py-2.5 border-b border-[#45CC2D]/10 transition-all
                     ${isActive ? "bg-[#45CC2D]/10 border-l-2 border-l-[#45CC2D]" : "hover:bg-[#45CC2D]/5"}`}>
                   <div className="flex items-center justify-between gap-2">
@@ -392,8 +491,16 @@ export default function MediaGallery() {
                       ${hasUploads ? "text-[#45CC2D]" : "text-[#45CC2D]/25"}`}>
                       {fullName(c)}
                     </span>
-                    <span className={`text-[9px] shrink-0 ${hasUploads ? "text-[#45CC2D]" : "opacity-20"}`}>
-                      {c.upload_count}
+                    <span className="flex items-center gap-1.5 shrink-0">
+                      {problems > 0 && (
+                        <span className="text-[7px] font-black px-1 bg-yellow-500 text-black"
+                          title={`${problems} unfinished`}>
+                          {problems}!
+                        </span>
+                      )}
+                      <span className={`text-[9px] ${hasUploads ? "text-[#45CC2D]" : "opacity-20"}`}>
+                        {c.upload_count}
+                      </span>
                     </span>
                   </div>
                   <div className="flex items-center justify-between mt-1">
@@ -431,10 +538,36 @@ export default function MediaGallery() {
             <p className="text-[8px] opacity-40">
               {filtered.length} SHOWN
               {activeName?.email && ` // ${activeName.email}`}
+              {reprocessNote && ` // ${reprocessNote}`}
             </p>
           </div>
 
           <div className="ml-auto flex items-center gap-2">
+            {/* Needs attention */}
+            {(attentionCount > 0 || attentionOnly) && (
+              <button onClick={() => { setAttentionOnly(a => !a); setLbIndex(null); }}
+                title="Show only items that aren't finished"
+                className={`flex items-center gap-1 px-2 py-1 text-[8px] font-bold uppercase tracking-widest
+                  border transition-all
+                  ${attentionOnly
+                    ? "bg-yellow-500 text-black border-yellow-500"
+                    : "border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/10"}`}>
+                <ExclamationTriangleIcon className="h-3 w-3" />
+                ATTENTION ({attentionCount})
+              </button>
+            )}
+
+            {/* Reprocess — only for items the server can retry */}
+            {retryableCount > 0 && (
+              <button onClick={handleReprocess} disabled={reprocessing}
+                title="Retry stuck and failed items. Missing items can only be fixed by the guest."
+                className="px-2 py-1 text-[8px] font-bold uppercase tracking-widest
+                  border border-yellow-500/50 text-yellow-400
+                  hover:bg-yellow-500 hover:text-black disabled:opacity-40 transition-all">
+                {reprocessing ? "REPROCESSING..." : `REPROCESS (${retryableCount})`}
+              </button>
+            )}
+
             {/* Kind filter */}
             {(["all", "image", "video"] as const).map(k => (
               <button key={k} onClick={() => setKindFilter(k)}
@@ -476,14 +609,17 @@ export default function MediaGallery() {
             </div>
           ) : filtered.length === 0 ? (
             <div className="py-20 text-center text-[10px] opacity-20 uppercase tracking-widest">
-              NO IMPRINTS DETECTED
+              {attentionOnly ? "NOTHING NEEDS ATTENTION" : "NO IMPRINTS DETECTED"}
             </div>
           ) : (
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
-                            {filtered.map((m, i) => (
+              {filtered.map((m, i) => (
                 <button key={`${m.id}-${m.guest_id}`} onClick={() => setLbIndex(i)}
-                  className="group relative aspect-square bg-neutral-900 border border-[#45CC2D]/15
-                    hover:border-[#45CC2D]/60 overflow-hidden transition-all">
+                  title={statusTitle(m)}
+                  className={`group relative aspect-square bg-neutral-900 border overflow-hidden transition-all
+                    ${m.status === "ready"
+                      ? "border-[#45CC2D]/15 hover:border-[#45CC2D]/60"
+                      : "border-yellow-500/30 hover:border-yellow-500/70"}`}>
 
                   {m.thumb_url ? (
                     <img src={m.thumb_url} loading="lazy" alt=""
@@ -491,11 +627,14 @@ export default function MediaGallery() {
                   ) : m.kind === "video" ? (
                     <div className="w-full h-full flex flex-col items-center justify-center gap-1 text-[#45CC2D]/40">
                       <VideoCameraIcon className="h-6 w-6" />
-                      <span className="text-[7px] tracking-widest">VID</span>
+                      {m.status === "ready"
+                        ? <span className="text-[7px] tracking-widest">VID</span>
+                        : <StatusTag status={m.status} />}
                     </div>
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-[#45CC2D]/20">
-                      <PhotoIcon className="h-5 w-5" />
+                    <div className="w-full h-full flex flex-col items-center justify-center gap-1.5">
+                      <PhotoIcon className="h-5 w-5 text-[#45CC2D]/20" />
+                      <StatusTag status={m.status} />
                     </div>
                   )}
 
@@ -563,7 +702,7 @@ export default function MediaGallery() {
           busy={purging !== null}
         />
       )}
-            {showTrash && (
+      {showTrash && (
         <div className="fixed inset-0 z-[12000] bg-black/90 backdrop-blur-sm
           font-mono flex items-center justify-center p-4">
           <div className="w-full max-w-4xl max-h-[85vh] bg-black border border-[#ff0055]/40
