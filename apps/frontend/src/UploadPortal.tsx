@@ -20,17 +20,17 @@ type MediaItem = {
 };
 
 type QueueItem = {
+  id: string;
   file: File;
-  sha256: string;
-  status: 'pending' | 'uploading' | 'processing' | 'done' | 'duplicate' | 'error';
+  sha256?: string;
+  status: 'pending' | 'reading' | 'uploading' | 'processing' | 'done' | 'duplicate' | 'error';
   progress: number;
   error?: string;
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-async function sha256Hex(file: File): Promise<string> {
-  const buf  = await file.arrayBuffer();
+async function sha256FromBuffer(buf: ArrayBuffer): Promise<string> {
   const hash = await crypto.subtle.digest('SHA-256', buf);
   return Array.from(new Uint8Array(hash))
     .map(b => b.toString(16).padStart(2, '0'))
@@ -44,9 +44,9 @@ type VideoPoster = {
   duration: number;
 };
 
-// Extract a poster frame from a video file using canvas.
+// Extract a poster frame from a video using canvas.
 // Resolves null if the browser can't decode the format.
-function extractVideoPoster(file: File): Promise<VideoPoster | null> {
+function extractVideoPoster(file: Blob): Promise<VideoPoster | null> {
   return new Promise(resolve => {
     const url   = URL.createObjectURL(file);
     const video = document.createElement('video');
@@ -113,6 +113,15 @@ function extractVideoPoster(file: File): Promise<VideoPoster | null> {
   });
 }
 
+declare module 'heic2any' {
+  const heic2any: (options: {
+    blob: Blob;
+    toType: string;
+    quality?: number;
+  }) => Promise<Blob | Blob[]>;
+  export default heic2any;
+}
+
 const isHeic = (f: File) =>
   /image\/hei[cf]/i.test(f.type) || /\.hei[cf]$/i.test(f.name);
 
@@ -124,7 +133,7 @@ async function convertHeic(file: File): Promise<File> {
     { type: 'image/jpeg', lastModified: file.lastModified });
 }
 
-function uploadWithProgress(url: string, file: File, onProgress: (p: number) => void) {
+function uploadWithProgress(url: string, file: Blob, onProgress: (p: number) => void) {
   return new Promise<void>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open('PUT', url);
@@ -316,7 +325,7 @@ function Lightbox({
       {/* Media */}
       <div className="relative z-10 h-full flex flex-col items-center justify-center p-4 pointer-events-none">
         <div className="pointer-events-auto max-w-4xl w-full flex flex-col items-center">
-                    {m.kind === 'video' ? (
+          {m.kind === 'video' ? (
             <div
               className="flex items-center justify-center"
               style={
@@ -414,7 +423,6 @@ export default function UploadPortal() {
   const [lbIndex, setLbIndex]     = useState<number | null>(null);
   const [authError, setAuthError] = useState(false);
   const [actionBusy, setActionBusy] = useState(false);
-  const [preparing, setPreparing] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -442,18 +450,12 @@ export default function UploadPortal() {
 
   useEffect(() => { if (token) loadMine(token); }, [token, loadMine]);
 
-  useEffect(() => {
-    if (!token) return;
-    if (!mine.some(m => m.status === 'processing')) return;
-    const id = setTimeout(() => loadMine(token), 3000);
-    return () => clearTimeout(id);
-  }, [mine, token, loadMine]);
-
   // Keep the screen awake and warn before closing mid-upload
   useEffect(() => {
-    const uploading = queue.some(q =>
-      q.status === 'pending' || q.status === 'uploading' || q.status === 'processing');
-    if (!uploading && preparing === 0) return;
+    const isWorking = queue.some(q =>
+      q.status === 'pending' || q.status === 'reading' ||
+      q.status === 'uploading' || q.status === 'processing');
+    if (!isWorking) return;
 
     let lock: any = null;
     (navigator as any).wakeLock?.request('screen')
@@ -467,57 +469,68 @@ export default function UploadPortal() {
       lock?.release?.().catch(() => {});
       window.removeEventListener('beforeunload', warn);
     };
-  }, [queue, preparing]);
+  }, [queue]);
 
   const handleFiles = async (files: FileList | null) => {
     if (!files || !token) return;
     const raw = Array.from(files);
 
-    // Show the queue immediately so nothing looks frozen
-    setPreparing(raw.length);
-
-    const items: QueueItem[] = [];
-    for (const [i, f] of raw.entries()) {
-      setPreparing(raw.length - i);
-      let file = f;
-      if (isHeic(f)) {
-        try { file = await convertHeic(f); } catch { /* keep original */ }
-      }
-      const sha = await sha256Hex(file);
-      const item: QueueItem = { file, sha256: sha, status: 'pending', progress: 0 };
-      items.push(item);
-      setQueue(q => [...q, item]);   // append as each one is ready
-      await new Promise(r => setTimeout(r, 0)); // let the UI paint
-    }
-    setPreparing(0);
+    // Every file appears in the queue immediately; a new batch clears old errors
+    const items: QueueItem[] = raw.map((file, i) => ({
+      id: `${Date.now()}-${i}-${Math.random().toString(36).slice(2, 8)}`,
+      file,
+      status: 'pending',
+      progress: 0,
+    }));
+    setQueue(q => [...q.filter(x => x.status !== 'error'), ...items]);
 
     for (const item of items) {
       const mark = (patch: Partial<QueueItem>) =>
-        setQueue(q => q.map(x => x.sha256 === item.sha256 ? { ...x, ...patch } : x));
+        setQueue(q => q.map(x => x.id === item.id ? { ...x, ...patch } : x));
+      const unavailable = () => mark({ status: 'error', error: 'UNAVAILABLE — SELECT AGAIN' });
+
       try {
-        mark({ status: 'uploading' });
+        mark({ status: 'reading' });
+
+        let file = item.file;
+        if (isHeic(file)) {
+          try { file = await convertHeic(file); } catch { /* keep original */ }
+        }
+
+        // Read the bytes right before sending them. iOS can reclaim files
+        // from the photo picker; uploading exactly what we just read means
+        // an empty file can never reach the server.
+        let buf: ArrayBuffer;
+        try { buf = await file.arrayBuffer(); } catch { unavailable(); continue; }
+        if (buf.byteLength === 0) { unavailable(); continue; }
+
+        const type   = file.type || 'application/octet-stream';
+        const blob   = new Blob([buf], { type });
+        const sha256 = await sha256FromBuffer(buf);
+        mark({ sha256, status: 'uploading' });
+
         const pres = await fetch('/api/v1/upload/presign', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            token, sha256: item.sha256, filename: item.file.name,
-            mime: item.file.type || 'application/octet-stream', bytes: item.file.size,
+            token, sha256, filename: file.name, mime: type, bytes: buf.byteLength,
           }),
         }).then(r => r.json());
 
         if (pres.error)     { mark({ status: 'error', error: pres.error }); continue; }
         if (pres.duplicate) { mark({ status: 'duplicate', progress: 1 });   continue; }
 
-        await uploadWithProgress(pres.put_url, item.file, p => mark({ progress: p }));
+        await uploadWithProgress(pres.put_url, blob, p => mark({ progress: p }));
         mark({ status: 'processing', progress: 1 });
 
-        await fetch('/api/v1/upload/complete', {
+        const comp = await fetch('/api/v1/upload/complete', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token, media_id: pres.media_id }),
         });
+        if (comp.status === 422) { unavailable(); continue; }
 
-        if (item.file.type.startsWith('video/')) {
+        if (type.startsWith('video/')) {
           try {
-            const poster = await extractVideoPoster(item.file);
+            const poster = await extractVideoPoster(blob);
             if (poster) {
               const pp = await fetch('/api/v1/upload/poster', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -546,7 +559,8 @@ export default function UploadPortal() {
     }
 
     await loadMine(token);
-    setTimeout(() => setQueue([]), 4000);
+    // Clear successes, but keep errors visible so the guest knows what to re-add
+    setTimeout(() => setQueue(q => q.filter(x => x.status === 'error')), 4000);
   };
 
   const handleDelete = async (m: MediaItem) => {
@@ -589,9 +603,12 @@ export default function UploadPortal() {
   if (!ready) return <div className="fixed inset-0 bg-[#020617]" />;
   if (!token || authError) return <NoAccessPanel />;
 
-  const active = queue.filter(q => q.status !== 'done' && q.status !== 'duplicate');
+  const working = queue.filter(q =>
+    q.status === 'pending' || q.status === 'reading' ||
+    q.status === 'uploading' || q.status === 'processing');
+  const errors = queue.filter(q => q.status === 'error');
   const dupes  = queue.filter(q => q.status === 'duplicate');
-  const busy   = active.length > 0 || preparing > 0;
+  const busy   = working.length > 0;
 
   return (
     <div className="min-h-screen bg-[#020617] font-mono relative overflow-x-hidden">
@@ -639,32 +656,21 @@ export default function UploadPortal() {
             </span>
           </p>
 
-          {preparing > 0 && (
-            <div className="mt-8 bg-[#00ffff]/5 rounded-2xl border border-[#00ffff]/25 p-5 text-center">
-              <p className="text-[10px] text-[#00ffff] uppercase tracking-[0.3em] animate-pulse">
-                PREPARING {preparing} FILE{preparing > 1 ? 'S' : ''}
-              </p>
-              <p className="text-white/40 text-[8px] uppercase tracking-widest mt-2 leading-relaxed">
-                Your device is thinking.<br />
-                This is normal. Keep this page open. It will be over soon.
-              </p>
-            </div>
-          )}
-
-          {active.length > 0 && (
+          {(working.length > 0 || errors.length > 0) && (
             <div className="mt-8 bg-white/5 rounded-2xl border border-white/5 backdrop-blur-md p-5 space-y-3">
               <p className="text-[8px] text-[#00ffff]/40 uppercase tracking-[0.4em] mb-1">
-                // Incoming [{active.length}]
+                // Incoming [{working.length}]
               </p>
-              {active.map(q => (
-                <div key={q.sha256} className="space-y-1.5">
+              {[...working, ...errors].map(q => (
+                <div key={q.id} className="space-y-1.5">
                   <div className="flex items-center justify-between gap-3">
                     <span className="text-white/40 text-[9px] tracking-wider truncate flex-1">{q.file.name}</span>
                     <span className={`text-[8px] uppercase tracking-[0.2em] shrink-0
                       ${q.status === 'error' ? 'text-[#ff0055]' : 'text-[#00ffff]'}`}>
+                      {q.status === 'pending'    && 'QUEUED'}
+                      {q.status === 'reading'    && 'READING'}
                       {q.status === 'uploading'  && `${Math.round(q.progress * 100)}%`}
                       {q.status === 'processing' && 'PROCESSING'}
-                      {q.status === 'pending'    && 'QUEUED'}
                       {q.status === 'error'      && (q.error || 'FAILED')}
                     </span>
                   </div>
@@ -706,7 +712,7 @@ export default function UploadPortal() {
           </div>
         ) : (
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2.5">
-                        {mine.map((m, i) => (
+            {mine.map((m, i) => (
               <button key={m.id}
                 onClick={() => m.status === 'ready' && setLbIndex(i)}
                 className="group relative aspect-square rounded-2xl overflow-hidden
