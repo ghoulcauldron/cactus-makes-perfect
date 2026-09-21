@@ -2497,18 +2497,23 @@ function renderUploadEmail({ guest, uploadUrl }) {
         style="max-width:580px;width:100%;background-color:#ffffff;
         border:1px solid #e3dff0;border-radius:24px;">
 
-        <!-- IRIDESCENT BAR -->
+        <!-- IRIDESCENT BAR (inset pill) -->
         <tr>
-          <td bgcolor="#8b00d9" height="5"
-            style="background-color:#8b00d9;
-            background-image:linear-gradient(90deg,#8b00d9 0%,#b400ff 30%,#0aa5c4 70%,#1fbf6b 100%);
-            height:5px;font-size:0;line-height:5px;
-            border-radius:24px 24px 0 0;">&nbsp;</td>
+          <td align="center" style="padding:22px 44px 0 44px;">
+            <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation">
+              <tr>
+                <td height="4" bgcolor="#8b00d9"
+                  style="height:4px;background-color:#8b00d9;
+                  background-image:linear-gradient(90deg,#8b00d9 0%,#b400ff 30%,#0aa5c4 70%,#1fbf6b 100%);
+                  border-radius:100px;font-size:0;line-height:4px;">&nbsp;</td>
+              </tr>
+            </table>
+          </td>
         </tr>
 
         <!-- KICKER -->
         <tr>
-          <td class="pad" align="center" style="padding:40px 44px 0 44px;">
+          <td class="pad" align="center" style="padding:26px 44px 0 44px;">
             <div class="kick" style="font-size:10px;letter-spacing:5px;text-transform:uppercase;
               color:#8b00d9;font-weight:700;font-family:${SANS};">
               Cactus Makes Perfect
