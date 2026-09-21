@@ -2559,10 +2559,12 @@ function renderUploadEmail({ guest, uploadUrl }) {
             </p>
             <p style="margin:0 0 18px 0;font-size:15px;line-height:1.75;color:#3d3b52;
               font-family:${SANS};">
-              It went past being a celebration and turned into something
-              communal &mdash; and we are still replaying it in our heads.
+              It went beyond a celebration.
+              It became a collective experience.
               The loved ones, the skies, the smiles, the energy, the desert, the stars, the fires, the
-              conversations, the laughter. No one cried, that we know of. It was a lot.
+              conversations, the laughter.
+              No one cried, that we know of.
+              It was a more than we could have imagined.
             </p>
             <p style="margin:0 0 18px 0;font-size:15px;line-height:1.75;color:#3d3b52;
               font-family:${SANS};">
@@ -2698,10 +2700,12 @@ ${firstName},
 
 Wow. What a weekend.
 
-It went past being a celebration and turned into something
-communal &mdash; and we are still replaying it in our heads.
+It went beyond a celebration.
+It became a collective experience.
 The loved ones, the skies, the smiles, the energy, the desert, the stars, the fires, the
-conversations, the laughter. No one cried, that we know of. It was a lot.
+conversations, the laughter.
+No one cried, that we know of.
+It was a more than we could have imagined.
 
 Thank you for making the trip. Thank you for giving us the end of
 your summer. We came away with more to keep than we knew how to
