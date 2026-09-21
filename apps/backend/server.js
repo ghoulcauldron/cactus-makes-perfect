@@ -3553,10 +3553,27 @@ app.post("/api/v1/upload/complete", async (req, res) => {
 });
 
 // ---- 4. My uploads ----
+// Guests whose leftover items are being repaired right now (prevents overlapping repairs)
+const healingGuests = new Set();
+
 app.get("/api/v1/upload/mine", async (req, res) => {
   try {
     const guest = await guestFromArtifactToken(req.query.token);
     if (!guest) return res.status(401).json({ error: "Invalid token" });
+
+    // Self-heal: anything of theirs stuck 2+ minutes is finished (if the bytes
+    // arrived) or moved to "missing" (if not), in the background. The portal
+    // checks back shortly when `healing` > 0.
+    const stuck = await stuckMediaFor(guest.id);
+    if (stuck.length && !healingGuests.has(guest.id)) {
+      healingGuests.add(guest.id);
+      (async () => {
+        let r;
+        do { r = await reprocessBatch(guest.id); } while (r.remaining > 0);
+      })()
+        .catch(e => console.error("[UploadMine] self-heal failed", e))
+        .finally(() => healingGuests.delete(guest.id));
+    }
 
     const { data: rows } = await supabase
       .from("media_uploads")
@@ -3573,6 +3590,7 @@ app.get("/api/v1/upload/mine", async (req, res) => {
     return res.json({
       guest: { first_name: guest.first_name, id: guest.id },
       count: media.length,
+      healing: stuck.length,
       media,
     });
   } catch (e) {
@@ -3786,6 +3804,7 @@ app.get("/api/v1/admin/media", async (req, res) => {
       source:     m.source,
       uploaded_at: m.uploaded_at,
       is_hidden: m.is_hidden,
+      last_error: m.last_error,
     }));
 
     const { data: stats } = await supabase

@@ -438,13 +438,20 @@ export default function UploadPortal() {
   }, []);
 
   const loadMine = useCallback(async (t: string) => {
-    try {
-      const res = await fetch(`/api/v1/upload/mine?token=${encodeURIComponent(t)}`);
-      if (res.status === 401) { setAuthError(true); return; }
-      const data = await res.json();
-      setMine(data.media || []);
-      setGuestName(data.guest?.first_name || '');
-    } catch { /* ignore */ }
+    const fetchOnce = async (attempt: number): Promise<void> => {
+      try {
+        const res = await fetch(`/api/v1/upload/mine?token=${encodeURIComponent(t)}`);
+        if (res.status === 401) { setAuthError(true); return; }
+        const data = await res.json();
+        setMine(data.media || []);
+        setGuestName(data.guest?.first_name || '');
+        // The server is repairing leftover items in the background; check back shortly
+        if (data.healing > 0 && attempt < 3) {
+          setTimeout(() => { fetchOnce(attempt + 1); }, 8000);
+        }
+      } catch { /* ignore */ }
+    };
+    await fetchOnce(0);
   }, []);
 
   useEffect(() => { if (token) loadMine(token); }, [token, loadMine]);
@@ -546,6 +553,7 @@ export default function UploadPortal() {
           body: JSON.stringify({ token, media_id: pres.media_id }),
         });
         if (comp.status === 422) { unavailable(); continue; }
+        if (!comp.ok) { mark({ status: 'error', error: "COULDN'T PROCESS THIS FILE" }); continue; }
 
         if (type.startsWith('video/')) {
           try {
