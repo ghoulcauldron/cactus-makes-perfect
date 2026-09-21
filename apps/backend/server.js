@@ -2561,7 +2561,7 @@ function renderUploadEmail({ guest, uploadUrl }) {
               font-family:${SANS};">
               It went beyond a celebration.<br>
               It became a collective experience.<br>
-              The loved ones, the skies, the smiles, the energy, the desert, the stars, the fires, the
+              The loved ones, the skies, the smiles, the energy, the desert, the stars, the
               conversations, the laughter.<br>
               No one cried, that we know of.<br>
               It was more than we could have imagined.
@@ -2679,7 +2679,7 @@ function renderUploadEmail({ guest, uploadUrl }) {
         <tr>
           <td align="center" style="padding:26px 20px 0 20px;">
             <div style="font-size:12px;line-height:1.8;color:#8a87a0;font-family:${SANS};">
-              Lost this email? Write to
+              Future you will need this email. If you lose it, remember to write to
               <a href="mailto:eyesonly@cactusmakesperfect.org?subject=upload"
                 style="color:#8b00d9;text-decoration:underline;">eyesonly@cactusmakesperfect.org</a><br/>
               with the subject <strong style="color:#6e6b85;">upload</strong> and we'll send your link again.
@@ -2736,8 +2736,9 @@ Big Love,
 S & G
 
 ---
-Lost this email? Write to eyesonly@cactusmakesperfect.org with the
-subject "upload" and another will be dispatched without comment.`;
+Future you will need this email. If you lose it, remember to write to
+eyesonly@cactusmakesperfect.org with the
+subject "upload" and another will be sent without comment.`;
 
   return { html, text };
 }
