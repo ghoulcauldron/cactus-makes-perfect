@@ -2555,13 +2555,32 @@ function renderUploadEmail({ guest, uploadUrl }) {
             </p>
             <p style="margin:0 0 18px 0;font-size:15px;line-height:1.75;color:#3d3b52;
               font-family:${SANS};">
-              The weekend happened. You were there. Your phone remembers.
+              Wow. What a weekend.
+            </p>
+            <p style="margin:0 0 18px 0;font-size:15px;line-height:1.75;color:#3d3b52;
+              font-family:${SANS};">
+              It went past being a celebration and turned into something
+              communal &mdash; and we are still replaying it in our heads.
+              The loved ones, the skies, the smiles, the energy, the desert, the stars, the fires, the
+              conversations, the laughter. No one cried, that we know of. It was a lot.
+            </p>
+            <p style="margin:0 0 18px 0;font-size:15px;line-height:1.75;color:#3d3b52;
+              font-family:${SANS};">
+              Thank you for making the trip. Thank you for giving us the end of
+              your summer. We came away with more to keep than we knew how to
+              ask for.
+            </p>
+            <p style="margin:0 0 18px 0;font-size:15px;line-height:1.75;color:#3d3b52;
+              font-family:${SANS};">
+              We are building one shared capsule for
+              all of it. Your photos and video, everyone else's, in the same
+              place. Once we have compiled it, the whole archive opens to
+              everyone for the final phase of CMP &mdash; and then it simply stays
+              up. You can revisit it, and keep adding to it, til the sun goes down.
             </p>
             <p style="margin:0 0 28px 0;font-size:15px;line-height:1.75;color:#3d3b52;
               font-family:${SANS};">
-              We're building the archive &mdash; every photo, every video,
-              in one place that stays up for good. The link below opens your
-              own portal where you can add yours.
+              The link below is your portal. Add what you have.
             </p>
           </td>
         </tr>
@@ -2613,9 +2632,9 @@ function renderUploadEmail({ guest, uploadUrl }) {
                     If you're on iPhone
                   </div>
                   <div style="font-size:13px;line-height:1.7;color:#3d3b52;font-family:${SANS};">
-                    After you tap Add, your phone may sit still for up to a minute
-                    while it hands over the files. That's normal &mdash; keep the page
-                    open and don't close the browser. Wifi works best.
+                    After you tap Add, your phone may do nothing at all for up to
+                    a minute. It is thinking. Keep the page open and don't close
+                    the browser &mdash; wifi helps. We are told this is normal.
                   </div>
                 </td>
               </tr>
@@ -2677,31 +2696,44 @@ THE CAPSULE
 
 ${firstName},
 
-The weekend happened. You were there. Your phone remembers.
+Wow. What a weekend.
 
-We're building the archive — every photo, every video, in one place
-that stays up for good. The link below opens your own portal where
-you can add yours.
+It went past being a celebration and turned into something
+communal &mdash; and we are still replaying it in our heads.
+The loved ones, the skies, the smiles, the energy, the desert, the stars, the fires, the
+conversations, the laughter. No one cried, that we know of. It was a lot.
 
-OPEN YOUR PORTAL:
+Thank you for making the trip. Thank you for giving us the end of
+your summer. We came away with more to keep than we knew how to
+ask for.
+
+We are building one shared capsule for
+all of it. Your photos and video, everyone else's, in the same
+place. Once we have compiled it, the whole archive opens to
+everyone for the final phase of CMP &mdash; and then it simply stays
+up. You can revisit it, and keep adding to it, til the sun goes down.
+
+The link below is your portal. Add what you have.
+
+YOUR PORTAL:
 ${uploadUrl}
 
 Works on phone or computer. Select as many as you like at once.
 Duplicates are detected and skipped.
 
-IF YOU'RE ON IPHONE: after you tap Add, your phone may sit still for
-up to a minute while it hands over the files. That's normal — keep
-the page open and don't close the browser. Wifi works best.
+IF YOU'RE ON IPHONE: after you tap Add, your phone may do nothing at
+all for up to a minute. It is thinking. Keep the page open and don't
+close the browser. Wifi helps. We are told this is normal.
 
-This link is yours alone — it's how the archive knows which photos
-came from you. Bookmark it and come back anytime to add more.
+This link is yours alone and it's how the archive knows which photos
+came from you. Bookmark it and come back anytime.
 
-Big love,
+Big Love,
 S & G
 
 ---
 Lost this email? Write to eyesonly@cactusmakesperfect.org with the
-subject "upload" and we'll send your link again.`;
+subject "upload" and another will be dispatched without comment.`;
 
   return { html, text };
 }

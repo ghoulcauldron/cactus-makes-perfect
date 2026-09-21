@@ -171,7 +171,7 @@ function NoAccessPanel() {
 
         <div className="relative z-10 flex flex-col items-center">
           <h3 className="text-[#aa00ff] text-[10px] tracking-[0.8em] uppercase mb-10 text-center opacity-80">
-            <PatternScramble text="ARCHIVE_LOCKED" {...CYBERPUNK_THEME} startTrigger={true} />
+            <PatternScramble text="NOT_RECOGNISED" {...CYBERPUNK_THEME} startTrigger={true} />
           </h3>
 
           <div className="w-full mb-8">
@@ -179,26 +179,26 @@ function NoAccessPanel() {
               {sent ? (
                 <div className="space-y-2">
                   <p className="text-[10px] text-[#39FF14] uppercase tracking-[0.3em] animate-biopulse-green">
-                    <PatternScramble text="TRANSMISSION_DISPATCHED" {...CYBERPUNK_THEME} startTrigger={sent} />
+                    <PatternScramble text="DISPATCHED" {...CYBERPUNK_THEME} startTrigger={sent} />
                   </p>
                   <p className="text-white/50 text-[9px] uppercase tracking-widest leading-relaxed">
-                    If coordinates are on file, check your archive.
+                    If you are known to us, it is already on its way.
                   </p>
                 </div>
               ) : (
                 <div className="space-y-6">
                   <div className="space-y-2">
                     <p className="text-[10px] text-[#aa00ff]/80 uppercase tracking-[0.3em]">
-                      <PatternScramble text="AUTHENTICATION_REQUIRED" {...CYBERPUNK_THEME} startTrigger={true} />
+                      <PatternScramble text="LINK_REQUIRED" {...CYBERPUNK_THEME} startTrigger={true} />
                     </p>
                     <p className="text-white/50 text-[9px] uppercase tracking-widest leading-relaxed">
-                      Archive access requires your unique link.<br />
-                      Check your transmission archive.
+                      This portal admits only those it recognises.<br />
+                      Yours arrived by email. Check your records.
                     </p>
                   </div>
                   <div className="space-y-3">
                     <p className="text-[8px] text-[#00ffff]/40 uppercase tracking-[0.4em]">
-                      // Input Relink Coordinates
+                      // Or identify yourself below
                     </p>
                     <input
                       type="email" value={email}
@@ -223,7 +223,7 @@ function NoAccessPanel() {
                 ${submitting
                   ? 'bg-white/10 text-white/30 cursor-not-allowed'
                   : 'bg-white/90 text-black hover:bg-[#aa00ff] hover:text-white hover:shadow-[0_0_30px_rgba(170,0,255,0.6)]'}`}>
-              {submitting ? '[ DISPATCHING... ]' : '[ REQUEST_NEW_LINK ]'}
+              {submitting ? '[ SENDING... ]' : '[ SEND_IT_AGAIN ]'}
             </button>
           )}
         </div>
@@ -363,12 +363,12 @@ function Lightbox({
                   className="px-5 py-2.5 rounded-full text-[8px] uppercase tracking-[0.3em]
                     bg-[#ff0055]/20 border border-[#ff0055]/60 text-[#ff0055]
                     hover:bg-[#ff0055] hover:text-white disabled:opacity-30 transition-all duration-500">
-                  [ Confirm_Purge ]
+                  [ Confirm_Removal ]
                 </button>
                 <button onClick={() => setConfirmDelete(false)}
                   className="px-4 py-2.5 rounded-full text-[8px] uppercase tracking-[0.3em]
                     text-white/30 hover:text-white/70 transition-all">
-                  Abort
+                  Never mind
                 </button>
               </div>
             ) : (
@@ -379,7 +379,7 @@ function Lightbox({
                 <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
                 </svg>
-                Purge
+                Remove
               </button>
             )}
 
@@ -629,13 +629,13 @@ export default function UploadPortal() {
               transition-all duration-700
               ${busy ? 'bg-white/10 text-white/30 cursor-not-allowed'
                      : 'bg-white/90 text-black hover:bg-[#aa00ff] hover:text-white hover:shadow-[0_0_30px_rgba(170,0,255,0.6)]'}`}>
-            {busy ? '[ TRANSMITTING... ]' : '[ SELECT_IMPRINTS ]'}
+            {busy ? '[ RECEIVING... ]' : '[ ADD_YOUR_MEDIA ]'}
           </button>
 
           <p className="text-white/20 text-[8px] uppercase tracking-[0.3em] text-center mt-4 leading-relaxed">
             Photos &amp; video // Phone or terminal // Multi-select supported<br />
             <span className="text-[#00ffff]/30">
-              Large batches take time — keep this page open until complete
+              Large batches take time. Keep this page open.
             </span>
           </p>
 
@@ -645,8 +645,8 @@ export default function UploadPortal() {
                 PREPARING {preparing} FILE{preparing > 1 ? 'S' : ''}
               </p>
               <p className="text-white/40 text-[8px] uppercase tracking-widest mt-2 leading-relaxed">
-                Your phone is handing over the files.<br />
-                This can take a minute — keep this page open.
+                Your device is thinking.<br />
+                This is normal. Keep this page open. It will be over soon.
               </p>
             </div>
           )}
@@ -654,7 +654,7 @@ export default function UploadPortal() {
           {active.length > 0 && (
             <div className="mt-8 bg-white/5 rounded-2xl border border-white/5 backdrop-blur-md p-5 space-y-3">
               <p className="text-[8px] text-[#00ffff]/40 uppercase tracking-[0.4em] mb-1">
-                // Uplink Queue [{active.length}]
+                // Incoming [{active.length}]
               </p>
               {active.map(q => (
                 <div key={q.sha256} className="space-y-1.5">
@@ -663,9 +663,9 @@ export default function UploadPortal() {
                     <span className={`text-[8px] uppercase tracking-[0.2em] shrink-0
                       ${q.status === 'error' ? 'text-[#ff0055]' : 'text-[#00ffff]'}`}>
                       {q.status === 'uploading'  && `${Math.round(q.progress * 100)}%`}
-                      {q.status === 'processing' && 'RENDERING'}
+                      {q.status === 'processing' && 'PROCESSING'}
                       {q.status === 'pending'    && 'QUEUED'}
-                      {q.status === 'error'      && (q.error || 'FAULT')}
+                      {q.status === 'error'      && (q.error || 'FAILED')}
                     </span>
                   </div>
                   <div className="h-[2px] w-full bg-white/5 rounded-full overflow-hidden">
@@ -681,10 +681,10 @@ export default function UploadPortal() {
           {dupes.length > 0 && (
             <div className="mt-6 bg-[#39FF14]/5 rounded-2xl border border-[#39FF14]/20 p-5 text-center">
               <p className="text-[9px] text-[#39FF14]/80 uppercase tracking-[0.3em] animate-biopulse-green">
-                {dupes.length} DUPLICATE{dupes.length > 1 ? 'S' : ''} DETECTED
+                {dupes.length} ALREADY IN THE CAPSULE
               </p>
               <p className="text-white/30 text-[8px] uppercase tracking-widest mt-2">
-                Already in the archive — transmission skipped.
+                Skipped. We have a memory.
               </p>
             </div>
           )}
@@ -693,7 +693,7 @@ export default function UploadPortal() {
         {/* Grid */}
         <div className="flex items-baseline justify-between mb-6 px-2">
           <span className="text-[9px] text-[#aa00ff]/60 uppercase tracking-[0.4em]">
-            <PatternScramble text="YOUR_IMPRINTS" {...CYBERPUNK_THEME} startTrigger={true} />
+            <PatternScramble text="YOUR_CONTRIBUTIONS" {...CYBERPUNK_THEME} startTrigger={true} />
           </span>
           <span className="text-[#00ffff] text-[10px] tracking-[0.2em] animate-biopulse-cyan">
             {String(mine.length).padStart(3, '0')}
@@ -702,7 +702,7 @@ export default function UploadPortal() {
 
         {mine.length === 0 ? (
           <div className="bg-white/5 rounded-2xl border border-white/5 backdrop-blur-md py-16 text-center">
-            <p className="text-white/20 text-[9px] uppercase tracking-[0.4em] italic">No signal detected</p>
+            <p className="text-white/20 text-[9px] uppercase tracking-[0.4em] italic">Nothing yet. We are patient.</p>
           </div>
         ) : (
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2.5">
@@ -760,8 +760,8 @@ export default function UploadPortal() {
         )}
 
         <p className="text-center text-white/15 text-[8px] uppercase tracking-[0.35em] mt-16 leading-relaxed">
-          Bookmark this vector — it is yours alone.<br />
-          Return anytime to deposit more.
+          This link is yours alone.<br />
+          Come back whenever you remember something.
         </p>
       </div>
 
