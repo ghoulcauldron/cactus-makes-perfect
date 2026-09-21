@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { PatternScramble } from './components/UI/PatternScramble';
 import { CYBERPUNK_THEME } from './constants/themes';
 
@@ -115,6 +115,14 @@ function extractVideoPoster(file: Blob): Promise<VideoPoster | null> {
 
 const isHeic = (f: File) =>
   /image\/hei[cf]/i.test(f.type) || /\.hei[cf]$/i.test(f.name);
+
+// Camera-assigned names (IMG_6735.jpeg, PXL_2026…) are stable per device.
+// Generic names some browsers produce (image.jpg) are not, so never match on those.
+const isCameraName = (name: string) => /^(img|dsc|dscn|pxl|vid|mvimg)_?\d+/i.test(name);
+
+// Name without extension, so IMG_1.HEIC and IMG_1.jpg compare as the same photo
+const stripExt = (name: string) => name.replace(/\.[^.]+$/, '');
+const fileStem = (name: string) => stripExt(name).toLowerCase();
 
 async function convertHeic(file: File): Promise<File> {
   const heic2any = (await import('heic2any')).default as any;
@@ -441,6 +449,9 @@ export default function UploadPortal() {
 
   useEffect(() => { if (token) loadMine(token); }, [token, loadMine]);
 
+  // Items that never arrived are shown in their own panel, not the grid
+  const shown = useMemo(() => mine.filter(m => m.status !== 'missing'), [mine]);
+
   // Keep the screen awake and warn before closing mid-upload
   useEffect(() => {
     const isWorking = queue.some(q =>
@@ -475,10 +486,27 @@ export default function UploadPortal() {
     }));
     setQueue(q => [...q.filter(x => x.status !== 'error'), ...items]);
 
+    // Recovery mode: while anything is missing, skip files whose camera name
+    // matches a photo already safely here. iOS may re-encode a photo on a
+    // second pick, so its hash alone can't be trusted to catch the repeat.
+    const recovering = mine.some(m => m.status === 'missing');
+    const readyStems = new Set(
+      recovering
+        ? mine
+            .filter(m => m.status === 'ready' && m.filename && isCameraName(m.filename))
+            .map(m => fileStem(m.filename as string))
+        : []
+    );
+
     for (const item of items) {
       const mark = (patch: Partial<QueueItem>) =>
         setQueue(q => q.map(x => x.id === item.id ? { ...x, ...patch } : x));
       const unavailable = () => mark({ status: 'error', error: 'UNAVAILABLE — SELECT AGAIN' });
+
+      if (isCameraName(item.file.name) && readyStems.has(fileStem(item.file.name))) {
+        mark({ status: 'duplicate', progress: 1 });
+        continue;
+      }
 
       try {
         mark({ status: 'reading' });
@@ -563,8 +591,9 @@ export default function UploadPortal() {
         body: JSON.stringify({ token, media_id: m.id }),
       });
       const next = mine.filter(x => x.id !== m.id);
+      const nextShown = next.filter(x => x.status !== 'missing');
       setMine(next);
-      setLbIndex(i => (i === null ? null : (next.length === 0 ? null : Math.min(i, next.length - 1))));
+      setLbIndex(i => (i === null ? null : (nextShown.length === 0 ? null : Math.min(i, nextShown.length - 1))));
     } catch { /* ignore */ }
     setActionBusy(false);
   };
@@ -586,10 +615,10 @@ export default function UploadPortal() {
 
   const navLightbox = useCallback((dir: -1 | 1) => {
     setLbIndex(i => {
-      if (i === null || mine.length === 0) return i;
-      return (i + dir + mine.length) % mine.length;
+      if (i === null || shown.length === 0) return i;
+      return (i + dir + shown.length) % shown.length;
     });
-  }, [mine.length]);
+  }, [shown.length]);
 
   if (!ready) return <div className="fixed inset-0 bg-[#020617]" />;
   if (!token || authError) return <NoAccessPanel />;
@@ -600,6 +629,16 @@ export default function UploadPortal() {
   const errors = queue.filter(q => q.status === 'error');
   const dupes  = queue.filter(q => q.status === 'duplicate');
   const busy   = working.length > 0;
+
+  // Uploads that never arrived, summarized as a name range to look for
+  const missing = mine.filter(m => m.status === 'missing');
+  const missingNames = missing
+    .map(m => (m.filename ? stripExt(m.filename).toUpperCase() : ''))
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  const missingRange = missingNames.length === 0 ? null
+    : missingNames.length === 1 ? missingNames[0]
+    : `${missingNames[0]} – ${missingNames[missingNames.length - 1]}`;
 
   return (
     <div className="min-h-screen bg-[#020617] font-mono relative overflow-x-hidden">
@@ -685,6 +724,31 @@ export default function UploadPortal() {
               </p>
             </div>
           )}
+
+          {!busy && missing.length > 0 && (
+            <div className="mt-6 bg-[#ffaa00]/5 rounded-2xl border border-[#ffaa00]/25 p-5 text-center">
+              <p className="text-[10px] text-[#ffaa00] uppercase tracking-[0.3em]">
+                {missing.length} {missing.length === 1 ? 'ITEM' : 'ITEMS'} DIDN'T MAKE IT
+              </p>
+              <p className="text-white/40 text-[8px] uppercase tracking-widest mt-2 leading-relaxed">
+                The connection dropped before these arrived.<br />
+                Select the same photos again. Anything already here is skipped.
+              </p>
+              {missingRange && (
+                <p className="text-white/60 text-[9px] tracking-[0.2em] mt-3">
+                  {missingRange}
+                </p>
+              )}
+              <button onClick={() => fileRef.current?.click()}
+                className="mt-4 px-8 py-3 rounded-full text-[9px] font-bold uppercase tracking-[0.4em]
+                  bg-white/90 text-black hover:bg-[#ffaa00] transition-all duration-500">
+                [ ADD_THEM_AGAIN ]
+              </button>
+              <p className="text-white/25 text-[7px] uppercase tracking-widest mt-3">
+                Wifi recommended. Keep this page open until it finishes.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Grid */}
@@ -693,17 +757,17 @@ export default function UploadPortal() {
             <PatternScramble text="YOUR_CONTRIBUTIONS" {...CYBERPUNK_THEME} startTrigger={true} />
           </span>
           <span className="text-[#00ffff] text-[10px] tracking-[0.2em] animate-biopulse-cyan">
-            {String(mine.length).padStart(3, '0')}
+            {String(shown.length).padStart(3, '0')}
           </span>
         </div>
 
-        {mine.length === 0 ? (
+        {shown.length === 0 ? (
           <div className="bg-white/5 rounded-2xl border border-white/5 backdrop-blur-md py-16 text-center">
             <p className="text-white/20 text-[9px] uppercase tracking-[0.4em] italic">Nothing yet. We are patient.</p>
           </div>
         ) : (
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2.5">
-            {mine.map((m, i) => (
+            {shown.map((m, i) => (
               <button key={m.id}
                 onClick={() => m.status === 'ready' && setLbIndex(i)}
                 className="group relative aspect-square rounded-2xl overflow-hidden
@@ -762,9 +826,9 @@ export default function UploadPortal() {
         </p>
       </div>
 
-      {lbIndex !== null && mine[lbIndex] && (
+      {lbIndex !== null && shown[lbIndex] && (
         <Lightbox
-          items={mine}
+          items={shown}
           index={lbIndex}
           onClose={() => setLbIndex(null)}
           onNav={navLightbox}
