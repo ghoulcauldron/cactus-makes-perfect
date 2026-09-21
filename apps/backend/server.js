@@ -2559,11 +2559,11 @@ function renderUploadEmail({ guest, uploadUrl }) {
             </p>
             <p style="margin:0 0 18px 0;font-size:15px;line-height:1.75;color:#3d3b52;
               font-family:${SANS};">
-              It went beyond a celebration.
-              It became a collective experience.
+              It went beyond a celebration.< /br>
+              It became a collective experience.< /br>
               The loved ones, the skies, the smiles, the energy, the desert, the stars, the fires, the
-              conversations, the laughter.
-              No one cried, that we know of.
+              conversations, the laughter.< /br>
+              No one cried, that we know of.< /br>
               It was a more than we could have imagined.
             </p>
             <p style="margin:0 0 18px 0;font-size:15px;line-height:1.75;color:#3d3b52;
@@ -2577,7 +2577,7 @@ function renderUploadEmail({ guest, uploadUrl }) {
               We are building one shared capsule for
               all of it. Your photos and video, everyone else's, in the same
               place. Once we have compiled it, the whole archive opens to
-              everyone for the final phase of CMP &mdash; and then it simply stays
+              everyone for the final phase of CMP and then it simply stays
               up. You can revisit it, and keep adding to it, til the sun goes down.
             </p>
             <p style="margin:0 0 28px 0;font-size:15px;line-height:1.75;color:#3d3b52;
@@ -2636,7 +2636,7 @@ function renderUploadEmail({ guest, uploadUrl }) {
                   <div style="font-size:13px;line-height:1.7;color:#3d3b52;font-family:${SANS};">
                     After you tap Add, your phone may do nothing at all for up to
                     a minute. It is thinking. Keep the page open and don't close
-                    the browser &mdash; wifi helps. We are told this is normal.
+                    the browser. Wifi helps. We are told this is normal.
                   </div>
                 </td>
               </tr>
@@ -2655,7 +2655,7 @@ function renderUploadEmail({ guest, uploadUrl }) {
         <tr>
           <td class="pad" style="padding:24px 44px 0 44px;">
             <p style="margin:0;font-size:13px;line-height:1.8;color:#6e6b85;font-family:${SANS};">
-              This link is yours alone &mdash; it's how the archive knows which
+              This link is yours alone and it's how the archive knows which
               photos came from you. Bookmark it and come back anytime to add more.
             </p>
           </td>
