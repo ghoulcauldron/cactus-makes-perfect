@@ -3675,6 +3675,27 @@ app.post("/api/v1/admin/media/purge", async (req, res) => {
   }
 });
 
+// ---- Admin: restore a soft-deleted item ----
+app.post("/api/v1/admin/media/restore", async (req, res) => {
+  try {
+    const { media_id } = req.body || {};
+    if (!media_id) return res.status(400).json({ error: "Missing media_id" });
+
+    const { data: updated, error } = await supabase
+      .from("media")
+      .update({ deleted_at: null, updated_at: new Date().toISOString() })
+      .eq("id", media_id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return res.json({ media: serializeMedia(updated) });
+  } catch (e) {
+    console.error("[AdminRestore] error", e);
+    return res.status(500).json({ error: "Restore failed" });
+  }
+});
+
 // ---- Admin: list soft-deleted media ----
 app.get("/api/v1/admin/media/trash", async (req, res) => {
   try {

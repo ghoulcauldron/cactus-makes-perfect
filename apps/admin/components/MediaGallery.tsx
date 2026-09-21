@@ -167,6 +167,10 @@ export default function MediaGallery() {
   const [sortMode, setSortMode]         = useState<SortMode>("uploaded");
   const [lbIndex, setLbIndex]           = useState<number | null>(null);
   const [showRail, setShowRail]         = useState(true);
+  const [showTrash, setShowTrash]     = useState(false);
+  const [trash, setTrash]             = useState<MediaRow[]>([]);
+  const [purging, setPurging]         = useState<string | null>(null);
+  const [confirmPurge, setConfirmPurge] = useState<string | null>(null);
 
   const fetchMedia = useCallback(async () => {
     setLoading(true);
@@ -182,6 +186,49 @@ export default function MediaGallery() {
   }, []);
 
   useEffect(() => { fetchMedia(); }, [fetchMedia]);
+
+  const fetchTrash = useCallback(async () => {
+    try {
+      const res = await apiFetch("/admin/media/trash");
+      setTrash(res.media || []);
+    } catch (e) {
+      console.error("[MediaGallery] trash fetch failed", e);
+    }
+  }, []);
+
+  useEffect(() => { if (showTrash) fetchTrash(); }, [showTrash, fetchTrash]);
+
+  const handlePurge = useCallback(async (mediaId: string) => {
+    setPurging(mediaId);
+    try {
+      await apiFetch("/admin/media/purge", {
+        method: "POST",
+        body: JSON.stringify({ media_id: mediaId }),
+      });
+      setTrash(t => t.filter(m => m.id !== mediaId));
+      setMedia(m => m.filter(x => x.id !== mediaId));
+      setConfirmPurge(null);
+      setLbIndex(null);
+    } catch (e) {
+      console.error("[MediaGallery] purge failed", e);
+    }
+    setPurging(null);
+  }, []);
+
+  const handleRestore = useCallback(async (mediaId: string) => {
+    setPurging(mediaId);
+    try {
+      await apiFetch("/admin/media/restore", {
+        method: "POST",
+        body: JSON.stringify({ media_id: mediaId }),
+      });
+      setTrash(t => t.filter(m => m.id !== mediaId));
+      await fetchMedia();
+    } catch (e) {
+      console.error("[MediaGallery] restore failed", e);
+    }
+    setPurging(null);
+  }, [fetchMedia]);
 
   const filtered = useMemo(() => {
     let list = media;
@@ -335,6 +382,13 @@ export default function MediaGallery() {
               BY {sortMode === "uploaded" ? "UPLOAD" : "CAPTURE"}
             </button>
 
+            <button onClick={() => setShowTrash(true)}
+              className="px-2 py-1 text-[8px] font-bold uppercase tracking-widest
+                border border-[#45CC2D]/20 hover:border-[#ff0055]/60 hover:text-[#ff0055]
+                transition-all">
+              TRASH
+            </button>
+
             <button onClick={fetchMedia}
               className={`p-1 opacity-30 hover:opacity-100 transition-opacity ${loading ? "animate-spin" : ""}`}
               title="Sync">
@@ -424,6 +478,117 @@ export default function MediaGallery() {
           onClose={() => setLbIndex(null)}
           onNav={navLightbox}
         />
+      )}
+            {showTrash && (
+        <div className="fixed inset-0 z-[12000] bg-black/90 backdrop-blur-sm
+          font-mono flex items-center justify-center p-4">
+          <div className="w-full max-w-4xl max-h-[85vh] bg-black border border-[#ff0055]/40
+            flex flex-col">
+
+            {/* Header */}
+            <div className="shrink-0 flex items-center justify-between px-5 py-4
+              border-b border-[#ff0055]/30">
+              <div>
+                <h2 className="text-xs font-black uppercase tracking-widest text-[#ff0055]">
+                  SOFT-DELETED ARCHIVE
+                </h2>
+                <p className="text-[8px] opacity-40 mt-0.5 text-[#45CC2D]">
+                  {trash.length} ITEM{trash.length !== 1 ? "S" : ""} // PURGE IS PERMANENT
+                </p>
+              </div>
+              <button onClick={() => { setShowTrash(false); setConfirmPurge(null); }}
+                className="text-[#45CC2D]/40 hover:text-[#45CC2D] transition-colors">
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Warning */}
+            <div className="shrink-0 px-5 py-2.5 bg-[#ff0055]/10 border-b border-[#ff0055]/20">
+              <p className="text-[9px] text-[#ff0055]/80 uppercase tracking-wider leading-relaxed">
+                Purging removes the R2 objects and the database row. The file's
+                hash is freed, so it can be re-uploaded afterward.
+              </p>
+            </div>
+
+            {/* List */}
+            <div className="flex-1 overflow-y-auto scrollbar-hide p-4">
+              {trash.length === 0 ? (
+                <p className="py-16 text-center text-[10px] opacity-20 uppercase
+                  tracking-widest text-[#45CC2D]">
+                  TRASH EMPTY
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {trash.map(m => (
+                    <div key={m.id}
+                      className="flex items-center gap-3 p-2 border border-[#45CC2D]/15
+                        hover:border-[#45CC2D]/40 transition-all">
+
+                      {/* Thumb */}
+                      <div className="w-14 h-14 shrink-0 bg-neutral-900 overflow-hidden">
+                        {m.thumb_url ? (
+                          <img src={m.thumb_url} alt="" className="w-full h-full object-cover opacity-60" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-[#45CC2D]/20">
+                            {m.kind === "video"
+                              ? <VideoCameraIcon className="h-5 w-5" />
+                              : <PhotoIcon className="h-5 w-5" />}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Meta */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] font-bold uppercase truncate text-[#45CC2D]">
+                          {m.filename || "UNTITLED"}
+                        </p>
+                        <p className="text-[8px] opacity-40 text-[#45CC2D]">
+                          {m.kind.toUpperCase()} // ID {m.id.slice(0, 8)}
+                        </p>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="shrink-0">
+                        {confirmPurge === m.id ? (
+                          <div className="flex items-center gap-2">
+                            <button onClick={() => handlePurge(m.id)}
+                              disabled={purging === m.id}
+                              className="px-3 py-1.5 text-[8px] font-bold uppercase tracking-widest
+                                bg-[#ff0055] text-black hover:bg-[#ff3377]
+                                disabled:opacity-30 transition-all">
+                              {purging === m.id ? "PURGING..." : "CONFIRM"}
+                            </button>
+                            <button onClick={() => setConfirmPurge(null)}
+                              className="px-2 py-1.5 text-[8px] uppercase tracking-widest
+                                text-[#45CC2D]/40 hover:text-[#45CC2D] transition-colors">
+                              CANCEL
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <button onClick={() => handleRestore(m.id)}
+                              disabled={purging === m.id}
+                              className="px-3 py-1.5 text-[8px] font-bold uppercase tracking-widest
+                                border border-[#45CC2D]/40 text-[#45CC2D]/70
+                                hover:bg-[#45CC2D] hover:text-black disabled:opacity-30 transition-all">
+                              {purging === m.id ? "RESTORING..." : "RESTORE"}
+                            </button>
+                            <button onClick={() => setConfirmPurge(m.id)}
+                              className="px-3 py-1.5 text-[8px] font-bold uppercase tracking-widest
+                                border border-[#ff0055]/40 text-[#ff0055]/70
+                                hover:bg-[#ff0055] hover:text-black transition-all">
+                              PURGE
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
