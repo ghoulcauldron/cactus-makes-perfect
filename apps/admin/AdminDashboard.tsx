@@ -6,13 +6,15 @@ import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headless
 import { ChevronDownIcon } from '@heroicons/react/20/solid';
 import InboxManager from "./components/InboxManager";
 import MediaGallery from "./components/MediaGallery";
+import ConsoleHome from "./components/ConsoleHome";
 
-type Tab = "GUESTS" | "LODGING" | "SURVEYS" | "INBOX" | "MEDIA"; // Added MEDIA tab
+type Tab = "HOME" | "GUESTS" | "LODGING" | "SURVEYS" | "INBOX" | "MEDIA";
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<Tab>("GUESTS");
+  const [activeTab, setActiveTab] = useState<Tab>("HOME");
 
   const tabs: { id: Tab; label: string }[] = [
+    { id: "HOME", label: "CONSOLE" },
     { id: "GUESTS", label: "GUEST LIST" },
     { id: "LODGING", label: "LODGING" },
     { id: "SURVEYS", label: "SURVEYS" },
@@ -26,7 +28,10 @@ export default function AdminDashboard() {
       <div className="shrink-0 px-3 py-1 border-b border-primary bg-surface uppercase tracking-widest text-sm w-full z-40">
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-4 sm:gap-8">
-            <span className="truncate mr-2 font-bold text-[#45CC2D] text-xs sm:text-sm">AREA 51</span>
+            <button onClick={() => setActiveTab("HOME")}
+              className="truncate mr-2 font-bold text-[#45CC2D] text-xs sm:text-sm hover:opacity-70 transition-opacity">
+              AREA 51
+            </button>
             
             {/* DESKTOP TAB NAVIGATOR (Hidden on Mobile) */}
             <nav className="hidden sm:flex gap-4">
@@ -86,6 +91,7 @@ export default function AdminDashboard() {
 
       {/* VIEW CONTROLLER */}
       <div className="flex-1 overflow-hidden">
+        {activeTab === "HOME" && <ConsoleHome onNavigate={setActiveTab} />}
         {activeTab === "GUESTS" && <GuestList />}
         {activeTab === "LODGING" && <LodgingManager />}
         {activeTab === "SURVEYS" && <SurveyManager />}
